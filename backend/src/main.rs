@@ -44,6 +44,7 @@ async fn main() -> anyhow::Result<()> {
     let discord_redirect_uri =
         env::var("DISCORD_REDIRECT_URI").unwrap_or_else(|_| "".to_string());//.expect("DISCORD_REDIRECT_URI must be set");
     let api_port = env::var("API_PORT").unwrap_or_else(|_| "8080".to_string());
+    let mut api_host = env::var("API_HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
 
     let db = Database::connect(&database_url)
         .await
@@ -88,9 +89,13 @@ async fn main() -> anyhow::Result<()> {
         .fallback(static_files::static_handler)
         .with_state(state);
 
-    let addr: SocketAddr = format!("0.0.0.0:{}", api_port).parse().unwrap();
+    if api_host.contains(":") {
+        api_host = format!("[{}]", api_host);
+    }
+
+    let addr: SocketAddr = format!("{}:{}", api_host, api_port).parse().unwrap();
     
-    tracing::info!("Server listening on http://0.0.0.0:{}", api_port);
+    tracing::info!("Server listening on http://{}:{}", api_host, api_port);
     let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app).await?;
 

@@ -3,8 +3,7 @@ name: Build and Deploy to AlwaysData
 on:
   push:
     branches:
-      - tada
-#      - main
+      - main
   workflow_dispatch: # Permet de lancer manuellement le workflow
 
 env:
@@ -124,7 +123,7 @@ jobs:
         with:
           host: ${{ secrets.ALWAYSDATA_HOST }}
           username: ${{ secrets.ALWAYSDATA_USER }}
-          key: ${{ secrets.ALWAYSDATA_SSH_KEY }}
+          password: ${{ secrets.ALWAYSDATA_SSH_KEY }}
           script: |
             cd ${{ secrets.ALWAYSDATA_DEPLOY_PATH }}
             if [ -f minecraft-auth-backend ]; then
@@ -153,7 +152,7 @@ jobs:
         with:
           host: ${{ secrets.ALWAYSDATA_HOST }}
           username: ${{ secrets.ALWAYSDATA_USER }}
-          key: ${{ secrets.ALWAYSDATA_SSH_KEY }}
+          password: ${{ secrets.ALWAYSDATA_SSH_KEY }}
           script: |
             cd ${{ secrets.ALWAYSDATA_DEPLOY_PATH }}
             chmod +x minecraft-auth-backend
@@ -265,7 +264,7 @@ jobs:
         with:
           host: ${{ secrets.ALWAYSDATA_HOST }}
           username: ${{ secrets.ALWAYSDATA_USER }}
-          key: ${{ secrets.ALWAYSDATA_SSH_KEY }}
+          password: ${{ secrets.ALWAYSDATA_SSH_KEY }}
           script: |
             cd ${{ secrets.ALWAYSDATA_DEPLOY_PATH }}
             backup=$(ls -t minecraft-auth-backend.backup.* 2>/dev/null | head -n1)
