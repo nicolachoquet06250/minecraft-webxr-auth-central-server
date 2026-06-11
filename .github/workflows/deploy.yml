@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: ubuntu:23.10
+      image: debian:12
 
     steps:
       # =====================================================
@@ -53,6 +53,14 @@ jobs:
           echo "✅ Frontend built successfully"
           ls -la frontend/dist
 
+      - name: 🔎 Check required GLIBC version
+        run: |
+          echo "Build environment glibc:"
+          ldd --version | head -n1
+
+          echo "Required GLIBC symbols:"
+          strings target/release/minecraft-auth-backend | grep GLIBC_ | sort -V | tail -20
+
       - name: Initialize system dependencies
         run: |
           sed -i 's|http://archive.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' /etc/apt/sources.list
@@ -81,14 +89,14 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             backend/target/
-          key: ${{ runner.os }}-cargo-musl-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-musl-
+            ${{ runner.os }}-cargo-
 
       # =====================================================
       # 5. BUILD BACKEND
       # =====================================================
-      - name: 🏗️ Build backend (release mode with musl)
+      - name: 🏗️ Build backend (release mode)
         working-directory: .
         run: cargo build --release
 
