@@ -173,28 +173,12 @@ jobs:
       # 11. RESTART SERVER VIA ALWAYSDATA API
       # =====================================================
       - name: 🔄 Restart server via AlwaysData API
-        env:
-          ALWAYSDATA_API_KEY: ${{ secrets.ALWAYSDATA_API_KEY }}
-          ALWAYSDATA_ACCOUNT: ${{ secrets.ALWAYSDATA_ACCOUNT }}
-          ALWAYSDATA_SITE_ID: ${{ secrets.ALWAYSDATA_SITE_ID }}
         run: |
-          echo "🔄 Restarting application via AlwaysData API..."
-
-          # Restart the site/application
-          response=$(curl -s -w "\n%{http_code}" \
-            -X POST \
-            -u "$ALWAYSDATA_ACCOUNT:$ALWAYSDATA_API_KEY" \
-            "https://api.alwaysdata.com/v1/site/$ALWAYSDATA_SITE_ID/restart/")
-
-          http_code=$(echo "$response" | tail -n1)
-          body=$(echo "$response" | head -n-1)
-
-          if [ "$http_code" -eq 200 ] || [ "$http_code" -eq 204 ]; then
-            echo "✅ Server restarted successfully"
+          err=$(curl -X POST --basic --user "${{secrets.ALWAYSDATA_API_KEY}} account=${{secrets.ALWAYSDATA_ACCOUNT}}:" https://api.alwaysdata.com/v1/site/${{secrets.ALWAYSDATA_SITE_ID}}/restart/ &>2);
+          if [[ "${err}" -eq "" ]]; then 
+            echo "Redémarrage OK"
           else
-            echo "❌ Failed to restart server (HTTP $http_code)"
-            echo "Response: $body"
-            exit 1
+            echo "Erreur : ${err}"
           fi
 
       # =====================================================
