@@ -13,6 +13,9 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
+    container:
+      image: ubuntu:23.10
+
     steps:
       # =====================================================
       # 1. CHECKOUT CODE
@@ -55,11 +58,6 @@ jobs:
       # =====================================================
       - name: 🦀 Setup Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-unknown-linux-musl
-
-      - name: 📦 Install musl tools
-        run: sudo apt-get update && sudo apt-get install -y musl-tools
 
       - name: 📦 Cache Cargo dependencies
         uses: actions/cache@v3
@@ -79,19 +77,16 @@ jobs:
       # =====================================================
       - name: 🏗️ Build backend (release mode with musl)
         working-directory: .
-        run: cargo build --release --target x86_64-unknown-linux-musl
-        env:
-          RUSTFLAGS: '-C target-feature=+crt-static'
+        run: cargo build --release
 
       - name: ✅ Verify backend build
         run: |
-          if [ ! -f "target/x86_64-unknown-linux-musl/release/minecraft-auth-backend" ]; then
+          if [ ! -f "target/release/minecraft-auth-backend" ]; then
             echo "❌ Backend binary not found!"
             exit 1
           fi
           echo "✅ Backend built successfully"
-          ls -lh target/x86_64-unknown-linux-musl/release/minecraft-auth-backend
-          file target/x86_64-unknown-linux-musl/release/minecraft-auth-backend
+          ls -lh target/release/minecraft-auth-backend
 
       # =====================================================
       # 6. RUN MIGRATIONS (optionnel - décommenter si nécessaire)
@@ -101,7 +96,7 @@ jobs:
         env:
            DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-           ./target/x86_64-unknown-linux-musl/release/migration up
+           ./target/release/migration up
 
       # =====================================================
       # 7. PREPARE DEPLOYMENT PACKAGE
@@ -109,12 +104,11 @@ jobs:
       - name: 📦 Create deployment package
         run: |
           mkdir -p deploy
-          cp target/x86_64-unknown-linux-musl/release/minecraft-auth-backend deploy/
+          cp target/release/minecraft-auth-backend deploy/
           cp backend/.env.production deploy/.env || echo "No .env.production file"
           chmod +x deploy/minecraft-auth-backend
           echo "✅ Deployment package created"
           ls -lh deploy/
-          file deploy/minecraft-auth-backend
 
       # =====================================================
       # 8. BACKUP CURRENT VERSION
