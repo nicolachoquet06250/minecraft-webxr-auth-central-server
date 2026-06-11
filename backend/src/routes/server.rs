@@ -26,38 +26,11 @@ pub async fn create_server(
 
     let owner_id = claims.sub.clone();
 
-    // Check relay server health
-    let health_url = format!("{}/health", payload.relay_domain.trim_end_matches('/'));
-    
-    tracing::info!("Checking relay server health at: {}", health_url);
-    
-    let health_check = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(10))
-        .build()
-        .map_err(|e| {
-            tracing::error!("Failed to build HTTP client: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?
-        .get(&health_url)
-        .send()
-        .await;
-
-    match health_check {
-        Ok(response) => {
-            if !response.status().is_success() {
-                tracing::error!(
-                    "Relay server health check failed with status: {}",
-                    response.status()
-                );
-                return Err(StatusCode::SERVICE_UNAVAILABLE);
-            }
-            tracing::info!("Relay server health check passed");
-        }
-        Err(e) => {
-            tracing::error!("Failed to connect to relay server: {}", e);
-            return Err(StatusCode::SERVICE_UNAVAILABLE);
-        }
-    }
+    // Check relay server health before registering it.
+    // Some relay deployments expose their API at the domain root (`/health`),
+    // while others are mounted behind the `/api` prefix (`/api/health`).
+    // Try both endpoints to avoid rejecting valid relays because of their reverse proxy layout.
+    check_relay_health(&payload.relay_domain).await?;
 
     // Check if relay_domain or game_domain are already registered
     let existing_relay = Server::find()
@@ -111,6 +84,72 @@ pub async fn create_server(
         created_at: server.created_at.to_string(),
         updated_at: server.updated_at.to_string(),
     }))
+}
+
+async fn check_relay_health(relay_domain: &str) -> Result<(), StatusCode> {
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+        .map_err(|e| {
+            tracing::error!("Failed to build HTTP client: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    let health_urls = build_relay_health_urls(relay_domain);
+    let mut last_error: Option<String> = None;
+
+    for health_url in health_urls {
+        tracing::info!("Checking relay server health at: {}", health_url);
+
+        match client.get(&health_url).send().await {
+            Ok(response) => {
+                let status = response.status();
+
+                if status.is_success() {
+                    tracing::info!("Relay server health check passed at: {}", health_url);
+                    return Ok(());
+                }
+
+                let message = format!(
+                    "Relay server health check failed at {} with status: {}",
+                    health_url, status
+                );
+                tracing::warn!("{}", message);
+                last_error = Some(message);
+            }
+            Err(e) => {
+                let message = format!(
+                    "Failed to connect to relay server health endpoint {}: {}",
+                    health_url, e
+                );
+                tracing::warn!("{}", message);
+                last_error = Some(message);
+            }
+        }
+    }
+
+    tracing::error!(
+        "Relay server health check failed for all known endpoints: {}",
+        last_error.unwrap_or_else(|| "no health endpoint generated".to_string())
+    );
+
+    Err(StatusCode::SERVICE_UNAVAILABLE)
+}
+
+fn build_relay_health_urls(relay_domain: &str) -> Vec<String> {
+    let relay_domain = relay_domain.trim_end_matches('/');
+    let mut urls = Vec::new();
+
+    push_unique(&mut urls, format!("{}/health", relay_domain));
+    push_unique(&mut urls, format!("{}/api/health", relay_domain));
+
+    urls
+}
+
+fn push_unique(values: &mut Vec<String>, value: String) {
+    if !values.contains(&value) {
+        values.push(value);
+    }
 }
 
 pub async fn get_user_servers(
