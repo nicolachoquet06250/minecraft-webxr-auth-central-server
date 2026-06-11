@@ -7,6 +7,10 @@ use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 use std::sync::Arc;
 use uuid::Uuid;
 use validator::Validate;
+use hyper::{body::Bytes, Method, Request, Uri};
+use hyper_util::client::legacy::Client;
+use hyper_rustls::HttpsConnectorBuilder;
+use http_body_util::Full;
 
 use crate::{
     dto::{CreateServerRequest, ServerResponse, UpdateServerRequest},
@@ -31,19 +35,41 @@ pub async fn create_server(
     
     tracing::info!("Checking relay server health at: {}", health_url);
     
-    let health_check = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(10))
-        .build()
+    let https = HttpsConnectorBuilder::new()
+        .with_native_roots()
         .map_err(|e| {
-            tracing::error!("Failed to build HTTP client: {}", e);
+            tracing::error!("Failed to initialize HTTPS connector: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })?
-        .get(&health_url)
-        .send()
-        .await;
+        .https_or_http()
+        .enable_http1()
+        .enable_http2()
+        .build();
+
+    let client = Client::builder(hyper_util::rt::TokioExecutor::new()).build(https);
+
+    let uri: Uri = health_url.parse().map_err(|e| {
+        tracing::error!("Invalid health check URL: {}", e);
+        StatusCode::BAD_REQUEST
+    })?;
+
+    let req = Request::builder()
+        .method(Method::GET)
+        .uri(uri)
+        .body(Full::new(Bytes::new()))
+        .map_err(|e| {
+            tracing::error!("Failed to build health check request: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    let health_check = tokio::time::timeout(
+        std::time::Duration::from_secs(10),
+        client.request(req)
+    )
+    .await;
 
     match health_check {
-        Ok(response) => {
+        Ok(Ok(response)) => {
             if !response.status().is_success() {
                 tracing::error!(
                     "Relay server health check failed with status: {}",
@@ -53,8 +79,12 @@ pub async fn create_server(
             }
             tracing::info!("Relay server health check passed");
         }
-        Err(e) => {
+        Ok(Err(e)) => {
             tracing::error!("Failed to connect to relay server: {}", e);
+            return Err(StatusCode::SERVICE_UNAVAILABLE);
+        }
+        Err(_) => {
+            tracing::error!("Health check timed out");
             return Err(StatusCode::SERVICE_UNAVAILABLE);
         }
     }
