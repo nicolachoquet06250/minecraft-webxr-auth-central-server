@@ -7,7 +7,6 @@ on:
   workflow_dispatch: # Permet de lancer manuellement le workflow
 
 env:
-  RUST_VERSION: "1.29"
   NODE_VERSION: "24"
 
 jobs:
@@ -56,8 +55,6 @@ jobs:
       # =====================================================
       - name: 🦀 Setup Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: ${{ env.RUST_VERSION }}
 
       - name: 📦 Cache Cargo dependencies
         uses: actions/cache@v3
