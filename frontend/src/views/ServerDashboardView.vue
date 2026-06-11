@@ -31,89 +31,99 @@
         <!-- Stats Cards -->
         <div class="stats-cards">
           <div class="stat-card minecraft-panel">
-            <div class="stat-icon">👥</div>
+            <div class="stat-icon">🔌</div>
             <div class="stat-info">
-              <div class="stat-value">{{ stats.total_visits || 0 }}</div>
-              <div class="stat-label">Visites totales</div>
-            </div>
-          </div>
-
-          <div class="stat-card minecraft-panel">
-            <div class="stat-icon">📈</div>
-            <div class="stat-info">
-              <div class="stat-value">{{ stats.visits_this_month || 0 }}</div>
-              <div class="stat-label">Visites ce mois</div>
-            </div>
-          </div>
-
-          <div class="stat-card minecraft-panel">
-            <div class="stat-icon">📅</div>
-            <div class="stat-info">
-              <div class="stat-value">{{ stats.visits_today || 0 }}</div>
-              <div class="stat-label">Visites aujourd'hui</div>
+              <div class="stat-value">{{ totalConnections }}</div>
+              <div class="stat-label">Connexions totales</div>
             </div>
           </div>
 
           <div class="stat-card minecraft-panel">
             <div class="stat-icon">🎮</div>
             <div class="stat-info">
-              <div class="stat-value">{{ stats.active_players || 0 }}</div>
-              <div class="stat-label">Joueurs actifs</div>
+              <div class="stat-value">{{ currentConnectedPlayers }}</div>
+              <div class="stat-label">Joueurs connectés</div>
+            </div>
+          </div>
+
+          <div class="stat-card minecraft-panel">
+            <div class="stat-icon">👥</div>
+            <div class="stat-info">
+              <div class="stat-value">{{ connectedPlayersCount }}</div>
+              <div class="stat-label">Joueurs listés</div>
+            </div>
+          </div>
+
+          <div class="stat-card minecraft-panel">
+            <div class="stat-icon">⏱️</div>
+            <div class="stat-info">
+              <div class="stat-value">{{ formattedAverageDuration }}</div>
+              <div class="stat-label">Durée moyenne</div>
             </div>
           </div>
         </div>
 
         <!-- Charts Section -->
         <div class="charts-grid">
-          <!-- Monthly Visits Chart -->
+          <!-- Monthly Connections Chart -->
           <div class="chart-container minecraft-panel">
-            <h2 class="chart-title">📊 Visites par mois</h2>
+            <h2 class="chart-title">📊 Connexions par mois</h2>
             <div class="chart-wrapper">
-              <Line 
+              <Line
                 v-if="monthlyChartData"
-                :data="monthlyChartData" 
-                :options="monthlyChartOptions" 
+                :data="monthlyChartData"
+                :options="monthlyChartOptions"
               />
               <div v-else class="no-data">Aucune donnée disponible</div>
             </div>
           </div>
 
-          <!-- Daily Visits Chart (Last 30 days) -->
+          <!-- Gender Connections Chart -->
           <div class="chart-container minecraft-panel">
-            <h2 class="chart-title">📅 Visites des 30 derniers jours</h2>
+            <h2 class="chart-title">⚧ Connexions par genre</h2>
             <div class="chart-wrapper">
-              <Bar 
-                v-if="dailyChartData"
-                :data="dailyChartData" 
-                :options="dailyChartOptions" 
+              <Doughnut
+                v-if="genderChartData"
+                :data="genderChartData"
+                :options="pieChartOptions"
               />
               <div v-else class="no-data">Aucune donnée disponible</div>
             </div>
           </div>
 
-          <!-- Hourly Traffic Chart -->
+          <!-- Month and Gender Chart -->
           <div class="chart-container minecraft-panel">
-            <h2 class="chart-title">🕐 Trafic par heure (24h)</h2>
+            <h2 class="chart-title">📈 Connexions par mois et genre</h2>
             <div class="chart-wrapper">
-              <Line 
-                v-if="hourlyChartData"
-                :data="hourlyChartData" 
-                :options="hourlyChartOptions" 
+              <Bar
+                v-if="monthlyGenderChartData"
+                :data="monthlyGenderChartData"
+                :options="monthlyGenderChartOptions"
               />
               <div v-else class="no-data">Aucune donnée disponible</div>
             </div>
           </div>
 
-          <!-- Connection Types Pie Chart -->
+          <!-- Average Session Duration Chart -->
           <div class="chart-container minecraft-panel">
-            <h2 class="chart-title">🔌 Types de connexion</h2>
+            <h2 class="chart-title">⏱️ Durée moyenne par genre</h2>
             <div class="chart-wrapper">
-              <Doughnut 
-                v-if="connectionTypesData"
-                :data="connectionTypesData" 
-                :options="pieChartOptions" 
+              <Bar
+                v-if="averageDurationByGenderChartData"
+                :data="averageDurationByGenderChartData"
+                :options="durationChartOptions"
               />
               <div v-else class="no-data">Aucune donnée disponible</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Connected Players -->
+        <div class="info-section minecraft-panel" v-if="connectedPlayers.length > 0">
+          <h2>👥 Joueurs actuellement connectés</h2>
+          <div class="players-list">
+            <div v-for="player in connectedPlayers" :key="playerKey(player)" class="player-item">
+              <span>{{ playerLabel(player) }}</span>
             </div>
           </div>
         </div>
@@ -127,16 +137,12 @@
               <span>{{ relayDomain }}</span>
             </div>
             <div class="info-item">
-              <strong>Dernière mise à jour:</strong>
+              <strong>Statistiques générées le:</strong>
               <span>{{ lastUpdate }}</span>
             </div>
-            <div class="info-item" v-if="stats.uptime">
-              <strong>Temps de fonctionnement:</strong>
-              <span>{{ formatUptime(stats.uptime) }}</span>
-            </div>
-            <div class="info-item" v-if="stats.server_version">
-              <strong>Version:</strong>
-              <span>{{ stats.server_version }}</span>
+            <div class="info-item">
+              <strong>Endpoint statistiques:</strong>
+              <span>{{ statsEndpoint }}</span>
             </div>
           </div>
         </div>
@@ -164,7 +170,6 @@ import {
 } from 'chart.js'
 import { Line, Bar, Doughnut } from 'vue-chartjs'
 
-// Register Chart.js components
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -178,6 +183,45 @@ ChartJS.register(
   Filler
 )
 
+type CountByGender = {
+  gender?: string
+  label?: string
+  name?: string
+  count?: number
+  total?: number
+  connections?: number
+  total_connections?: number
+}
+
+type CountByMonth = {
+  month?: string
+  label?: string
+  period?: string
+  date?: string
+  count?: number
+  total?: number
+  connections?: number
+  total_connections?: number
+}
+
+type CountByMonthAndGender = CountByGender & CountByMonth
+
+type AverageSessionDuration = {
+  average_duration_seconds?: number
+  by_gender?: CountByGender[]
+}
+
+type ServerStats = {
+  generated_at?: string
+  total_connections?: number
+  current_connected_players?: number
+  connected_players?: unknown[]
+  connections_by_gender?: CountByGender[]
+  connections_by_month?: CountByMonth[]
+  connections_by_month_and_gender?: CountByMonthAndGender[]
+  average_session_duration?: AverageSessionDuration
+}
+
 const route = useRoute()
 const router = useRouter()
 const serverStore = useServerStore()
@@ -185,12 +229,24 @@ const serverStore = useServerStore()
 const serverId = route.params.id as string
 const loading = ref(true)
 const error = ref<string | null>(null)
-const stats = ref<any>({})
+const stats = ref<ServerStats>({})
 const relayDomain = ref('')
 const serverName = ref('Mon Serveur')
 
+const totalConnections = computed(() => stats.value.total_connections ?? 0)
+const currentConnectedPlayers = computed(() => stats.value.current_connected_players ?? 0)
+const connectedPlayers = computed(() => stats.value.connected_players ?? [])
+const connectedPlayersCount = computed(() => connectedPlayers.value.length)
+const averageDurationSeconds = computed(() => stats.value.average_session_duration?.average_duration_seconds ?? 0)
+const formattedAverageDuration = computed(() => formatDuration(averageDurationSeconds.value))
+const statsEndpoint = computed(() => relayDomain.value ? `${relayDomain.value.replace(/\/+$/, '')}/stats` : '')
+
 const lastUpdate = computed(() => {
-  return new Date().toLocaleString('fr-FR', {
+  if (!stats.value.generated_at) {
+    return 'Non disponible'
+  }
+
+  return new Date(stats.value.generated_at).toLocaleString('fr-FR', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -199,18 +255,19 @@ const lastUpdate = computed(() => {
   })
 })
 
-// Monthly Chart Data
 const monthlyChartData = computed(() => {
-  if (!stats.value.visits_by_month || stats.value.visits_by_month.length === 0) {
+  const rows = stats.value.connections_by_month ?? []
+
+  if (rows.length === 0) {
     return null
   }
 
   return {
-    labels: stats.value.visits_by_month.map((item: any) => item.label),
+    labels: rows.map((item) => monthLabel(item)),
     datasets: [
       {
-        label: 'Visites',
-        data: stats.value.visits_by_month.map((item: any) => item.count),
+        label: 'Connexions',
+        data: rows.map((item) => numericCount(item)),
         borderColor: '#64ffda',
         backgroundColor: 'rgba(100, 255, 218, 0.1)',
         fill: true,
@@ -226,18 +283,77 @@ const monthlyChartData = computed(() => {
   }
 })
 
-// Daily Chart Data
-const dailyChartData = computed(() => {
-  if (!stats.value.visits_by_day || stats.value.visits_by_day.length === 0) {
+const genderChartData = computed(() => {
+  const rows = stats.value.connections_by_gender ?? []
+
+  if (rows.length === 0) {
     return null
   }
 
   return {
-    labels: stats.value.visits_by_day.map((item: any) => item.label),
+    labels: rows.map((item) => genderLabel(item)),
     datasets: [
       {
-        label: 'Visites',
-        data: stats.value.visits_by_day.map((item: any) => item.count),
+        data: rows.map((item) => numericCount(item)),
+        backgroundColor: [
+          'rgba(100, 255, 218, 0.8)',
+          'rgba(255, 107, 107, 0.8)',
+          'rgba(255, 193, 7, 0.8)',
+          'rgba(76, 175, 80, 0.8)',
+          'rgba(156, 39, 176, 0.8)'
+        ],
+        borderColor: [
+          '#64ffda',
+          '#ff6b6b',
+          '#ffc107',
+          '#4caf50',
+          '#9c27b0'
+        ],
+        borderWidth: 2
+      }
+    ]
+  }
+})
+
+const monthlyGenderChartData = computed(() => {
+  const rows = stats.value.connections_by_month_and_gender ?? []
+
+  if (rows.length === 0) {
+    return null
+  }
+
+  const months = uniqueValues(rows.map((item) => monthLabel(item)))
+  const genders = uniqueValues(rows.map((item) => genderLabel(item)))
+
+  return {
+    labels: months,
+    datasets: genders.map((gender, index) => ({
+      label: gender,
+      data: months.map((month) => {
+        const row = rows.find((item) => monthLabel(item) === month && genderLabel(item) === gender)
+        return row ? numericCount(row) : 0
+      }),
+      backgroundColor: chartBackgroundColors[index % chartBackgroundColors.length],
+      borderColor: chartBorderColors[index % chartBorderColors.length],
+      borderWidth: 2,
+      borderRadius: 5
+    }))
+  }
+})
+
+const averageDurationByGenderChartData = computed(() => {
+  const rows = stats.value.average_session_duration?.by_gender ?? []
+
+  if (rows.length === 0) {
+    return null
+  }
+
+  return {
+    labels: rows.map((item) => genderLabel(item)),
+    datasets: [
+      {
+        label: 'Durée moyenne (secondes)',
+        data: rows.map((item) => durationSeconds(item)),
         backgroundColor: 'rgba(100, 255, 218, 0.6)',
         borderColor: '#64ffda',
         borderWidth: 2,
@@ -247,61 +363,22 @@ const dailyChartData = computed(() => {
   }
 })
 
-// Hourly Chart Data
-const hourlyChartData = computed(() => {
-  if (!stats.value.visits_by_hour || stats.value.visits_by_hour.length === 0) {
-    return null
-  }
+const chartBackgroundColors = [
+  'rgba(100, 255, 218, 0.6)',
+  'rgba(255, 107, 107, 0.6)',
+  'rgba(255, 193, 7, 0.6)',
+  'rgba(76, 175, 80, 0.6)',
+  'rgba(156, 39, 176, 0.6)'
+]
 
-  return {
-    labels: stats.value.visits_by_hour.map((item: any) => item.label),
-    datasets: [
-      {
-        label: 'Visites',
-        data: stats.value.visits_by_hour.map((item: any) => item.count),
-        borderColor: '#ff6b6b',
-        backgroundColor: 'rgba(255, 107, 107, 0.1)',
-        fill: true,
-        tension: 0.4,
-        borderWidth: 2,
-        pointRadius: 3,
-        pointHoverRadius: 5
-      }
-    ]
-  }
-})
+const chartBorderColors = [
+  '#64ffda',
+  '#ff6b6b',
+  '#ffc107',
+  '#4caf50',
+  '#9c27b0'
+]
 
-// Connection Types Data
-const connectionTypesData = computed(() => {
-  if (!stats.value.connection_types || Object.keys(stats.value.connection_types).length === 0) {
-    return null
-  }
-
-  const types = stats.value.connection_types
-  return {
-    labels: Object.keys(types),
-    datasets: [
-      {
-        data: Object.values(types) as number[],
-        backgroundColor: [
-          'rgba(100, 255, 218, 0.8)',
-          'rgba(255, 107, 107, 0.8)',
-          'rgba(255, 193, 7, 0.8)',
-          'rgba(76, 175, 80, 0.8)'
-        ],
-        borderColor: [
-          '#64ffda',
-          '#ff6b6b',
-          '#ffc107',
-          '#4caf50'
-        ],
-        borderWidth: 2
-      }
-    ]
-  }
-})
-
-// Chart Options
 const monthlyChartOptions = {
   responsive: true,
   maintainAspectRatio: false,
@@ -334,7 +411,7 @@ const monthlyChartOptions = {
   }
 }
 
-const dailyChartOptions = {
+const monthlyGenderChartOptions = {
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
@@ -356,21 +433,19 @@ const dailyChartOptions = {
   scales: {
     y: {
       beginAtZero: true,
+      stacked: true,
       ticks: { color: '#ffffff' },
       grid: { color: 'rgba(255, 255, 255, 0.1)' }
     },
     x: {
-      ticks: { 
-        color: '#ffffff',
-        maxRotation: 45,
-        minRotation: 45
-      },
+      stacked: true,
+      ticks: { color: '#ffffff' },
       grid: { color: 'rgba(255, 255, 255, 0.1)' }
     }
   }
 }
 
-const hourlyChartOptions = {
+const durationChartOptions = {
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
@@ -383,16 +458,22 @@ const hourlyChartOptions = {
     },
     tooltip: {
       backgroundColor: 'rgba(0, 0, 0, 0.8)',
-      titleColor: '#ff6b6b',
+      titleColor: '#64ffda',
       bodyColor: '#ffffff',
-      borderColor: '#ff6b6b',
-      borderWidth: 1
+      borderColor: '#64ffda',
+      borderWidth: 1,
+      callbacks: {
+        label: (context: any) => `Durée moyenne: ${formatDuration(Number(context.raw) || 0)}`
+      }
     }
   },
   scales: {
     y: {
       beginAtZero: true,
-      ticks: { color: '#ffffff' },
+      ticks: {
+        color: '#ffffff',
+        callback: (value: any) => formatDuration(Number(value) || 0)
+      },
       grid: { color: 'rgba(255, 255, 255, 0.1)' }
     },
     x: {
@@ -424,22 +505,11 @@ const pieChartOptions = {
   }
 }
 
-const formatUptime = (seconds: number) => {
-  const days = Math.floor(seconds / 86400)
-  const hours = Math.floor((seconds % 86400) / 3600)
-  const minutes = Math.floor((seconds % 3600) / 60)
-  
-  if (days > 0) return `${days}j ${hours}h ${minutes}m`
-  if (hours > 0) return `${hours}h ${minutes}m`
-  return `${minutes}m`
-}
-
 const loadStats = async () => {
   loading.value = true
   error.value = null
 
   try {
-    // Get server info
     const server = serverStore.servers.find((s: any) => s.id === serverId)
     if (!server) {
       error.value = 'Serveur non trouvé'
@@ -450,81 +520,73 @@ const loadStats = async () => {
     serverName.value = server.name
     relayDomain.value = server.relay_domain
 
-    // Fetch stats from relay server
-    const statsUrl = `${server.relay_domain}/stats`
-    const response = await fetch(statsUrl)
-    
+    const response = await fetch(statsEndpoint.value)
+
     if (!response.ok) {
       throw new Error(`Erreur HTTP: ${response.status}`)
     }
 
-    const data = await response.json()
-    stats.value = data
-
-    // If the relay server doesn't provide structured data, create mock data
-    if (!data.visits_by_month) {
-      stats.value = generateMockStats()
-    }
+    stats.value = await response.json()
   } catch (err: any) {
     console.error('Error loading stats:', err)
     error.value = err.message || 'Impossible de charger les statistiques'
-    // Use mock data as fallback
-    stats.value = generateMockStats()
+    stats.value = {}
   } finally {
     loading.value = false
   }
 }
 
-const generateMockStats = () => {
-  const now = new Date()
-  const months = []
-  const days = []
-  const hours = []
+const monthLabel = (item: CountByMonth) => {
+  return String(item.month ?? item.label ?? item.period ?? item.date ?? 'Non renseigné')
+}
 
-  // Generate 12 months of data
-  for (let i = 11; i >= 0; i--) {
-    const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
-    months.push({
-      label: date.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' }),
-      count: Math.floor(Math.random() * 500) + 100
-    })
+const genderLabel = (item: CountByGender) => {
+  return String(item.gender ?? item.label ?? item.name ?? 'Non renseigné')
+}
+
+const numericCount = (item: CountByGender | CountByMonth | CountByMonthAndGender) => {
+  return Number(item.count ?? item.total ?? item.connections ?? item.total_connections ?? 0)
+}
+
+const durationSeconds = (item: CountByGender) => {
+  return Number((item as any).average_duration_seconds ?? item.count ?? item.total ?? 0)
+}
+
+const uniqueValues = (values: string[]) => {
+  return Array.from(new Set(values))
+}
+
+const formatDuration = (seconds: number) => {
+  const safeSeconds = Math.max(0, Math.floor(seconds))
+  const hours = Math.floor(safeSeconds / 3600)
+  const minutes = Math.floor((safeSeconds % 3600) / 60)
+  const remainingSeconds = safeSeconds % 60
+
+  if (hours > 0) return `${hours}h ${minutes}m`
+  if (minutes > 0) return `${minutes}m ${remainingSeconds}s`
+  return `${remainingSeconds}s`
+}
+
+const playerLabel = (player: unknown) => {
+  if (typeof player === 'string') {
+    return player
   }
 
-  // Generate 30 days of data
-  for (let i = 29; i >= 0; i--) {
-    const date = new Date(now)
-    date.setDate(date.getDate() - i)
-    days.push({
-      label: date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
-      count: Math.floor(Math.random() * 50) + 10
-    })
+  if (player && typeof player === 'object') {
+    const record = player as Record<string, unknown>
+    return String(record.username ?? record.name ?? record.id ?? JSON.stringify(record))
   }
 
-  // Generate 24 hours of data
-  for (let i = 0; i < 24; i++) {
-    hours.push({
-      label: `${i}h`,
-      count: Math.floor(Math.random() * 30) + 5
-    })
+  return String(player)
+}
+
+const playerKey = (player: unknown) => {
+  if (player && typeof player === 'object') {
+    const record = player as Record<string, unknown>
+    return String(record.id ?? record.username ?? record.name ?? JSON.stringify(record))
   }
 
-  return {
-    total_visits: 12543,
-    visits_this_month: 1234,
-    visits_today: 89,
-    active_players: 12,
-    visits_by_month: months,
-    visits_by_day: days,
-    visits_by_hour: hours,
-    connection_types: {
-      'WebSocket': 450,
-      'WebRTC': 320,
-      'HTTP': 180,
-      'Direct': 90
-    },
-    uptime: 2592000, // 30 days in seconds
-    server_version: '1.0.0'
-  }
+  return String(player)
 }
 
 const goBack = () => {
@@ -532,7 +594,6 @@ const goBack = () => {
 }
 
 onMounted(async () => {
-  // Ensure servers are loaded
   if (serverStore.servers.length === 0) {
     await serverStore.fetchUserServers()
   }
@@ -678,6 +739,7 @@ onMounted(async () => {
 
 .info-section {
   padding: 2rem;
+  margin-bottom: 2rem;
 }
 
 .info-section h2 {
@@ -706,6 +768,20 @@ onMounted(async () => {
 .info-item span {
   color: #ffffff;
   font-size: 1.05rem;
+  word-break: break-word;
+}
+
+.players-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.player-item {
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(100, 255, 218, 0.35);
+  color: #ffffff;
 }
 
 @media (max-width: 1200px) {
