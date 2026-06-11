@@ -28,7 +28,6 @@
       </div>
 
       <div v-else class="dashboard-content">
-        <!-- Stats Cards -->
         <div class="stats-cards">
           <div class="stat-card minecraft-panel">
             <div class="stat-icon">🔌</div>
@@ -50,7 +49,7 @@
             <div class="stat-icon">👥</div>
             <div class="stat-info">
               <div class="stat-value">{{ connectedPlayersCount }}</div>
-              <div class="stat-label">Joueurs listés</div>
+              <div class="stat-label">Joueurs listés en direct</div>
             </div>
           </div>
 
@@ -63,9 +62,7 @@
           </div>
         </div>
 
-        <!-- Charts Section -->
         <div class="charts-grid">
-          <!-- Monthly Connections Chart -->
           <div class="chart-container minecraft-panel">
             <h2 class="chart-title">📊 Connexions par mois</h2>
             <div class="chart-wrapper">
@@ -78,7 +75,6 @@
             </div>
           </div>
 
-          <!-- Gender Connections Chart -->
           <div class="chart-container minecraft-panel">
             <h2 class="chart-title">⚧ Connexions par genre</h2>
             <div class="chart-wrapper">
@@ -91,7 +87,6 @@
             </div>
           </div>
 
-          <!-- Month and Gender Chart -->
           <div class="chart-container minecraft-panel">
             <h2 class="chart-title">📈 Connexions par mois et genre</h2>
             <div class="chart-wrapper">
@@ -104,7 +99,6 @@
             </div>
           </div>
 
-          <!-- Average Session Duration Chart -->
           <div class="chart-container minecraft-panel">
             <h2 class="chart-title">⏱️ Durée moyenne par genre</h2>
             <div class="chart-wrapper">
@@ -118,17 +112,22 @@
           </div>
         </div>
 
-        <!-- Connected Players -->
-        <div class="info-section minecraft-panel" v-if="connectedPlayers.length > 0">
-          <h2>👥 Joueurs actuellement connectés</h2>
-          <div class="players-list">
+        <div class="info-section minecraft-panel">
+          <div class="section-header">
+            <h2>👥 Joueurs actuellement connectés</h2>
+            <span :class="['websocket-status', websocketStatusClass]">
+              {{ websocketStatusLabel }}
+            </span>
+          </div>
+
+          <div v-if="connectedPlayers.length > 0" class="players-list">
             <div v-for="player in connectedPlayers" :key="playerKey(player)" class="player-item">
               <span>{{ playerLabel(player) }}</span>
             </div>
           </div>
+          <div v-else class="no-data no-players">Aucun joueur connecté</div>
         </div>
 
-        <!-- Additional Info -->
         <div class="info-section minecraft-panel">
           <h2>ℹ️ Informations du serveur</h2>
           <div class="info-grid">
@@ -144,6 +143,10 @@
               <strong>Endpoint statistiques:</strong>
               <span>{{ statsEndpoint }}</span>
             </div>
+            <div class="info-item">
+              <strong>WebSocket relais:</strong>
+              <span>{{ activeWebSocketEndpoint || 'Connexion non établie' }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -152,7 +155,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useServerStore } from '@/stores/server'
 import {
@@ -222,6 +225,23 @@ type ServerStats = {
   average_session_duration?: AverageSessionDuration
 }
 
+type RelayWebSocketMessage = {
+  type?: string
+  event?: string
+  player?: unknown
+  players?: unknown[]
+  online_players?: unknown[]
+  connected_players?: unknown[]
+  current_connected_players?: number
+  stats?: Partial<ServerStats>
+  data?: Partial<ServerStats> & {
+    player?: unknown
+    players?: unknown[]
+    online_players?: unknown[]
+    connected_players?: unknown[]
+  }
+}
+
 const route = useRoute()
 const router = useRouter()
 const serverStore = useServerStore()
@@ -232,14 +252,32 @@ const error = ref<string | null>(null)
 const stats = ref<ServerStats>({})
 const relayDomain = ref('')
 const serverName = ref('Mon Serveur')
+const liveConnectedPlayers = ref<unknown[]>([])
+const websocketStatus = ref<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected')
+const activeWebSocketEndpoint = ref('')
+
+let relayWebSocket: WebSocket | null = null
+let reconnectTimeoutId: number | undefined
+let currentWebSocketCandidateIndex = 0
+let currentWebSocketCandidates: string[] = []
+let shouldReconnectWebSocket = true
 
 const totalConnections = computed(() => stats.value.total_connections ?? 0)
-const currentConnectedPlayers = computed(() => stats.value.current_connected_players ?? 0)
-const connectedPlayers = computed(() => stats.value.connected_players ?? [])
+const connectedPlayers = computed(() => liveConnectedPlayers.value)
 const connectedPlayersCount = computed(() => connectedPlayers.value.length)
+const currentConnectedPlayers = computed(() => connectedPlayersCount.value || stats.value.current_connected_players || 0)
 const averageDurationSeconds = computed(() => stats.value.average_session_duration?.average_duration_seconds ?? 0)
 const formattedAverageDuration = computed(() => formatDuration(averageDurationSeconds.value))
 const statsEndpoint = computed(() => relayDomain.value ? `${relayDomain.value.replace(/\/+$/, '')}/stats` : '')
+
+const websocketStatusLabel = computed(() => {
+  if (websocketStatus.value === 'connected') return '🟢 Temps réel connecté'
+  if (websocketStatus.value === 'connecting') return '🟡 Connexion temps réel...'
+  if (websocketStatus.value === 'error') return '🔴 Temps réel indisponible'
+  return '⚪ Temps réel déconnecté'
+})
+
+const websocketStatusClass = computed(() => `status-${websocketStatus.value}`)
 
 const lastUpdate = computed(() => {
   if (!stats.value.generated_at) {
@@ -526,13 +564,233 @@ const loadStats = async () => {
       throw new Error(`Erreur HTTP: ${response.status}`)
     }
 
-    stats.value = await response.json()
+    const data = await response.json()
+    stats.value = data
+    liveConnectedPlayers.value = normalizePlayers(data.connected_players)
+    connectRelayWebSocket()
   } catch (err: any) {
     console.error('Error loading stats:', err)
     error.value = err.message || 'Impossible de charger les statistiques'
     stats.value = {}
+    liveConnectedPlayers.value = []
+    closeRelayWebSocket(false)
   } finally {
     loading.value = false
+  }
+}
+
+const connectRelayWebSocket = () => {
+  closeRelayWebSocket(false)
+
+  currentWebSocketCandidates = buildWebSocketCandidates(relayDomain.value)
+  currentWebSocketCandidateIndex = 0
+  shouldReconnectWebSocket = true
+
+  openCurrentRelayWebSocket()
+}
+
+const openCurrentRelayWebSocket = () => {
+  if (!shouldReconnectWebSocket || currentWebSocketCandidates.length === 0) {
+    websocketStatus.value = 'error'
+    return
+  }
+
+  const endpoint = currentWebSocketCandidates[currentWebSocketCandidateIndex]
+  activeWebSocketEndpoint.value = endpoint
+  websocketStatus.value = 'connecting'
+
+  try {
+    relayWebSocket = new WebSocket(endpoint)
+
+    relayWebSocket.onopen = () => {
+      websocketStatus.value = 'connected'
+      currentWebSocketCandidateIndex = 0
+    }
+
+    relayWebSocket.onmessage = (event) => {
+      handleRelayWebSocketMessage(event.data)
+    }
+
+    relayWebSocket.onerror = () => {
+      websocketStatus.value = 'error'
+    }
+
+    relayWebSocket.onclose = () => {
+      relayWebSocket = null
+
+      if (!shouldReconnectWebSocket) {
+        websocketStatus.value = 'disconnected'
+        return
+      }
+
+      currentWebSocketCandidateIndex = (currentWebSocketCandidateIndex + 1) % currentWebSocketCandidates.length
+      websocketStatus.value = 'connecting'
+      reconnectTimeoutId = window.setTimeout(openCurrentRelayWebSocket, 1500)
+    }
+  } catch (err) {
+    console.error('Unable to open relay websocket:', err)
+    websocketStatus.value = 'error'
+    currentWebSocketCandidateIndex = (currentWebSocketCandidateIndex + 1) % currentWebSocketCandidates.length
+    reconnectTimeoutId = window.setTimeout(openCurrentRelayWebSocket, 1500)
+  }
+}
+
+const closeRelayWebSocket = (disableReconnect = true) => {
+  shouldReconnectWebSocket = !disableReconnect
+
+  if (reconnectTimeoutId !== undefined) {
+    window.clearTimeout(reconnectTimeoutId)
+    reconnectTimeoutId = undefined
+  }
+
+  if (relayWebSocket) {
+    relayWebSocket.close()
+    relayWebSocket = null
+  }
+
+  if (disableReconnect) {
+    websocketStatus.value = 'disconnected'
+    activeWebSocketEndpoint.value = ''
+  }
+}
+
+const handleRelayWebSocketMessage = (rawMessage: unknown) => {
+  const message = parseRelayMessage(rawMessage)
+
+  if (Array.isArray(message)) {
+    updateConnectedPlayers(message)
+    return
+  }
+
+  if (!message || typeof message !== 'object') {
+    return
+  }
+
+  const typedMessage = message as RelayWebSocketMessage
+  const nestedData = typedMessage.data ?? {}
+  const statsPayload = typedMessage.stats ?? (hasStatsShape(typedMessage) ? typedMessage : undefined)
+
+  if (statsPayload) {
+    mergeStats(statsPayload)
+  }
+
+  const playerList = typedMessage.connected_players
+    ?? typedMessage.players
+    ?? typedMessage.online_players
+    ?? nestedData.connected_players
+    ?? nestedData.players
+    ?? nestedData.online_players
+
+  if (Array.isArray(playerList)) {
+    updateConnectedPlayers(playerList)
+    return
+  }
+
+  const eventType = String(typedMessage.type ?? typedMessage.event ?? '').toLowerCase()
+  const player = typedMessage.player ?? nestedData.player
+
+  if (eventType.includes('connect') && !eventType.includes('disconnect') && player) {
+    addConnectedPlayer(player)
+  }
+
+  if ((eventType.includes('disconnect') || eventType.includes('leave')) && player) {
+    removeConnectedPlayer(player)
+  }
+
+  if (typeof typedMessage.current_connected_players === 'number') {
+    stats.value = {
+      ...stats.value,
+      current_connected_players: typedMessage.current_connected_players
+    }
+  }
+}
+
+const parseRelayMessage = (rawMessage: unknown) => {
+  if (typeof rawMessage !== 'string') {
+    return rawMessage
+  }
+
+  try {
+    return JSON.parse(rawMessage)
+  } catch {
+    return rawMessage
+  }
+}
+
+const hasStatsShape = (value: RelayWebSocketMessage) => {
+  return value.total_connections !== undefined
+    || value.current_connected_players !== undefined
+    || value.connected_players !== undefined
+    || value.connections_by_gender !== undefined
+    || value.connections_by_month !== undefined
+    || value.connections_by_month_and_gender !== undefined
+    || value.average_session_duration !== undefined
+}
+
+const mergeStats = (partialStats: Partial<ServerStats>) => {
+  stats.value = {
+    ...stats.value,
+    ...partialStats,
+    average_session_duration: {
+      ...stats.value.average_session_duration,
+      ...partialStats.average_session_duration
+    }
+  }
+
+  if (Array.isArray(partialStats.connected_players)) {
+    updateConnectedPlayers(partialStats.connected_players)
+  }
+}
+
+const updateConnectedPlayers = (players: unknown[]) => {
+  liveConnectedPlayers.value = normalizePlayers(players)
+  stats.value = {
+    ...stats.value,
+    current_connected_players: liveConnectedPlayers.value.length,
+    connected_players: liveConnectedPlayers.value
+  }
+}
+
+const addConnectedPlayer = (player: unknown) => {
+  const nextPlayers = [...liveConnectedPlayers.value]
+  const key = playerKey(player)
+
+  if (!nextPlayers.some((currentPlayer) => playerKey(currentPlayer) === key)) {
+    nextPlayers.push(player)
+  }
+
+  updateConnectedPlayers(nextPlayers)
+}
+
+const removeConnectedPlayer = (player: unknown) => {
+  const key = playerKey(player)
+  updateConnectedPlayers(liveConnectedPlayers.value.filter((currentPlayer) => playerKey(currentPlayer) !== key))
+}
+
+const normalizePlayers = (players: unknown) => {
+  return Array.isArray(players) ? players.filter((player) => player !== null && player !== undefined) : []
+}
+
+const buildWebSocketCandidates = (domain: string) => {
+  if (!domain) {
+    return []
+  }
+
+  try {
+    const url = new URL(domain)
+    const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
+    const basePath = url.pathname.replace(/\/+$/, '')
+    const origin = `${protocol}//${url.host}`
+
+    return uniqueValues([
+      `${origin}${basePath}/ws`,
+      `${origin}${basePath}/api/ws`,
+      `${origin}/ws`,
+      `${origin}/api/ws`,
+      `${origin}/stats/ws`
+    ])
+  } catch {
+    return []
   }
 }
 
@@ -574,7 +832,7 @@ const playerLabel = (player: unknown) => {
 
   if (player && typeof player === 'object') {
     const record = player as Record<string, unknown>
-    return String(record.username ?? record.name ?? record.id ?? JSON.stringify(record))
+    return String(record.username ?? record.name ?? record.display_name ?? record.player_name ?? record.id ?? JSON.stringify(record))
   }
 
   return String(player)
@@ -583,7 +841,7 @@ const playerLabel = (player: unknown) => {
 const playerKey = (player: unknown) => {
   if (player && typeof player === 'object') {
     const record = player as Record<string, unknown>
-    return String(record.id ?? record.username ?? record.name ?? JSON.stringify(record))
+    return String(record.id ?? record.uuid ?? record.username ?? record.name ?? record.display_name ?? record.player_name ?? JSON.stringify(record))
   }
 
   return String(player)
@@ -598,6 +856,10 @@ onMounted(async () => {
     await serverStore.fetchUserServers()
   }
   await loadStats()
+})
+
+onBeforeUnmount(() => {
+  closeRelayWebSocket(true)
 })
 </script>
 
@@ -737,6 +999,11 @@ onMounted(async () => {
   font-size: 1.1rem;
 }
 
+.no-players {
+  height: auto;
+  padding: 1.5rem;
+}
+
 .info-section {
   padding: 2rem;
   margin-bottom: 2rem;
@@ -744,8 +1011,42 @@ onMounted(async () => {
 
 .info-section h2 {
   font-size: 1.5rem;
-  margin-bottom: 1.5rem;
+  margin: 0;
   color: #64ffda;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.websocket-status {
+  font-size: 0.9rem;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.status-connected {
+  color: #64ffda;
+  border-color: rgba(100, 255, 218, 0.5);
+}
+
+.status-connecting {
+  color: #ffc107;
+  border-color: rgba(255, 193, 7, 0.5);
+}
+
+.status-error {
+  color: #ff6b6b;
+  border-color: rgba(255, 107, 107, 0.5);
+}
+
+.status-disconnected {
+  color: #999;
 }
 
 .info-grid {
@@ -805,6 +1106,11 @@ onMounted(async () => {
 
   .info-grid {
     grid-template-columns: 1fr;
+  }
+
+  .section-header {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 </style>
