@@ -138,7 +138,7 @@ jobs:
         with:
           host: ${{ secrets.ALWAYSDATA_HOST }}
           username: ${{ secrets.ALWAYSDATA_USER }}
-          key: ${{ secrets.ALWAYSDATA_SSH_KEY }}
+          password: ${{ secrets.ALWAYSDATA_SSH_KEY }}
           source: "deploy/*"
           target: ${{ secrets.ALWAYSDATA_DEPLOY_PATH }}
           strip_components: 1
