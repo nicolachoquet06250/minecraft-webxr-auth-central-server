@@ -115,7 +115,7 @@ jobs:
       # 8. BACKUP CURRENT VERSION
       # =====================================================
       - name: 💾 Backup current version on server
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.0
         continue-on-error: true
         with:
           host: ${{ secrets.ALWAYSDATA_HOST }}
