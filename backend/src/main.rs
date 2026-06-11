@@ -44,7 +44,6 @@ async fn main() -> anyhow::Result<()> {
     let discord_redirect_uri =
         env::var("DISCORD_REDIRECT_URI").unwrap_or_else(|_| "".to_string());//.expect("DISCORD_REDIRECT_URI must be set");
     let api_port = env::var("API_PORT").unwrap_or_else(|_| "8080".to_string());
-    let use_https = env::var("USE_HTTPS").unwrap_or_else(|_| "false".to_string()) == "true";
 
     let db = Database::connect(&database_url)
         .await
