@@ -88,16 +88,12 @@ jobs:
       # =====================================================
       # 6. RUN MIGRATIONS (optionnel - décommenter si nécessaire)
       # =====================================================
-      # - name: 🗄️ Run database migrations
-      #   working-directory: ./backend
-      #   env:
-      #     DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      #   run: |
-      #     # Si vous avez un binaire de migration séparé
-      #     ../target/release/minecraft-auth-backend migrate
-      #     # OU si vous utilisez sea-orm-cli:
-      #     # cargo install sea-orm-cli
-      #     # sea-orm-cli migrate up
+      - name: 🗄️ Run database migrations
+        working-directory: .
+        env:
+           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+           ./target/release/migration up
 
       # =====================================================
       # 7. PREPARE DEPLOYMENT PACKAGE
