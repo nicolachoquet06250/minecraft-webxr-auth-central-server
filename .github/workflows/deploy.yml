@@ -53,6 +53,11 @@ jobs:
           echo "✅ Frontend built successfully"
           ls -la frontend/dist
 
+      - name: Initialize system dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential curl
+
       # =====================================================
       # 4. SETUP RUST
       # =====================================================
