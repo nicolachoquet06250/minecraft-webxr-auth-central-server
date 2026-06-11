@@ -3,6 +3,9 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import './style.css'
+import { installWebSocketUrlNormalizer } from './utils/websocket-url'
+
+installWebSocketUrlNormalizer()
 
 const app = createApp(App)
 const pinia = createPinia()
