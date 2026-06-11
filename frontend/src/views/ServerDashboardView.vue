@@ -225,14 +225,12 @@ type ServerStats = {
   average_session_duration?: AverageSessionDuration
 }
 
-type RelayWebSocketMessage = {
+type RelayWebSocketMessage = Partial<ServerStats> & {
   type?: string
   event?: string
   player?: unknown
   players?: unknown[]
   online_players?: unknown[]
-  connected_players?: unknown[]
-  current_connected_players?: number
   stats?: Partial<ServerStats>
   data?: Partial<ServerStats> & {
     player?: unknown
@@ -717,7 +715,7 @@ const parseRelayMessage = (rawMessage: unknown) => {
   }
 }
 
-const hasStatsShape = (value: RelayWebSocketMessage) => {
+const hasStatsShape = (value: Partial<ServerStats>) => {
   return value.total_connections !== undefined
     || value.current_connected_players !== undefined
     || value.connected_players !== undefined
