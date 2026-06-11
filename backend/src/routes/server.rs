@@ -27,8 +27,8 @@ pub async fn create_server(
     let owner_id = claims.sub.clone();
 
     // Check relay server health before registering it.
-    // Some relay deployments expose their API at the domain root (`/health`),
-    // while others are mounted behind the `/api` prefix (`/api/health`).
+    // Some relay deployments expose their API at the domain root (`/healthz`),
+    // while others are mounted behind the `/api` prefix (`/api/healthz`).
     // Try both endpoints to avoid rejecting valid relays because of their reverse proxy layout.
     check_relay_health(&payload.relay_domain).await?;
 
@@ -140,8 +140,7 @@ fn build_relay_health_urls(relay_domain: &str) -> Vec<String> {
     let relay_domain = relay_domain.trim_end_matches('/');
     let mut urls = Vec::new();
 
-    push_unique(&mut urls, format!("{}/health", relay_domain));
-    push_unique(&mut urls, format!("{}/api/health", relay_domain));
+    push_unique(&mut urls, format!("{}/healthz", relay_domain));
 
     urls
 }

@@ -8,13 +8,13 @@ Avant d'enregistrer un serveur dans la base de données, le backend vérifie aut
 
 ### 1. Route de santé requise
 
-Chaque serveur relais **DOIT** exposer une route `/health` qui répond avec un statut HTTP de succès (2xx).
+Chaque serveur relais **DOIT** exposer une route `/healthz` qui répond avec un statut HTTP de succès (2xx).
 
 **Exemple d'implémentation côté serveur relais :**
 
 ```javascript
 // Node.js/Express
-app.get('/health', (req, res) => {
+app.get('/healthz', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 ```
@@ -26,12 +26,12 @@ async fn health_check() -> StatusCode {
 }
 
 // Dans le router
-.route("/health", get(health_check))
+.route("/healthz", get(health_check))
 ```
 
 ```python
 # Python/Flask
-@app.route('/health')
+@app.route('/healthz')
 def health():
     return {'status': 'ok'}, 200
 ```
@@ -40,9 +40,9 @@ def health():
 
 Lors de l'enregistrement d'un serveur, le backend :
 
-1. **Construit l'URL de santé** : `{relay_domain}/health`
+1. **Construit l'URL de santé** : `{relay_domain}/healthz`
    - Supprime automatiquement les `/` en fin d'URL
-   - Exemple : `https://relay.example.com/health`
+   - Exemple : `https://relay.example.com/healthz`
 
 2. **Envoie une requête GET** avec un timeout de 10 secondes
 
@@ -66,7 +66,7 @@ Lors de l'enregistrement d'un serveur, le backend :
 
 ```rust
 // Check relay server health
-let health_url = format!("{}/health", payload.relay_domain.trim_end_matches('/'));
+let health_url = format!("{}/healthz", payload.relay_domain.trim_end_matches('/'));
 
 tracing::info!("Checking relay server health at: {}", health_url);
 
@@ -130,14 +130,14 @@ const createServer = async (data: CreateServerData) => {
 Les vérifications de santé sont entièrement loggées :
 
 ```
-INFO  Checking relay server health at: https://relay.example.com/health
+INFO  Checking relay server health at: https://relay.example.com/healthz
 INFO  Relay server health check passed
 ```
 
 En cas d'erreur :
 
 ```
-ERROR Failed to connect to relay server: error sending request for url (https://relay.example.com/health): error trying to connect: tcp connect error: Connection refused (os error 111)
+ERROR Failed to connect to relay server: error sending request for url (https://relay.example.com/healthz): error trying to connect: tcp connect error: Connection refused (os error 111)
 ```
 
 ## ⚙️ Configuration
@@ -152,7 +152,7 @@ Le timeout par défaut est de **10 secondes**. Pour le modifier :
 
 ### Format de réponse
 
-La route `/health` peut retourner n'importe quoi tant que le statut HTTP est dans la plage 2xx (200-299). Exemples acceptables :
+La route `/healthz` peut retourner n'importe quoi tant que le statut HTTP est dans la plage 2xx (200-299). Exemples acceptables :
 
 - `200 OK` avec un corps vide
 - `200 OK` avec `{ "status": "ok" }`
@@ -180,12 +180,12 @@ La vérification de santé empêche :
 ### 1. Serveur relais fonctionnel
 
 ```bash
-# Démarrer un serveur de test avec route /health
+# Démarrer un serveur de test avec route /healthz
 python3 -c "
 from flask import Flask
 app = Flask(__name__)
 
-@app.route('/health')
+@app.route('/healthz')
 def health():
     return {'status': 'ok'}, 200
 
@@ -208,7 +208,7 @@ python3 -m http.server 8082
 ```
 
 Enregistrer avec `relay_domain = http://localhost:8082`
-→ ❌ Doit échouer (réponse 404 sur /health)
+→ ❌ Doit échouer (réponse 404 sur /healthz)
 
 ## 🚀 Améliorations futures possibles
 
