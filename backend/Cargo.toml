@@ -13,8 +13,8 @@ tower-http = { version = "0.5", features = ["cors", "trace"] }
 # Async runtime
 tokio = { version = "1", features = ["full"] }
 
-# Database ORM
-sea-orm = { version = "0.12", features = ["sqlx-mysql", "runtime-tokio-native-tls", "macros"] }
+# Database ORM (using rustls instead of native-tls)
+sea-orm = { version = "0.12", features = ["sqlx-mysql", "runtime-tokio-rustls", "macros"] }
 sea-orm-migration = "0.12"
 
 # Serialization
@@ -26,8 +26,8 @@ jsonwebtoken = "9"
 bcrypt = "0.15"
 uuid = { version = "1", features = ["serde", "v4"] }
 
-# HTTP client for OAuth
-reqwest = { version = "0.11", features = ["json"] }
+# HTTP client for OAuth (using rustls instead of native-tls)
+reqwest = { version = "0.11", default-features = false, features = ["json", "rustls-tls"] }
 
 # Environment variables
 dotenvy = "0.15"
