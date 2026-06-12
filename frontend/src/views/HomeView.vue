@@ -1,7 +1,7 @@
 <template>
   <div class="home voxicraft-bg">
     <!-- Hero Section -->
-    <section class="hero-section">
+    <section class="hero-section large-section">
       <div class="hero-content voxicraft-container">
         <div class="hero-badge">
           <span class="badge-icon">⭐</span>
@@ -67,7 +67,7 @@
     </section>
 
     <!-- Features Section -->
-    <section class="features-section">
+    <section class="features-section large-section">
       <div class="voxicraft-container">
         <div class="section-header">
           <span class="section-badge">✨ Fonctionnalités</span>
@@ -142,7 +142,7 @@
     </section>
 
     <!-- How It Works Section -->
-    <section class="how-it-works-section">
+    <section class="how-it-works-section large-section">
       <div class="voxicraft-container">
         <div class="section-header">
           <span class="section-badge">🚀 Comment ça marche</span>
@@ -194,7 +194,7 @@
     </section>
 
     <!-- Benefits Section -->
-    <section class="benefits-section">
+    <section class="benefits-section large-section">
       <div class="voxicraft-container">
         <div class="benefits-content">
           <div class="benefits-text">
@@ -270,7 +270,7 @@
     </section>
 
     <!-- CTA Section -->
-    <section class="cta-section">
+    <section class="cta-section large-section">
       <div class="voxicraft-container">
         <div class="cta-content">
           <h2 class="cta-title">Prêt à commencer votre aventure ?</h2>
@@ -383,7 +383,7 @@ const authStore = useAuthStore()
 }
 
 @keyframes gradientMove {
-  0%, 100% { background-position: 0% 50%; }
+  0%, 100% { background-position: 0 50%; }
   50% { background-position: 100% 50%; }
 }
 
@@ -1075,6 +1075,11 @@ const authStore = useAuthStore()
   
   .cta-content {
     padding: 2rem 1.5rem;
+  }
+
+  .large-section {
+    padding: 0!important;
+    margin: 0;
   }
 }
 </style>
