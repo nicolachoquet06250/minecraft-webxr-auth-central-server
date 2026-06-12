@@ -252,12 +252,12 @@ async function overwrite() {
 .builder-layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(420px, 0.85fr); gap: 2rem; align-items: start; }
 .viewer-card, .editor-card { padding: 1.5rem; }
 .header-row { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1rem; overflow: hidden; }
-.header-actions { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; min-width: 0; }
-.header-title { min-width: 0; }
-.header-title h1 { margin: 0 0 .5rem; color: #64ffda; font-size: clamp(1.4rem, 2.4vw, 2.2rem); line-height: 1.1; }
-.back-button { max-width: min(100%, 320px); }
+.header-actions { display: flex; flex-direction: column; align-items: flex-start; gap: .75rem; min-width: 0; max-width: 100%; }
+.header-title { min-width: 0; max-width: 100%; }
+.header-title h1 { margin: 0 0 .5rem; color: #64ffda; font-size: 1.35rem; line-height: 1.15; overflow-wrap: anywhere; }
+.back-button { max-width: 100%; width: fit-content; }
 .avatar-canvas { display: block; width: 100%; height: 680px; outline: none; touch-action: none; border-radius: 12px; background: rgba(0, 0, 0, 0.35); }
-.status-pill { flex: 0 1 auto; max-width: 190px; box-sizing: border-box; border: 1px solid rgba(100,255,218,.45); color: #64ffda; border-radius: 999px; padding: .5rem .75rem; background: rgba(0,0,0,.25); white-space: normal; text-align: center; overflow-wrap: anywhere; }
+.status-pill { display: inline-block; max-width: 100%; box-sizing: border-box; border: 1px solid rgba(100,255,218,.45); color: #64ffda; border-radius: 999px; padding: .5rem .75rem; background: rgba(0,0,0,.25); white-space: normal; text-align: left; overflow-wrap: anywhere; }
 .editor-card { display: flex; flex-direction: column; gap: 1rem; }
 .field-label, .grid-title { color: #ffd700; font-weight: 700; }
 .text-input { padding: .75rem 1rem; border-radius: 8px; border: 2px solid #424242; background: rgba(0,0,0,.55); color: #fff; }
@@ -279,5 +279,5 @@ async function overwrite() {
 .success { color: #7cfc9a; font-weight: 700; }
 .error { color: #ff8a80; font-weight: 700; }
 @media (max-width: 1100px) { .builder-layout { grid-template-columns: 1fr; } .avatar-canvas { height: 520px; } }
-@media (max-width: 720px) { .avatar-builder { padding: 1rem; } .header-actions, .color-row, .actions { display: grid; grid-template-columns: 1fr; } .status-pill { max-width: 100%; justify-self: start; } }
+@media (max-width: 720px) { .avatar-builder { padding: 1rem; } .color-row, .actions { grid-template-columns: 1fr; } }
 </style>
