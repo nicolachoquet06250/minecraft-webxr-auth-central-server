@@ -34,7 +34,7 @@ const renderSvg = () => {
     ? createEditableAvatarFromApi(props.customAvatar)
     : createEditableAvatar(getSelectedAvatarName(props.avatar))
   mesh = buildCharacter(scene, createCharacterModelFromAvatar(avatar), Vector3.Zero(), { physics: false })
-  const svg = generateCharacterPerspectiveSvg(mesh, { width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT, padding: 14, background: 'rgba(3, 4, 8, 1)' })
+  const svg = generateCharacterPerspectiveSvg(mesh, { width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT, padding: 14, background: 'rgba(3, 4, 8, 0)' })
   svgUrl.value = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
 }
 
