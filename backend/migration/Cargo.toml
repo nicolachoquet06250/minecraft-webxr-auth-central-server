@@ -19,3 +19,5 @@ sea-orm-migration = { version = "0.12", default-features = false, features = [
     "sqlx-sqlite",
     "runtime-tokio-rustls",
 ] }
+
+dotenvy = "0.15"

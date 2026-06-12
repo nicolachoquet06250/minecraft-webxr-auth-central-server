@@ -42,3 +42,5 @@ tmp/
 
 .env
 */**/.env
+
+*.sqlite3
