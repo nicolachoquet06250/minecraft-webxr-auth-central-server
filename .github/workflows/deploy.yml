@@ -193,7 +193,7 @@ jobs:
       - name: 🔄 Restart server via AlwaysData API
         run: |
           chmod +x restart_server.sh
-          ./restart_server.sh
+          ./restart_server.sh ${{secrets.ALWAYSDATA_API_KEY}} ${{secrets.ALWAYSDATA_ACCOUNT}} ${{secrets.ALWAYSDATA_SITE_ID}}
 
       # =====================================================
       # 11. HEALTH CHECK
