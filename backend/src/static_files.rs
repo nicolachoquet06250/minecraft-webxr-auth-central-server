@@ -3,7 +3,7 @@ use axum::{
     http::{header, StatusCode, Uri},
     response::{IntoResponse, Response},
 };
-use rust_embed::RustEmbed;
+use rust_embed::{Embed, RustEmbed};
 use std::env;
 
 #[derive(RustEmbed)]
