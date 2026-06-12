@@ -6,7 +6,7 @@ pub struct Migration;
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-        // Create servers table with relay_domain and game_domain directly
+        // Create servers table with the game server domain directly.
         manager
             .create_table(
                 Table::create()
@@ -20,12 +20,6 @@ impl MigrationTrait for Migration {
                     )
                     .col(ColumnDef::new(Server::OwnerId).char_len(36).not_null())
                     .col(ColumnDef::new(Server::Name).string_len(255).not_null())
-                    .col(
-                        ColumnDef::new(Server::RelayDomain)
-                            .string_len(255)
-                            .not_null()
-                            .unique_key(),
-                    )
                     .col(
                         ColumnDef::new(Server::GameDomain)
                             .string_len(255)
@@ -80,16 +74,6 @@ impl MigrationTrait for Migration {
         manager
             .create_index(
                 Index::create()
-                    .name("idx_relay_domain")
-                    .table(Server::Table)
-                    .col(Server::RelayDomain)
-                    .to_owned(),
-            )
-            .await?;
-
-        manager
-            .create_index(
-                Index::create()
                     .name("idx_game_domain")
                     .table(Server::Table)
                     .col(Server::GameDomain)
@@ -113,7 +97,6 @@ enum Server {
     Id,
     OwnerId,
     Name,
-    RelayDomain,
     GameDomain,
     Description,
     IsActive,
