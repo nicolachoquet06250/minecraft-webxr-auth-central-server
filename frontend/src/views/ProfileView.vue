@@ -151,7 +151,7 @@ const handleUpdate = async () => {
 .profile :deep(*) { box-sizing: border-box; }
 .profile-header, .profile-content { max-width: 1200px; width: 100%; margin: 0 auto; min-width: 0; }
 .profile-header { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 2rem; align-items: center; margin-bottom: 3rem; }
-.voxicraft-panel { background: rgba(139, 69, 19, 0.9); border: 4px solid #5d4037; border-radius: 12px; padding: 2rem; box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.5); box-sizing: border-box; min-width: 0; max-width: 100%; overflow: hidden; }
+.voxicraft-panel { background: rgba(139, 69, 19, 0.9); border: 4px solid #5d4037; border-radius: 12px; padding: 2rem; box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.5); box-sizing: border-box; min-width: 0; width: 100%; max-width: 100%; overflow: hidden; }
 .avatar-display { position: relative; }
 .avatar-frame { width: 120px; height: 120px; background: linear-gradient(135deg, #64ffda, #4caf50); border: 4px solid #1a1a1a; border-radius: 15px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4); overflow: hidden; padding: 5px; }
 .user-badge { position: absolute; bottom: -10px; right: -10px; background: linear-gradient(135deg, #4caf50, #66bb6a); border: 3px solid #1a1a1a; border-radius: 50px; padding: 0.3rem 0.7rem; font-size: 0.6rem; color: #fff; font-weight: bold; }
