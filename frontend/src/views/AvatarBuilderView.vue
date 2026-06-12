@@ -18,7 +18,8 @@
           <div class="status-list">
             <div class="status-item">✅ Babylon.js</div>
             <div class="status-item">✅ buildCharacter()</div>
-            <div class="status-item">✅ textures matrices</div>
+            <div class="status-item">✅ matrices Alex</div>
+            <div class="status-item">✅ zoom canvas isolé</div>
             <div class="status-item">✅ aucun sol</div>
           </div>
         </aside>
@@ -45,10 +46,11 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import '@babylonjs/loaders'
-import { ArcRotateCamera, Color3, Color4, Engine, HemisphericLight, Mesh, Scene, Vector3 } from '@babylonjs/core'
+import { ArcRotateCamera, Color4, Engine, HemisphericLight, Mesh, Scene, Vector3 } from '@babylonjs/core'
 import { useAuthStore } from '@/stores/auth'
 import { buildCharacter } from '@/character-builder/character-builder'
 import { generateCharacterPerspectiveSvg } from '@/character-builder/svg-export'
+import { alexModelTextures } from '@/character-builder/alex-color-matrices'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -65,6 +67,10 @@ const hasCustomAvatar = computed(() => {
 })
 
 const goBack = () => router.push({ name: 'profile' })
+
+const preventCanvasPageScroll = (event: WheelEvent) => {
+  event.preventDefault()
+}
 
 const initializeBabylon = () => {
   const canvas = canvasRef.value
@@ -85,6 +91,8 @@ const initializeBabylon = () => {
 
   avatarRoot = buildCharacter(scene, model(), Vector3.Zero(), { physics: false })
   refreshSvg()
+
+  canvas.addEventListener('wheel', preventCanvasPageScroll, { passive: false })
   engine.runRenderLoop(() => scene?.render())
   window.addEventListener('resize', resizeEngine)
 }
@@ -95,42 +103,19 @@ const refreshSvg = () => {
     : ''
 }
 
-const model = () => {
-  const id = authStore.user?.avatar || 'custom'
-  const hue = hash(id) % 360
-  const skin = new Color3(0.72, 0.52, 0.39)
-  const hair = color(hue + 25, 0.42, 0.22)
-  const shirt = color(hue, 0.65, 0.44)
-  const pants = color(hue + 210, 0.54, 0.32)
-  const shoes = new Color3(0.08, 0.08, 0.08)
-  const faces = (name: string, main: Color3, alt = main) => ({ front: tex(name, main, alt), back: tex(name, main, alt), top: tex(name, alt, main), bottom: tex(name, main, alt), left: tex(name, main, alt), right: tex(name, main, alt) })
-  return {
-    name: 'connectedAvatar',
-    bodyType: 'custom',
-    bodyParts: [
-      { name: 'head', dimensions: { width: 0.5, height: 0.5, depth: 0.5 }, position: { x: 0, y: 1.625, z: 0 }, textures: faces('head', skin, hair) },
-      { name: 'torso', dimensions: { width: 0.5, height: 0.75, depth: 0.25 }, position: { x: 0, y: 1, z: 0 }, textures: faces('torso', shirt) },
-      { name: 'rightArm', dimensions: { width: 0.25, height: 0.75, depth: 0.25 }, position: { x: -0.375, y: 1, z: 0 }, pivot: { x: 0, y: 0.375, z: 0 }, textures: faces('rightArm', skin, shirt) },
-      { name: 'leftArm', dimensions: { width: 0.25, height: 0.75, depth: 0.25 }, position: { x: 0.375, y: 1, z: 0 }, pivot: { x: 0, y: 0.375, z: 0 }, textures: faces('leftArm', skin, shirt) },
-      { name: 'rightLeg', dimensions: { width: 0.25, height: 0.75, depth: 0.25 }, position: { x: -0.125, y: 0.375, z: 0 }, pivot: { x: 0, y: 0.375, z: 0 }, textures: faces('rightLeg', pants, shoes) },
-      { name: 'leftLeg', dimensions: { width: 0.25, height: 0.75, depth: 0.25 }, position: { x: 0.125, y: 0.375, z: 0 }, pivot: { x: 0, y: 0.375, z: 0 }, textures: faces('leftLeg', pants, shoes) },
-    ],
-  } as any
-}
+const model = () => ({
+  name: 'connectedAvatar',
+  bodyType: 'custom',
+  bodyParts: [
+    { name: 'head', dimensions: { width: 0.5, height: 0.5, depth: 0.5 }, position: { x: 0, y: 1.625, z: 0 }, textures: alexModelTextures.head },
+    { name: 'torso', dimensions: { width: 0.5, height: 0.75, depth: 0.25 }, position: { x: 0, y: 1, z: 0 }, textures: alexModelTextures.torso },
+    { name: 'rightArm', dimensions: { width: 0.1875, height: 0.75, depth: 0.25 }, position: { x: -0.34375, y: 1, z: 0 }, pivot: { x: 0, y: 0.375, z: 0 }, textures: alexModelTextures.rightArm },
+    { name: 'leftArm', dimensions: { width: 0.1875, height: 0.75, depth: 0.25 }, position: { x: 0.34375, y: 1, z: 0 }, pivot: { x: 0, y: 0.375, z: 0 }, textures: alexModelTextures.leftArm },
+    { name: 'rightLeg', dimensions: { width: 0.25, height: 0.75, depth: 0.25 }, position: { x: -0.125, y: 0.25, z: 0 }, pivot: { x: 0, y: 0.375, z: 0 }, textures: alexModelTextures.rightLeg },
+    { name: 'leftLeg', dimensions: { width: 0.25, height: 0.75, depth: 0.25 }, position: { x: 0.125, y: 0.25, z: 0 }, pivot: { x: 0, y: 0.375, z: 0 }, textures: alexModelTextures.leftLeg },
+  ],
+}) as any
 
-const tex = (seed: string, a: Color3, b: Color3) => {
-  const rgba = (c: Color3, d: number) => [clamp(c.r + d), clamp(c.g + d), clamp(c.b + d), 1] as const
-  return {
-    palette: { A: rgba(a, -0.05), B: rgba(a, 0.02), C: rgba(b, -0.04), D: rgba(b, 0.05) },
-    width: 4,
-    height: 4,
-    matrix: Array.from({ length: 4 }, (_, y) => Array.from({ length: 4 }, (_, x) => 'ABCD'[(hash(seed) + x + y * 2) % 4]).join('')),
-  }
-}
-
-const color = (h: number, s: number, l: number) => Color3.FromHSV(((h % 360) + 360) % 360, s, l)
-const clamp = (v: number) => Math.min(1, Math.max(0, v))
-const hash = (v: string) => Math.abs([...v].reduce((a, c) => ((a << 5) - a + c.charCodeAt(0)) | 0, 0))
 const resizeEngine = () => engine?.resize()
 
 onMounted(async () => {
@@ -139,6 +124,7 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+  canvasRef.value?.removeEventListener('wheel', preventCanvasPageScroll)
   window.removeEventListener('resize', resizeEngine)
   scene?.dispose()
   engine?.dispose()
