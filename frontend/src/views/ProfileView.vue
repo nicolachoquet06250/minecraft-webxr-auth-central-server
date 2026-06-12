@@ -77,7 +77,10 @@
               </div>
 
               <template v-if="customAvatars.length > 0">
-                <label class="form-label">Avatars personnalisés</label>
+                <div class="custom-avatar-heading">
+                  <label class="form-label">Avatars personnalisés</label>
+                  <button v-if="selectedCustomAvatarId" type="button" class="custom-avatar-clear" @click="clearPendingCustomAvatar">Annuler la sélection</button>
+                </div>
                 <div class="custom-avatar-scroll" aria-label="Avatars personnalisés">
                   <button
                     v-for="avatar in customAvatars"
@@ -172,6 +175,10 @@ const selectPendingCustomAvatar = (avatarId: string) => {
   selectedCustomAvatarId.value = avatarId
 }
 
+const clearPendingCustomAvatar = () => {
+  selectedCustomAvatarId.value = ''
+}
+
 const handleUpdate = async () => {
   savingAvatarSelection.value = true
   try {
@@ -183,6 +190,10 @@ const handleUpdate = async () => {
       await avatarApi.select(selectedCustomAvatarId.value)
       customAvatars.value = customAvatars.value.map((avatar) => ({ ...avatar, is_active: avatar.id === selectedCustomAvatarId.value }))
       activeProfileAvatar.value = customAvatars.value.find((avatar) => avatar.is_active) || null
+    } else if (!selectedCustomAvatarId.value && activeAvatarId) {
+      await avatarApi.clearActive()
+      customAvatars.value = customAvatars.value.map((avatar) => ({ ...avatar, is_active: false }))
+      activeProfileAvatar.value = null
     }
 
     showEditForm.value = false
@@ -217,6 +228,8 @@ const handleUpdate = async () => {
 .security-panel { width: 100%; min-width: 0; overflow: hidden; }
 .security-value { display: block; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
 .security-email { display: inline; min-width: 0; }
+.custom-avatar-heading { display: flex; justify-content: space-between; align-items: center; gap: 1rem; min-width: 0; }
+.custom-avatar-clear { flex: 0 0 auto; padding: .5rem .7rem; border-radius: 6px; border: 2px solid #ff6b6b; background: rgba(255, 107, 107, 0.18); color: #fff; cursor: pointer; font-size: .65rem; }
 .custom-avatar-scroll { display: flex; gap: 1rem; max-width: 100%; overflow-x: auto; overflow-y: hidden; padding: .25rem .25rem .75rem; scroll-snap-type: x proximity; }
 .custom-avatar-card { flex: 0 0 140px; display: flex; flex-direction: column; gap: .5rem; align-items: center; padding: .75rem; border-radius: 10px; border: 2px solid rgba(100, 255, 218, 0.2); background: rgba(0, 0, 0, 0.35); color: #fff; cursor: pointer; scroll-snap-align: start; }
 .custom-avatar-card.selected { border-color: #64ffda; background: rgba(100, 255, 218, 0.18); }
@@ -244,5 +257,5 @@ const handleUpdate = async () => {
 .stat-item { display: flex; flex-direction: column; gap: .5rem; text-align: center; }
 .stat-item strong { color: #64ffda; font-size: 1.5rem; }
 @media (max-width: 900px) { .profile { padding: 1rem .75rem; } .profile-header, .profile-content { grid-template-columns: 1fr; } .profile-header { gap: 1.25rem; } .voxicraft-panel { padding: 1.25rem; box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.5); } .actions-grid { display: grid; grid-template-columns: minmax(0, 1fr); } .action-btn { width: 100%; max-width: 100%; } }
-@media (max-width: 520px) { .profile { padding: .75rem .5rem; } .voxicraft-panel { padding: 1rem; } .username { font-size: 1.35rem; } .card-title { font-size: 1.1rem; } .info-item { flex-direction: column; align-items: flex-start; } .form-actions { flex-direction: column; } }
+@media (max-width: 520px) { .profile { padding: .75rem .5rem; } .voxicraft-panel { padding: 1rem; } .username { font-size: 1.35rem; } .card-title { font-size: 1.1rem; } .info-item { flex-direction: column; align-items: flex-start; } .custom-avatar-heading, .form-actions { flex-direction: column; align-items: stretch; } }
 </style>
