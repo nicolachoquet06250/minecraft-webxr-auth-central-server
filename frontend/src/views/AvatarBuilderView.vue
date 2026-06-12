@@ -16,6 +16,15 @@
       </section>
 
       <aside v-if="currentAvatar" class="voxicraft-panel editor-card">
+        <template v-if="customAvatars.length > 1">
+          <label class="field-label">Avatar à modifier</label>
+          <select v-model="selectedAvatarId" class="form-select" @change="loadSelectedCustomAvatar">
+            <option v-for="avatar in customAvatars" :key="avatar.id" :value="avatar.id">
+              {{ avatar.name }}{{ avatar.is_active ? ' — actif' : '' }}
+            </option>
+          </select>
+        </template>
+
         <label class="field-label">Nom</label>
         <input v-model="avatarName" class="text-input" maxlength="80" />
 
@@ -45,21 +54,13 @@
 
         <div class="grid-title">{{ partLabels[selectedPart] }} / {{ faceLabels[selectedFace] }}</div>
         <div class="pixel-grid" :style="{ gridTemplateColumns: `repeat(${activeTexture.width}, 14px)` }">
-          <button
-            v-for="pixel in facePixels"
-            :key="`${pixel.x}-${pixel.y}`"
-            class="pixel"
-            type="button"
-            :style="{ background: pixel.cssColor }"
-            @click="paint(pixel.x, pixel.y)"
-            @contextmenu.prevent="pick(pixel.x, pixel.y)"
-          />
+          <button v-for="pixel in facePixels" :key="`${pixel.x}-${pixel.y}`" class="pixel" type="button" :style="{ background: pixel.cssColor }" @click="paint(pixel.x, pixel.y)" @contextmenu.prevent="pick(pixel.x, pixel.y)" />
         </div>
         <p class="help-text">Clic gauche: peindre. Clic droit: reprendre la couleur.</p>
 
         <div class="actions">
           <button class="action primary" type="button" :disabled="saving || !avatarName.trim()" @click="saveCopy">Enregistrer comme copie</button>
-          <button class="action secondary" type="button" :disabled="saving || !overwriteAllowed || !avatarName.trim()" @click="overwrite">Ecraser l'original</button>
+          <button class="action secondary" type="button" :disabled="saving || !overwriteAllowed || !avatarName.trim()" @click="overwrite">Écraser l'original</button>
         </div>
 
         <p v-if="successMessage" class="success">{{ successMessage }}</p>
@@ -74,7 +75,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import '@babylonjs/loaders'
 import { ArcRotateCamera, Color4, Engine, HemisphericLight, Mesh, Scene, Vector3 } from '@babylonjs/core'
-import { avatarApi } from '@/api'
+import { avatarApi, type UserAvatar } from '@/api'
 import { useAuthStore } from '@/stores/auth'
 import { buildCharacter } from '@/character-builder/character-builder'
 import {
@@ -98,6 +99,8 @@ const router = useRouter()
 const authStore = useAuthStore()
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 const currentAvatar = ref<EditableAvatar | null>(null)
+const customAvatars = ref<UserAvatar[]>([])
+const selectedAvatarId = ref('')
 const avatarName = ref('')
 const selectedPart = ref<AvatarPartName>('head')
 const selectedFace = ref<AvatarFaceName>('front')
@@ -155,13 +158,39 @@ watch([selectedPart, selectedFace], syncColorFromPixel)
 
 async function loadAvatar() {
   if (!authStore.user) await authStore.fetchProfile()
+  await refreshCustomAvatars()
+
+  const activeCustom = customAvatars.value.find((avatar) => avatar.is_active)
+  if (activeCustom) {
+    setCurrentCustomAvatar(activeCustom)
+    return
+  }
+
   const active = await avatarApi.getActive().then((response) => response.data).catch(() => null)
   if (active?.avatar) {
-    currentAvatar.value = createEditableAvatarFromApi(active.avatar)
-  } else {
-    currentAvatar.value = createEditableAvatar(authStore.user?.avatar || 'alex')
+    setCurrentCustomAvatar(active.avatar)
+    return
   }
+
+  currentAvatar.value = createEditableAvatar(authStore.user?.avatar || 'alex')
+  selectedAvatarId.value = ''
   avatarName.value = currentAvatar.value.name
+}
+
+async function refreshCustomAvatars(preferredAvatarId?: string) {
+  customAvatars.value = await avatarApi.list().then((response) => response.data).catch(() => [])
+  if (preferredAvatarId) selectedAvatarId.value = preferredAvatarId
+}
+
+function setCurrentCustomAvatar(avatar: UserAvatar) {
+  currentAvatar.value = createEditableAvatarFromApi(avatar)
+  selectedAvatarId.value = avatar.id
+  avatarName.value = avatar.name
+}
+
+function loadSelectedCustomAvatar() {
+  const avatar = customAvatars.value.find((item) => item.id === selectedAvatarId.value)
+  if (avatar) setCurrentCustomAvatar(avatar)
 }
 
 function preventCanvasPageScroll(event: WheelEvent) {
@@ -220,8 +249,9 @@ async function saveCopy() {
   try {
     const created = await avatarApi.createCopy({ name: avatarName.value.trim(), base_kind: currentAvatar.value.baseKind, texture_data: texturesToTextureData({ ...currentAvatar.value, name: avatarName.value.trim() }) }).then((response) => response.data)
     await avatarApi.select(created.id)
-    currentAvatar.value = createEditableAvatarFromApi(created)
-    successMessage.value = 'Copie enregistree.'
+    await refreshCustomAvatars(created.id)
+    setCurrentCustomAvatar({ ...created, is_active: true })
+    successMessage.value = 'Copie enregistrée.'
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : 'Erreur lors de la sauvegarde.'
   } finally {
@@ -236,8 +266,9 @@ async function overwrite() {
   errorMessage.value = ''
   try {
     const updated = await avatarApi.update(currentAvatar.value.id, { name: avatarName.value.trim(), texture_data: texturesToTextureData({ ...currentAvatar.value, name: avatarName.value.trim() }) }).then((response) => response.data)
-    currentAvatar.value = createEditableAvatarFromApi(updated)
-    successMessage.value = 'Avatar ecrase.'
+    customAvatars.value = customAvatars.value.map((avatar) => avatar.id === updated.id ? { ...updated, is_active: avatar.is_active } : avatar)
+    setCurrentCustomAvatar({ ...updated, is_active: customAvatars.value.find((avatar) => avatar.id === updated.id)?.is_active ?? false })
+    successMessage.value = 'Avatar écrasé.'
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : 'Erreur lors de la sauvegarde.'
   } finally {
@@ -260,7 +291,7 @@ async function overwrite() {
 .status-pill { display: inline-block; max-width: 100%; box-sizing: border-box; border: 1px solid rgba(100,255,218,.45); color: #64ffda; border-radius: 999px; padding: .5rem .75rem; background: rgba(0,0,0,.25); white-space: normal; text-align: left; overflow-wrap: anywhere; }
 .editor-card { display: flex; flex-direction: column; gap: 1rem; }
 .field-label, .grid-title { color: #ffd700; font-weight: 700; }
-.text-input { padding: .75rem 1rem; border-radius: 8px; border: 2px solid #424242; background: rgba(0,0,0,.55); color: #fff; }
+.text-input, .form-select { padding: .75rem 1rem; border-radius: 8px; border: 2px solid #424242; background: rgba(0,0,0,.55); color: #fff; width: 100%; min-width: 0; }
 .chips { display: flex; flex-wrap: wrap; gap: .5rem; }
 .chip { border: 2px solid rgba(100,255,218,.2); background: rgba(0,0,0,.3); color: #fff; border-radius: 999px; padding: .55rem .75rem; cursor: pointer; }
 .chip.active { border-color: #64ffda; color: #64ffda; background: rgba(100,255,218,.18); }
