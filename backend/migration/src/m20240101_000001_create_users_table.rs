@@ -61,8 +61,7 @@ impl MigrationTrait for Migration {
                         ColumnDef::new(User::UpdatedAt)
                             .date_time()
                             .not_null()
-                            .default(Expr::current_timestamp())
-                            .extra("ON UPDATE CURRENT_TIMESTAMP"),
+                            .default(Expr::current_timestamp()),
                     )
                     .engine("InnoDB")
                     .character_set("utf8mb4")
