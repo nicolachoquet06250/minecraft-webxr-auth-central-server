@@ -9,6 +9,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@babylonjs/core": "^9.10.1",
+    "@babylonjs/gui": "^9.10.1",
+    "@babylonjs/loaders": "^9.10.1",
     "axios": "^1.17.0",
     "chart.js": "^4.5.1",
     "pinia": "^3.0.4",
