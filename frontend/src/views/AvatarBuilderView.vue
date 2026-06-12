@@ -184,10 +184,6 @@ const createVoxelAvatarPlaceholder = (targetScene: Scene): Mesh => {
   rightShoe.position = new Vector3(0.23, -0.23, 0.02)
   rightShoe.material = shoesMaterial
 
-  const ground = MeshBuilder.CreateGround('avatar-builder-ground', { width: 5, height: 5 }, targetScene)
-  ground.position.y = -0.32
-  ground.material = createMatrixMaterial(targetScene, 'ground', new Color3(0.11, 0.15, 0.18))
-
   root.computeWorldMatrix(true)
   return root
 }
