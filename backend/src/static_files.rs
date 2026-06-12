@@ -3,10 +3,10 @@ use axum::{
     http::{header, StatusCode, Uri},
     response::{IntoResponse, Response},
 };
-use rust_embed::RustEmbed;
+use rust_embed::Embed;
 use std::env;
 
-#[derive(RustEmbed)]
+#[derive(Embed)]
 #[folder = "../frontend/dist"]
 pub struct Assets;
 
@@ -17,7 +17,7 @@ pub async fn static_handler(uri: Uri) -> impl IntoResponse {
         return index_html().await;
     }
 
-    match <Assets as rust_embed::Embed>::get(path) {
+    match Assets::get(path) {
         Some(content) => {
             let mime = mime_guess::from_path(path).first_or_octet_stream();
             
@@ -49,7 +49,7 @@ pub async fn static_handler(uri: Uri) -> impl IntoResponse {
 }
 
 async fn index_html() -> Response {
-    match <Assets as rust_embed::Embed>::get("index.html") {
+    match Assets::get("index.html") {
         Some(content) => Response::builder()
             .status(StatusCode::OK)
             .header(header::CONTENT_TYPE, "text/html")
