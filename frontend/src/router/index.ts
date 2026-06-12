@@ -4,6 +4,7 @@ import HomeView from '@/views/HomeView.vue'
 import LoginView from '@/views/LoginView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import ProfileView from '@/views/ProfileView.vue'
+import AvatarBuilderView from '@/views/AvatarBuilderView.vue'
 import ServersView from '@/views/ServersView.vue'
 import ServerDashboardView from '@/views/ServerDashboardView.vue'
 
@@ -31,6 +32,12 @@ const router = createRouter({
       path: '/profile',
       name: 'profile',
       component: ProfileView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/profile/avatar-builder',
+      name: 'avatar-builder',
+      component: AvatarBuilderView,
       meta: { requiresAuth: true },
     },
     {

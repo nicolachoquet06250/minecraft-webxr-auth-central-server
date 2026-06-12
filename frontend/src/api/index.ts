@@ -1,6 +1,18 @@
-import axios from 'axios'
-
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
+
+type ApiResponse<T> = Promise<{ data: T }>
+
+type ApiErrorResponse = { status: number; data: any }
+
+class ApiError extends Error {
+  response: ApiErrorResponse
+  constructor(status: number, data: any) {
+    const message = data?.message || data?.error || `HTTP error! status: ${status}`
+    super(message)
+    this.name = 'ApiError'
+    this.response = { status, data }
+  }
+}
 
 export interface User {
   id: string
@@ -14,24 +26,9 @@ export interface User {
   created_at: string
 }
 
-export interface RegisterData {
-  username: string
-  email: string
-  password: string
-  avatar: string
-  birthdate: string
-  bio?: string
-}
-
-export interface LoginData {
-  email: string
-  password: string
-}
-
-export interface AuthResponse {
-  token: string
-  user: User
-}
+export interface RegisterData { username: string; email: string; password: string; avatar: string; birthdate: string; bio?: string }
+export interface LoginData { email: string; password: string }
+export interface AuthResponse { token: string; user: User }
 
 export interface Server {
   id: string
@@ -44,56 +41,85 @@ export interface Server {
   updated_at: string
 }
 
-export interface CreateServerData {
-  name: string
-  game_domain: string
-  description?: string
+export interface CreateServerData { name: string; game_domain: string; description?: string }
+
+export type AvatarTextureData = {
+  version: 1
+  palette: Record<string, readonly [number, number, number, number]>
+  parts: Record<string, Record<string, { width: number; height: number; matrix: string[] }>>
 }
 
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  withCredentials: true,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-})
+export interface UserAvatar {
+  id: string
+  name: string
+  base_kind: 'steve' | 'alex' | 'custom'
+  is_active: boolean
+  texture_data: AvatarTextureData
+  created_at: string
+  updated_at: string
+}
 
-api.interceptors.request.use((config) => {
+export interface ActiveAvatarResponse { kind: 'default' | 'custom'; avatar: UserAvatar | null }
+export interface SaveAvatarData { name: string; base_kind: string; texture_data: AvatarTextureData }
+export interface UpdateAvatarData { name?: string; texture_data: AvatarTextureData }
+
+const request = async <T>(path: string, options: RequestInit = {}): ApiResponse<T> => {
   const token = localStorage.getItem('auth_token')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  return config
-})
+  const headers = new Headers(options.headers)
+  if (!headers.has('Content-Type') && options.body !== undefined) headers.set('Content-Type', 'application/json')
+  if (token) headers.set('Authorization', `Bearer ${token}`)
+
+  const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers, credentials: 'include' })
+  const data = await parseResponseBody(response)
+  if (!response.ok) throw new ApiError(response.status, data)
+  return { data: data as T }
+}
+
+const parseResponseBody = async (response: Response) => {
+  if (response.status === 204) return null
+  const contentType = response.headers.get('content-type') || ''
+  if (contentType.includes('application/json')) return response.json()
+  const text = await response.text()
+  if (!text) return null
+  try { return JSON.parse(text) } catch { return { message: text } }
+}
+
+const jsonBody = (data: unknown) => JSON.stringify(data)
 
 export const authApi = {
-  register: (data: RegisterData) => api.post<AuthResponse>('/auth/register', data),
-  login: (data: LoginData) => api.post<AuthResponse>('/auth/login', data),
-  getDiscordUrl: () => api.get<{ url: string }>('/auth/discord/url'),
+  register: (data: RegisterData): ApiResponse<AuthResponse> => request<AuthResponse>('/auth/register', { method: 'POST', body: jsonBody(data) }),
+  login: (data: LoginData): ApiResponse<AuthResponse> => request<AuthResponse>('/auth/login', { method: 'POST', body: jsonBody(data) }),
+  getDiscordUrl: (): ApiResponse<{ url: string }> => request<{ url: string }>('/auth/discord/url'),
 }
 
 export const userApi = {
-  getProfile: () => api.get<User>('/users/me'),
-  getUserById: (id: string) => api.get<User>(`/users/${id}`),
-  updateProfile: (data: Partial<User>) => api.put<User>('/users/me', data),
-  deleteAccount: () => api.delete('/users/me'),
+  getProfile: (): ApiResponse<User> => request<User>('/users/me'),
+  getUserById: (id: string): ApiResponse<User> => request<User>(`/users/${id}`),
+  updateProfile: (data: Partial<User>): ApiResponse<User> => request<User>('/users/me', { method: 'PUT', body: jsonBody(data) }),
+  deleteAccount: (): ApiResponse<null> => request<null>('/users/me', { method: 'DELETE' }),
+}
+
+export const avatarApi = {
+  getActive: (): ApiResponse<ActiveAvatarResponse> => request<ActiveAvatarResponse>('/users/me/avatar'),
+  clearActive: (): ApiResponse<null> => request<null>('/users/me/avatar', { method: 'DELETE' }),
+  list: (): ApiResponse<UserAvatar[]> => request<UserAvatar[]>('/users/me/avatars'),
+  createCopy: (data: SaveAvatarData): ApiResponse<UserAvatar> => request<UserAvatar>('/users/me/avatars', { method: 'POST', body: jsonBody(data) }),
+  update: (id: string, data: UpdateAvatarData): ApiResponse<UserAvatar> => request<UserAvatar>(`/users/me/avatars/${id}`, { method: 'PUT', body: jsonBody(data) }),
+  select: (id: string): ApiResponse<null> => request<null>(`/users/me/avatars/${id}/select`, { method: 'PUT' }),
 }
 
 export const serverApi = {
-  createServer: (data: CreateServerData) => api.post<Server>('/servers', data),
-  getUserServers: () => api.get<Server[]>('/servers'),
-  getServer: (id: string) => api.get<Server>(`/servers/${id}`),
-  updateServer: (id: string, data: Partial<CreateServerData>) =>
-    api.put<Server>(`/servers/${id}`, data),
-  deleteServer: (id: string) => api.delete(`/servers/${id}`),
+  createServer: (data: CreateServerData): ApiResponse<Server> => request<Server>('/servers', { method: 'POST', body: jsonBody(data) }),
+  getUserServers: (): ApiResponse<Server[]> => request<Server[]>('/servers'),
+  getServer: (id: string): ApiResponse<Server> => request<Server>(`/servers/${id}`),
+  updateServer: (id: string, data: Partial<CreateServerData>): ApiResponse<Server> => request<Server>(`/servers/${id}`, { method: 'PUT', body: jsonBody(data) }),
+  deleteServer: (id: string): ApiResponse<null> => request<null>(`/servers/${id}`, { method: 'DELETE' }),
   getServerStats: async (gameDomain: string) => {
     const statsUrl = `${gameDomain.replace(/\/+$/, '')}/stats`
     const response = await fetch(statsUrl)
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
     return response.json()
   },
 }
 
-export default api
+export default request
