@@ -25,6 +25,10 @@ const keyPool = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
 export const avatarPartNames = partNames
 export const avatarFaceNames = faceNames
 
+export function getSelectedAvatarName(fallback: string | undefined): string {
+  return fallback?.trim() || 'alex'
+}
+
 export function createEditableAvatar(avatarName: string | undefined): EditableAvatar {
   const normalized = avatarName?.trim() || 'alex'
 
