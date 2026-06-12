@@ -1,6 +1,6 @@
-# Minecraft Authentication Platform
+# Voxicraft Authentication Platform
 
-Une plateforme d'authentification centralisée pour les serveurs Minecraft WebXR.
+Une plateforme d'authentification centralisée pour les serveurs Voxicraft.
 
 ## Architecture
 
@@ -35,7 +35,7 @@ Une plateforme d'authentification centralisée pour les serveurs Minecraft WebXR
 ## Structure du projet
 
 ```
-minecraft-auth-platform/
+voxicraft-auth-platform/
 ├── backend/           # API Rust
 │   ├── src/
 │   │   ├── main.rs         # Point d'entrée
