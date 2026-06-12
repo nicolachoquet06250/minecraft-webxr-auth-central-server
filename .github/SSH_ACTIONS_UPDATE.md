@@ -141,8 +141,8 @@
     key: ${{ secrets.ALWAYSDATA_SSH_KEY }}
     script: |
       cd ${{ secrets.ALWAYSDATA_DEPLOY_PATH }}
-      if [ -f minecraft-auth-backend ]; then
-        mv minecraft-auth-backend minecraft-auth-backend.backup.$(date +%Y%m%d_%H%M%S)
+      if [ -f voxicraft-auth-backend ]; then
+        mv voxicraft-auth-backend voxicraft-auth-backend.backup.$(date +%Y%m%d_%H%M%S)
       fi
 ```
 
@@ -174,8 +174,8 @@
     key: ${{ secrets.ALWAYSDATA_SSH_KEY }}
     script: |
       cd ${{ secrets.ALWAYSDATA_DEPLOY_PATH }}
-      chmod +x minecraft-auth-backend
-      ls -lh minecraft-auth-backend
+      chmod +x voxicraft-auth-backend
+      ls -lh voxicraft-auth-backend
 ```
 
 #### 4. Rollback (ssh-action)
@@ -188,11 +188,11 @@
     key: ${{ secrets.ALWAYSDATA_SSH_KEY }}
     script: |
       cd ${{ secrets.ALWAYSDATA_DEPLOY_PATH }}
-      backup=$(ls -t minecraft-auth-backend.backup.* 2>/dev/null | head -n1)
+      backup=$(ls -t voxicraft-auth-backend.backup.* 2>/dev/null | head -n1)
       if [ -n "$backup" ]; then
-        mv minecraft-auth-backend minecraft-auth-backend.failed
-        mv $backup minecraft-auth-backend
-        chmod +x minecraft-auth-backend
+        mv voxicraft-auth-backend voxicraft-auth-backend.failed
+        mv $backup voxicraft-auth-backend
+        chmod +x voxicraft-auth-backend
       fi
 ```
 

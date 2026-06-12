@@ -5,8 +5,8 @@
 ### 1. Base de données MySQL
 
 ```sql
-CREATE DATABASE minecraft_auth CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE minecraft_auth;
+CREATE DATABASE voxicraft_auth CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE voxicraft_auth;
 SOURCE migration/init.sql;
 ```
 
@@ -16,7 +16,7 @@ Si vous souhaitez tester l'authentification Discord:
 
 1. Visitez https://discord.com/developers/applications
 2. Cliquez sur "New Application"
-3. Donnez-lui un nom (ex: "Minecraft Auth Local")
+3. Donnez-lui un nom (ex: "Voxicraft Auth Local")
 4. Dans OAuth2 > General:
    - Ajoutez un Redirect URL: `http://localhost:5173/auth/discord/callback`
    - Sauvegardez
@@ -28,7 +28,7 @@ Si vous souhaitez tester l'authentification Discord:
 cd backend
 
 # Créer le fichier .env
-echo "DATABASE_URL=mysql://root:password@localhost:3306/minecraft_auth
+echo "DATABASE_URL=mysql://root:password@localhost:3306/voxicraft_auth
 JWT_SECRET=$(openssl rand -base64 32)
 DISCORD_CLIENT_ID=votre_client_id_ou_test
 DISCORD_CLIENT_SECRET=votre_client_secret_ou_test

@@ -3,7 +3,7 @@
     <div class="navbar-container">
       <router-link to="/" class="navbar-brand">
         <span class="brand-icon">⛏️</span>
-        <span class="brand-text">Minecraft WebXR</span>
+        <span class="brand-text">Voxicraft WebXR</span>
       </router-link>
       
       <div class="navbar-menu">
@@ -108,7 +108,7 @@ const handleLogout = () => {
   gap: 0.5rem;
   text-decoration: none;
   color: #fff;
-  font-family: 'Minecraft', monospace;
+  font-family: 'Voxicraft', monospace;
   font-size: 1.25rem;
   font-weight: bold;
   text-shadow: 2px 2px 0 #000;
@@ -134,7 +134,7 @@ const handleLogout = () => {
   text-decoration: none;
   padding: 0.5rem 1rem;
   border-radius: 4px;
-  font-family: 'Minecraft', monospace;
+  font-family: 'Voxicraft', monospace;
   text-shadow: 1px 1px 0 #000;
   transition: all 0.2s;
   background: none;
@@ -181,7 +181,7 @@ const handleLogout = () => {
   padding: 0.5rem;
   border-radius: 4px;
   cursor: pointer;
-  font-family: 'Minecraft', monospace;
+  font-family: 'Voxicraft', monospace;
 }
 
 .mobile-menu {
@@ -198,7 +198,7 @@ const handleLogout = () => {
   text-decoration: none;
   padding: 0.75rem 1rem;
   border-radius: 4px;
-  font-family: 'Minecraft', monospace;
+  font-family: 'Voxicraft', monospace;
   text-shadow: 1px 1px 0 #000;
   transition: all 0.2s;
   background: none;

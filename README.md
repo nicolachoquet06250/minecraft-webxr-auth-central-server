@@ -69,7 +69,7 @@ voxicraft-auth-platform/
 
 1. **Créer la base de données MySQL:**
 ```sql
-CREATE DATABASE minecraft_auth;
+CREATE DATABASE voxicraft_auth;
 ```
 
 2. **Configurer les variables d'environnement:**
@@ -80,7 +80,7 @@ cp .env.example .env
 
 Éditez le fichier `.env`:
 ```
-DATABASE_URL=mysql://root:password@localhost:3306/minecraft_auth
+DATABASE_URL=mysql://root:password@localhost:3306/voxicraft_auth
 JWT_SECRET=your_secret_key_change_this_in_production
 DISCORD_CLIENT_ID=your_discord_client_id
 DISCORD_CLIENT_SECRET=your_discord_client_secret
@@ -91,7 +91,7 @@ CORS_ORIGIN=http://localhost:5173
 
 3. **Créer les tables de base de données:**
 ```bash
-mysql -u root -p minecraft_auth < migration/init.sql
+mysql -u root -p voxicraft_auth < migration/init.sql
 ```
 
 4. **Lancer le serveur:**

@@ -16,7 +16,7 @@ Allez dans **Settings** → **Secrets and variables** → **Actions** → **New 
 **Comment obtenir :**
 ```bash
 # Sur votre machine locale
-ssh-keygen -t rsa -b 4096 -C "github-actions@minecraft-auth" -f ~/.ssh/alwaysdata_deploy
+ssh-keygen -t rsa -b 4096 -C "github-actions@voxicraft-auth" -f ~/.ssh/alwaysdata_deploy
 
 # Copier la clé publique sur AlwaysData
 cat ~/.ssh/alwaysdata_deploy.pub
@@ -72,18 +72,18 @@ nicolachoquet
 
 **Valeur recommandée :**
 ```
-/home/<votre-compte>/minecraft-auth-backend
+/home/<votre-compte>/voxicraft-auth-backend
 ```
 
 **Exemple :**
 ```
-/home/nicolachoquet/minecraft-auth-backend
+/home/nicolachoquet/voxicraft-auth-backend
 ```
 
 **Note :** Créez ce dossier sur AlwaysData avant le premier déploiement :
 ```bash
 ssh <votre-compte>@ssh-<votre-compte>.alwaysdata.net
-mkdir -p ~/minecraft-auth-backend
+mkdir -p ~/voxicraft-auth-backend
 ```
 
 ---
@@ -143,7 +143,7 @@ curl -u "<compte>:<api-key>" https://api.alwaysdata.com/v1/site/
 
 **Valeur :**
 ```
-https://minecraft-auth.alwaysdata.net
+https://voxicraft-auth.alwaysdata.net
 ```
 
 Ou votre domaine personnalisé :
@@ -163,7 +163,7 @@ mysql://user:password@host:port/database
 
 **Exemple :**
 ```
-mysql://nicolachoquet:MyP@ssw0rd@mysql-nicolachoquet.alwaysdata.net:3306/nicolachoquet_minecraft
+mysql://nicolachoquet:MyP@ssw0rd@mysql-nicolachoquet.alwaysdata.net:3306/nicolachoquet_voxicraft
 ```
 
 **⚠️ Note :** Ce secret est optionnel. Les migrations peuvent aussi être exécutées directement sur le serveur.
@@ -177,11 +177,11 @@ mysql://nicolachoquet:MyP@ssw0rd@mysql-nicolachoquet.alwaysdata.net:3306/nicolac
 | `ALWAYSDATA_SSH_KEY` | Clé privée SSH | `-----BEGIN OPENSSH...` |
 | `ALWAYSDATA_HOST` | Hostname SSH | `ssh-nicolachoquet.alwaysdata.net` |
 | `ALWAYSDATA_USER` | Username SSH | `nicolachoquet` |
-| `ALWAYSDATA_DEPLOY_PATH` | Chemin déploiement | `/home/nicolachoquet/minecraft-auth-backend` |
+| `ALWAYSDATA_DEPLOY_PATH` | Chemin déploiement | `/home/nicolachoquet/voxicraft-auth-backend` |
 | `ALWAYSDATA_API_KEY` | Token API | `abc123...` |
 | `ALWAYSDATA_ACCOUNT` | Nom du compte | `nicolachoquet` |
 | `ALWAYSDATA_SITE_ID` | ID du site | `123456` |
-| `APP_URL` | URL de l'app | `https://minecraft-auth.alwaysdata.net` |
+| `APP_URL` | URL de l'app | `https://voxicraft-auth.alwaysdata.net` |
 | `DATABASE_URL` | MySQL URL (optionnel) | `mysql://user:pass@host/db` |
 
 ---
@@ -193,21 +193,21 @@ mysql://nicolachoquet:MyP@ssw0rd@mysql-nicolachoquet.alwaysdata.net:3306/nicolac
 1. **Web** → **Sites** → **Add a site**
 2. Configuration :
    - **Type:** Custom application
-   - **Command:** `/home/<compte>/minecraft-auth-backend/minecraft-auth-backend`
-   - **Working directory:** `/home/<compte>/minecraft-auth-backend`
+   - **Command:** `/home/<compte>/voxicraft-auth-backend/voxicraft-auth-backend`
+   - **Working directory:** `/home/<compte>/voxicraft-auth-backend`
    - **Port:** Attribué automatiquement (notez-le)
    - **Environment variables:**
      ```
      DATABASE_URL=mysql://...
      JWT_SECRET=your_secret
-     DOMAIN=https://minecraft-auth.alwaysdata.net
+     DOMAIN=https://voxicraft-auth.alwaysdata.net
      API_PORT=<port-attribué>
      ```
 
 ### 2. Créer la base de données
 
 1. **Databases** → **MySQL**
-2. Créer une nouvelle base : `<compte>_minecraft`
+2. Créer une nouvelle base : `<compte>_voxicraft`
 3. Notez les credentials
 
 ### 3. Configurer le fichier .env sur le serveur
@@ -215,17 +215,17 @@ mysql://nicolachoquet:MyP@ssw0rd@mysql-nicolachoquet.alwaysdata.net:3306/nicolac
 ```bash
 ssh <compte>@ssh-<compte>.alwaysdata.net
 
-cd ~/minecraft-auth-backend
+cd ~/voxicraft-auth-backend
 nano .env
 ```
 
 Contenu :
 ```env
-DATABASE_URL=mysql://user:pass@mysql-nicolachoquet.alwaysdata.net:3306/nicolachoquet_minecraft
+DATABASE_URL=mysql://user:pass@mysql-nicolachoquet.alwaysdata.net:3306/nicolachoquet_voxicraft
 JWT_SECRET=your_super_secret_key_here
-DOMAIN=https://minecraft-auth.alwaysdata.net
+DOMAIN=https://voxicraft-auth.alwaysdata.net
 API_PORT=8080
-CORS_ORIGIN=https://minecraft-auth.alwaysdata.net
+CORS_ORIGIN=https://voxicraft-auth.alwaysdata.net
 ```
 
 ---
@@ -294,7 +294,7 @@ Le workflow se déclenche automatiquement sur :
 1. Vérifier les logs sur AlwaysData :
    ```bash
    ssh <user>@<host>
-   cd ~/minecraft-auth-backend
+   cd ~/voxicraft-auth-backend
    tail -f logs/app.log
    ```
 2. Vérifier que le `.env` est correct

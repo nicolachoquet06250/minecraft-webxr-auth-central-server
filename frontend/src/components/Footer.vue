@@ -3,7 +3,7 @@
     <div class="footer-container">
       <div class="footer-content">
         <div class="footer-section">
-          <h3>⛏️ Minecraft WebXR</h3>
+          <h3>⛏️ Voxicraft</h3>
           <p>Plateforme d'authentification sécurisée pour vos serveurs</p>
         </div>
         
@@ -38,7 +38,7 @@
       </div>
       
       <div class="footer-bottom">
-        <p>&copy; 2024 Minecraft WebXR Auth Platform. Tous droits réservés.</p>
+        <p>&copy; 2024 Voxicraft Auth Platform. Tous droits réservés.</p>
         <p class="tech-stack">Propulsé par Rust 🦀 & Vue.js 💚</p>
       </div>
     </div>
@@ -73,14 +73,14 @@ const authStore = useAuthStore()
 }
 
 .footer-section h3 {
-  font-family: 'Minecraft', monospace;
+  font-family: 'Voxicraft', monospace;
   color: #64ffda;
   margin-bottom: 0.5rem;
   text-shadow: 2px 2px 0 #000;
 }
 
 .footer-section h4 {
-  font-family: 'Minecraft', monospace;
+  font-family: 'Voxicraft', monospace;
   color: #64ffda;
   margin-bottom: 1rem;
   font-size: 1rem;

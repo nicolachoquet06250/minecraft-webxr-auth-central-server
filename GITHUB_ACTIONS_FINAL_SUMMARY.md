@@ -2,7 +2,7 @@
 
 ## 🎯 Objectif atteint
 
-Workflow GitHub Actions **complet et prêt à l'emploi** pour déployer automatiquement votre application Minecraft Auth Platform sur AlwaysData.
+Workflow GitHub Actions **complet et prêt à l'emploi** pour déployer automatiquement votre application Voxicraft Auth Platform sur AlwaysData.
 
 ---
 
@@ -32,9 +32,9 @@ Workflow GitHub Actions **complet et prêt à l'emploi** pour déployer automati
 4. **🏗️ Build frontend** - `npm run build` → `frontend/dist/`
 5. **🦀 Setup Rust 1.75** - Configuration de l'environnement Rust
 6. **📦 Cache Cargo** - Mise en cache des dépendances Rust
-7. **🏗️ Build backend** - `cargo build --release` → `target/release/minecraft-auth-backend`
+7. **🏗️ Build backend** - `cargo build --release` → `target/release/voxicraft-auth-backend`
 8. **✅ Verify builds** - Vérification que les builds ont réussi
-9. **📦 Create package** - Création de `minecraft-auth-backend.tar.gz`
+9. **📦 Create package** - Création de `voxicraft-auth-backend.tar.gz`
 10. **🚀 Deploy SSH** - Upload du package sur AlwaysData
 11. **💾 Backup** - Sauvegarde de la version précédente
 12. **🔄 Restart API** - Redémarrage du site via l'API AlwaysData
@@ -57,11 +57,11 @@ Workflow GitHub Actions **complet et prêt à l'emploi** pour déployer automati
 | `ALWAYSDATA_SSH_KEY` | Clé SSH privée | `-----BEGIN OPENSSH PRIVATE KEY-----` |
 | `ALWAYSDATA_HOST` | Hostname | `ssh-nicolachoquet.alwaysdata.net` |
 | `ALWAYSDATA_USER` | Username | `nicolachoquet` |
-| `ALWAYSDATA_DEPLOY_PATH` | Chemin | `/home/nicolachoquet/minecraft-auth-backend` |
+| `ALWAYSDATA_DEPLOY_PATH` | Chemin | `/home/nicolachoquet/voxicraft-auth-backend` |
 | `ALWAYSDATA_API_KEY` | Token API | `abc123...` |
 | `ALWAYSDATA_ACCOUNT` | Compte | `nicolachoquet` |
 | `ALWAYSDATA_SITE_ID` | ID du site | `123456` |
-| `APP_URL` | URL publique | `https://minecraft-auth.alwaysdata.net` |
+| `APP_URL` | URL publique | `https://voxicraft-auth.alwaysdata.net` |
 
 ---
 
@@ -115,24 +115,24 @@ GitHub → Actions → "Build and Deploy to AlwaysData" → Run workflow
 │
 └── Backend (cargo)
     ├── cargo build --release
-    └── → target/release/minecraft-auth-backend
+    └── → target/release/voxicraft-auth-backend
 ```
 
 ### Package
 
 ```
-minecraft-auth-backend.tar.gz
-├── minecraft-auth-backend  # Binaire (50-80 MB)
+voxicraft-auth-backend.tar.gz
+├── voxicraft-auth-backend  # Binaire (50-80 MB)
 └── .env                   # Config (optionnel)
 ```
 
 ### Déploiement
 
 ```
-AlwaysData:/home/<compte>/minecraft-auth-backend/
-├── minecraft-auth-backend                    # Actif
-├── minecraft-auth-backend.backup.20260611_...  # Backup 1
-├── minecraft-auth-backend.backup.20260610_...  # Backup 2
+AlwaysData:/home/<compte>/voxicraft-auth-backend/
+├── voxicraft-auth-backend                    # Actif
+├── voxicraft-auth-backend.backup.20260611_...  # Backup 1
+├── voxicraft-auth-backend.backup.20260610_...  # Backup 2
 └── .env                                      # Variables
 ```
 

@@ -1,9 +1,9 @@
-# Minecraft Auth Platform - Résumé du Projet
+# Voxicraft Auth Platform - Résumé du Projet
 
 ## ✅ Projet Complété
 
 **Date**: 2026-06-10
-**Emplacement**: `minecraft-auth-platform/`
+**Emplacement**: `voxicraft-auth-platform/`
 
 ## 🏗️ Architecture Implémentée
 
@@ -28,7 +28,7 @@
 ## 📁 Structure des Fichiers
 
 ```
-minecraft-auth-platform/
+voxicraft-auth-platform/
 ├── README.md                 # Documentation principale
 ├── QUICKSTART.md            # Guide de démarrage rapide
 ├── .gitignore               # Fichiers à ignorer
@@ -216,8 +216,8 @@ DELETE /api/servers/:id                # Supprimer serveur (owner)
 1. **Base de données**:
    ```bash
    mysql -u root -p
-   CREATE DATABASE minecraft_auth;
-   USE minecraft_auth;
+   CREATE DATABASE voxicraft_auth;
+   USE voxicraft_auth;
    SOURCE backend/migration/init.sql;
    ```
 
@@ -242,7 +242,7 @@ DELETE /api/servers/:id                # Supprimer serveur (owner)
 
 ### Variables d'environnement Backend (.env)
 ```
-DATABASE_URL=mysql://root:password@localhost:3306/minecraft_auth
+DATABASE_URL=mysql://root:password@localhost:3306/voxicraft_auth
 JWT_SECRET=secret_key_très_sécurisé
 DISCORD_CLIENT_ID=votre_client_id (optionnel pour dev)
 DISCORD_CLIENT_SECRET=votre_secret (optionnel pour dev)
@@ -351,7 +351,7 @@ VITE_API_URL=http://localhost:8080/api
 
 ## 🎉 Conclusion
 
-Plateforme d'authentification Minecraft **COMPLÈTE** et **FONCTIONNELLE** !
+Plateforme d'authentification Voxicraft **COMPLÈTE** et **FONCTIONNELLE** !
 
 Toutes les fonctionnalités demandées ont été implémentées:
 - ✅ Backend Rust avec ORM

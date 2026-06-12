@@ -56,7 +56,7 @@ cargo run --release
 
 ### Docker
 ```dockerfile
-ENV DOMAIN=https://minecraft-auth.example.com
+ENV DOMAIN=https://voxicraft-auth.example.com
 ```
 
 ## 📊 Avantages
@@ -84,7 +84,7 @@ echo "DOMAIN=https://auth.example.com" > .env
 cargo build --release
 
 # 4. Deploy et run
-./target/release/minecraft-auth-backend
+./target/release/voxicraft-auth-backend
 ```
 
 ## 🧪 Test

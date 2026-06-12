@@ -1,11 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
 :root {
-  --minecraft-brown: #8B4513;
-  --minecraft-dark: #3E2723;
-  --minecraft-gray: #757575;
-  --minecraft-green: #4CAF50;
-  --minecraft-light: #D7CCC8;
+  --voxicraft-brown: #8B4513;
+  --voxicraft-dark: #3E2723;
+  --voxicraft-gray: #757575;
+  --voxicraft-green: #4CAF50;
+  --voxicraft-light: #D7CCC8;
 }
 
 * {
@@ -33,7 +33,7 @@ body {
   overflow-x: hidden;
 }
 
-.minecraft-bg {
+.voxicraft-bg {
   background: linear-gradient(135deg, #2d5016 0%, #1a3a0f 50%, #0f2409 100%);
   background-size: 400% 400%;
   animation: gradientShift 15s ease infinite;
@@ -45,13 +45,13 @@ body {
   100% { background-position: 0% 50%; }
 }
 
-.minecraft-container {
+.voxicraft-container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
 }
 
-.minecraft-title {
+.voxicraft-title {
   font-size: 2rem;
   text-shadow: 4px 4px 0 rgba(0, 0, 0, 0.5);
   margin-bottom: 1.5rem;
@@ -59,13 +59,13 @@ body {
   text-align: center;
 }
 
-.minecraft-text {
+.voxicraft-text {
   font-size: 0.9rem;
   margin: 1rem 0;
   text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
 }
 
-.minecraft-panel {
+.voxicraft-panel {
   background: rgba(139, 69, 19, 0.9);
   border: 4px solid #5D4037;
   border-radius: 8px;
@@ -75,7 +75,7 @@ body {
   margin: 0 auto;
 }
 
-.minecraft-button {
+.voxicraft-button {
   background: linear-gradient(180deg, #4CAF50 0%, #388E3C 100%);
   border: 3px solid #2E7D32;
   border-bottom: 5px solid #1B5E20;
@@ -91,22 +91,22 @@ body {
   text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
 }
 
-.minecraft-button:hover:not(:disabled) {
+.voxicraft-button:hover:not(:disabled) {
   transform: translateY(-2px);
   background: linear-gradient(180deg, #66BB6A 0%, #4CAF50 100%);
 }
 
-.minecraft-button:active:not(:disabled) {
+.voxicraft-button:active:not(:disabled) {
   transform: translateY(2px);
   border-bottom-width: 3px;
 }
 
-.minecraft-button:disabled {
+.voxicraft-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.minecraft-label {
+.voxicraft-label {
   font-size: 0.8rem;
   margin-bottom: 0.5rem;
   display: block;
@@ -114,8 +114,8 @@ body {
   text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
 }
 
-.minecraft-input,
-.minecraft-textarea {
+.voxicraft-input,
+.voxicraft-textarea {
   background: rgba(0, 0, 0, 0.6);
   border: 3px solid #424242;
   color: white;
@@ -127,27 +127,27 @@ body {
   transition: border-color 0.3s;
 }
 
-.minecraft-input:focus,
-.minecraft-textarea:focus {
+.voxicraft-input:focus,
+.voxicraft-textarea:focus {
   border-color: #4CAF50;
 }
 
-textarea.minecraft-input {
+textarea.voxicraft-input {
   resize: vertical;
   font-family: 'Courier New', monospace;
 }
 
 @media (max-width: 768px) {
-  .minecraft-title {
+  .voxicraft-title {
     font-size: 1.2rem;
   }
   
-  .minecraft-button {
+  .voxicraft-button {
     font-size: 0.7rem;
     padding: 0.5rem 1rem;
   }
   
-  .minecraft-panel {
+  .voxicraft-panel {
     padding: 1.5rem;
   }
 }

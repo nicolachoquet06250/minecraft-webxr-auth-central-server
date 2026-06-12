@@ -11,7 +11,7 @@
 3. **📦 Build Frontend** - `npm ci && npm run build`
 4. **🦀 Setup Rust** - Configuration Rust 1.75
 5. **🏗️ Build Backend** - `cargo build --release` (depuis racine)
-6. **📦 Package** - Création de `minecraft-auth-backend.tar.gz`
+6. **📦 Package** - Création de `voxicraft-auth-backend.tar.gz`
 7. **🚀 Deploy SSH** - Upload sur AlwaysData via SSH
 8. **🔄 Restart** - Redémarrage via API AlwaysData
 9. **🏥 Health Check** - Vérification que l'app fonctionne
@@ -33,11 +33,11 @@ Configurez ces secrets dans **Settings** → **Secrets and variables** → **Act
 | `ALWAYSDATA_SSH_KEY` | Clé SSH privée | `-----BEGIN OPENSSH...` |
 | `ALWAYSDATA_HOST` | Hostname SSH | `ssh-nicolachoquet.alwaysdata.net` |
 | `ALWAYSDATA_USER` | Username SSH | `nicolachoquet` |
-| `ALWAYSDATA_DEPLOY_PATH` | Chemin déploiement | `/home/nicolachoquet/minecraft-auth-backend` |
+| `ALWAYSDATA_DEPLOY_PATH` | Chemin déploiement | `/home/nicolachoquet/voxicraft-auth-backend` |
 | `ALWAYSDATA_API_KEY` | Token API | `abc123...` |
 | `ALWAYSDATA_ACCOUNT` | Nom du compte | `nicolachoquet` |
 | `ALWAYSDATA_SITE_ID` | ID du site | `123456` |
-| `APP_URL` | URL de l'app | `https://minecraft-auth.alwaysdata.net` |
+| `APP_URL` | URL de l'app | `https://voxicraft-auth.alwaysdata.net` |
 
 **Documentation complète :** Voir `.github/DEPLOYMENT_SETUP.md`
 
@@ -71,17 +71,17 @@ Configurez ces secrets dans **Settings** → **Secrets and variables** → **Act
 
 ### Sur AlwaysData
 ```
-/home/<compte>/minecraft-auth-backend/
-├── minecraft-auth-backend           # Binaire actif
-├── minecraft-auth-backend.backup.*  # Backups horodatés
+/home/<compte>/voxicraft-auth-backend/
+├── voxicraft-auth-backend           # Binaire actif
+├── voxicraft-auth-backend.backup.*  # Backups horodatés
 ├── .env                            # Variables d'environnement
 └── logs/                           # Logs application (optionnel)
 ```
 
 ### Package déployé
 ```
-minecraft-auth-backend.tar.gz
-├── minecraft-auth-backend  # Binaire
+voxicraft-auth-backend.tar.gz
+├── voxicraft-auth-backend  # Binaire
 └── .env                   # Config (si .env.production existe)
 ```
 
@@ -126,15 +126,15 @@ git push origin main
 
 ```
 Type: Custom application
-Command: /home/<compte>/minecraft-auth-backend/minecraft-auth-backend
-Working directory: /home/<compte>/minecraft-auth-backend
-Addresses: minecraft-auth.alwaysdata.net
+Command: /home/<compte>/voxicraft-auth-backend/voxicraft-auth-backend
+Working directory: /home/<compte>/voxicraft-auth-backend
+Addresses: voxicraft-auth.alwaysdata.net
 Environment variables:
   DATABASE_URL=mysql://...
   JWT_SECRET=...
-  DOMAIN=https://minecraft-auth.alwaysdata.net
+  DOMAIN=https://voxicraft-auth.alwaysdata.net
   API_PORT=8080
-  CORS_ORIGIN=https://minecraft-auth.alwaysdata.net
+  CORS_ORIGIN=https://voxicraft-auth.alwaysdata.net
 ```
 
 ### 2. Créer la base de données
@@ -142,7 +142,7 @@ Environment variables:
 **Databases** → **MySQL** → **Add a database**
 
 ```
-Name: <compte>_minecraft
+Name: <compte>_voxicraft
 ```
 
 ### 3. Générer le token API
@@ -179,7 +179,7 @@ Name: <compte>_minecraft
 **Solution :** Vérifier les logs sur le serveur :
 ```bash
 ssh <user>@<host>
-cd ~/minecraft-auth-backend
+cd ~/voxicraft-auth-backend
 tail -f logs/app.log
 ```
 

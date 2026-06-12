@@ -23,7 +23,7 @@ Le backend utilise maintenant un **middleware CORS dynamique** qui autorise auto
 CORS_ORIGIN=http://localhost:5176
 
 # Autres variables...
-DATABASE_URL=mysql://user:password@localhost:3306/minecraft_xr_central
+DATABASE_URL=mysql://user:password@localhost:3306/voxicraft_central
 JWT_SECRET=your_secret_key
 API_PORT=8080
 ```
@@ -195,7 +195,7 @@ tracing::error!("Failed to fetch servers for CORS: {}", e);
 
 ```bash
 # Depuis MySQL
-mysql -u root -p minecraft_xr_central -e "
+mysql -u root -p voxicraft_central -e "
   SELECT name, relay_domain, game_domain, is_active 
   FROM server 
   WHERE is_active = true;

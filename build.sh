@@ -9,4 +9,4 @@ echo "Building backend with embedded frontend..."
 cd ../backend
 cargo build --release
 
-echo "Build complete! Binary is at: backend/target/release/minecraft-auth-backend"
+echo "Build complete! Binary is at: backend/target/release/voxicraft-auth-backend"

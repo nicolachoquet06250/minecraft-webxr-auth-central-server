@@ -7,7 +7,7 @@ Le binaire de production embarque le frontend compilé à l'intérieur grâce à
 ## Structure
 
 ```
-minecraft-auth-platform/
+voxicraft-auth-platform/
 ├── frontend/
 │   ├── dist/          # Build du frontend (généré par Vite)
 │   └── ...
@@ -46,7 +46,7 @@ cd ../backend
 cargo build --release
 ```
 
-Le binaire sera disponible à : `backend/target/release/minecraft-auth-backend[.exe]`
+Le binaire sera disponible à : `backend/target/release/voxicraft-auth-backend[.exe]`
 
 ## Développement
 
@@ -69,7 +69,7 @@ Le CORS est configuré pour permettre au frontend (port 5173) de communiquer ave
 Le fichier `.env` doit être présent dans le même répertoire que le binaire ou vous devez définir les variables d'environnement :
 
 ```env
-DATABASE_URL=mysql://user:password@localhost:3306/minecraft_xr_central
+DATABASE_URL=mysql://user:password@localhost:3306/voxicraft_xr_central
 JWT_SECRET=votre_secret_jwt
 API_PORT=8080
 CORS_ORIGIN=*
@@ -78,8 +78,8 @@ CORS_ORIGIN=*
 ## Déploiement
 
 1. Builder le projet avec `build.bat` ou `build.sh`
-2. Copier le binaire `backend/target/release/minecraft-auth-backend[.exe]`
+2. Copier le binaire `backend/target/release/voxicraft-auth-backend[.exe]`
 3. Créer un fichier `.env` avec les variables de production
-4. Lancer le binaire : `./minecraft-auth-backend`
+4. Lancer le binaire : `./voxicraft-auth-backend`
 
 Le serveur écoute sur `http://0.0.0.0:8080` (configurable via `API_PORT`)

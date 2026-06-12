@@ -14,7 +14,7 @@ DOMAIN=http://localhost:8080
 
 # Exemples pour différents environnements:
 # DOMAIN=https://api.example.com
-# DOMAIN=https://minecraft-auth.example.com:8443
+# DOMAIN=https://voxicraft-auth.example.com:8443
 ```
 
 ### 2. Frontend (valeur par défaut dans le code)
@@ -64,19 +64,19 @@ DOMAIN=https://auth.example.com
 
 ```env
 # backend/.env
-DOMAIN=https://api.minecraft-xr.com
+DOMAIN=https://api.voxicraft.com
 ```
 
-**Résultat** : Le frontend utilisera `https://api.minecraft-xr.com/api`
+**Résultat** : Le frontend utilisera `https://api.voxicraft.com/api`
 
 ### Production (avec port personnalisé)
 
 ```env
 # backend/.env
-DOMAIN=https://minecraft-auth.example.com:8443
+DOMAIN=https://voxicraft-auth.example.com:8443
 ```
 
-**Résultat** : Le frontend utilisera `https://minecraft-auth.example.com:8443/api`
+**Résultat** : Le frontend utilisera `https://voxicraft-auth.example.com:8443/api`
 
 ## 🔍 Vérification
 
@@ -217,7 +217,7 @@ location / {
 
 ```env
 # backend/.env
-DOMAIN=https://minecraft-auth.example.com
+DOMAIN=https://voxicraft-auth.example.com
 ```
 
 ### Configuration multi-environnement

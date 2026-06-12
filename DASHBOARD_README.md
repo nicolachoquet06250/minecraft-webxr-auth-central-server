@@ -2,7 +2,7 @@
 
 ## ✨ Nouveautés
 
-Un dashboard complet a été ajouté à l'application pour afficher les statistiques et métriques de vos serveurs de jeu Minecraft WebXR.
+Un dashboard complet a été ajouté à l'application pour afficher les statistiques et métriques de vos serveurs de jeu Voxicraft.
 
 ## 🚀 Utilisation
 

@@ -37,7 +37,7 @@ Le workflow a été **optimisé** en utilisant des **GitHub Actions dédiées** 
     username: ${{ secrets.ALWAYSDATA_USER }}
     key: ${{ secrets.ALWAYSDATA_SSH_KEY }}
     script: |
-      chmod +x minecraft-auth-backend
+      chmod +x voxicraft-auth-backend
 ```
 **~15 lignes YAML**
 

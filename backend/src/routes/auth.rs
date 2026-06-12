@@ -162,7 +162,7 @@ pub async fn login(
 pub async fn discord_oauth_url(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<DiscordOAuthUrl>, StatusCode> {
-    let url = state.discord_service.get_oauth_url(Some("minecraft_auth"));
+    let url = state.discord_service.get_oauth_url(Some("voxicraft_auth"));
     Ok(Json(DiscordOAuthUrl { url }))
 }
 

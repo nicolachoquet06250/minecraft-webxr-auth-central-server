@@ -23,7 +23,7 @@ Suivez **`ALWAYSDATA_SETUP.md`** :
 2. Créer le site/application custom
 3. Générer le token API
 4. Ajouter votre clé SSH publique
-5. Créer le dossier ~/minecraft-auth-backend
+5. Créer le dossier ~/voxicraft-auth-backend
 6. Configurer le .env sur le serveur
 ```
 
@@ -237,7 +237,7 @@ git push origin feature/nouvelle-fonctionnalite
 ```bash
 # Via SSH
 ssh <user>@<host>
-cd ~/minecraft-auth-backend
+cd ~/voxicraft-auth-backend
 tail -f logs/app.log
 
 # Via AlwaysData

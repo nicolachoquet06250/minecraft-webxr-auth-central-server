@@ -2,7 +2,7 @@
 
 ## 🎨 Vue d'ensemble
 
-Une landing page moderne et professionnelle a été créée pour la page d'accueil de la plateforme Minecraft WebXR Auth Platform.
+Une landing page moderne et professionnelle a été créée pour la page d'accueil de la plateforme Voxicraft Auth Platform.
 
 ## 📑 Sections de la Landing Page
 
@@ -245,4 +245,4 @@ Pour personnaliser la landing page :
 
 ---
 
-**Landing Page by Minecraft WebXR Auth Platform** 🎮🚀
+**Landing Page by Voxicraft Auth Platform** 🎮🚀

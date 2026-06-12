@@ -1,11 +1,11 @@
-# Configuration AlwaysData pour Minecraft Auth Platform
+# Configuration AlwaysData pour Voxicraft Auth Platform
 
 ## 📁 Structure des fichiers
 
 ```
 /home/<votre-compte>/
-├── minecraft-auth-backend/          # Dossier de l'application
-│   ├── minecraft-auth-backend       # Binaire exécutable
+├── voxicraft-auth-backend/          # Dossier de l'application
+│   ├── voxicraft-auth-backend       # Binaire exécutable
 │   ├── .env                        # Configuration
 │   └── logs/                       # Logs (optionnel)
 │       └── app.log
@@ -24,20 +24,20 @@
 Type d'application: Custom application (Application personnalisée)
 
 Configuration:
-  Commande: /home/<votre-compte>/minecraft-auth-backend/minecraft-auth-backend
-  Répertoire de travail: /home/<votre-compte>/minecraft-auth-backend
+  Commande: /home/<votre-compte>/voxicraft-auth-backend/voxicraft-auth-backend
+  Répertoire de travail: /home/<votre-compte>/voxicraft-auth-backend
   
 Addresses (Adresses):
-  - minecraft-auth.alwaysdata.net
+  - voxicraft-auth.alwaysdata.net
   # Ou votre domaine personnalisé:
   - auth.example.com
 
 Variables d'environnement:
-  DATABASE_URL: mysql://<user>:<password>@mysql-<compte>.alwaysdata.net:3306/<compte>_minecraft
+  DATABASE_URL: mysql://<user>:<password>@mysql-<compte>.alwaysdata.net:3306/<compte>_voxicraft
   JWT_SECRET: <votre_secret_jwt>
-  DOMAIN: https://minecraft-auth.alwaysdata.net
+  DOMAIN: https://voxicraft-auth.alwaysdata.net
   API_PORT: 8080
-  CORS_ORIGIN: https://minecraft-auth.alwaysdata.net
+  CORS_ORIGIN: https://voxicraft-auth.alwaysdata.net
   ENVIRONMENT: production
 
 Ports:
@@ -52,7 +52,7 @@ Ports:
 **Databases** → **MySQL** → **Ajouter une base de données**
 
 ```
-Nom: <compte>_minecraft
+Nom: <compte>_voxicraft
 ```
 
 Notez les informations de connexion :
@@ -60,12 +60,12 @@ Notez les informations de connexion :
 - **Port**: `3306`
 - **User**: `<compte>` ou `<compte>_user`
 - **Password**: (généré automatiquement)
-- **Database**: `<compte>_minecraft`
+- **Database**: `<compte>_voxicraft`
 
 ### Connection string
 
 ```
-mysql://<user>:<password>@mysql-<compte>.alwaysdata.net:3306/<compte>_minecraft
+mysql://<user>:<password>@mysql-<compte>.alwaysdata.net:3306/<compte>_voxicraft
 ```
 
 ## 📝 Fichier .env sur le serveur
@@ -74,7 +74,7 @@ Connectez-vous via SSH et créez le fichier :
 
 ```bash
 ssh <compte>@ssh-<compte>.alwaysdata.net
-cd ~/minecraft-auth-backend
+cd ~/voxicraft-auth-backend
 nano .env
 ```
 
@@ -82,7 +82,7 @@ Contenu du `.env` :
 
 ```env
 # Database MySQL AlwaysData
-DATABASE_URL=mysql://nicolachoquet:password@mysql-nicolachoquet.alwaysdata.net:3306/nicolachoquet_minecraft
+DATABASE_URL=mysql://nicolachoquet:password@mysql-nicolachoquet.alwaysdata.net:3306/nicolachoquet_voxicraft
 
 # JWT Secret (générez une clé sécurisée !)
 JWT_SECRET=votre_super_secret_jwt_key_changez_moi_en_production_123456789
@@ -90,16 +90,16 @@ JWT_SECRET=votre_super_secret_jwt_key_changez_moi_en_production_123456789
 # Discord OAuth (optionnel)
 # DISCORD_CLIENT_ID=your_discord_client_id
 # DISCORD_CLIENT_SECRET=your_discord_client_secret
-# DISCORD_REDIRECT_URI=https://minecraft-auth.alwaysdata.net/auth/discord/callback
+# DISCORD_REDIRECT_URI=https://voxicraft-auth.alwaysdata.net/auth/discord/callback
 
 # Server
 API_PORT=8080
 
 # CORS - Autoriser votre domaine
-CORS_ORIGIN=https://minecraft-auth.alwaysdata.net
+CORS_ORIGIN=https://voxicraft-auth.alwaysdata.net
 
 # Domain - URL publique de votre API
-DOMAIN=https://minecraft-auth.alwaysdata.net
+DOMAIN=https://voxicraft-auth.alwaysdata.net
 
 # Environment
 ENVIRONMENT=production
@@ -143,19 +143,19 @@ cd ../backend
 cargo build --release
 
 # 2. Uploadez le binaire
-scp ../target/release/minecraft-auth-backend <compte>@ssh-<compte>.alwaysdata.net:~/minecraft-auth-backend/
+scp ../target/release/voxicraft-auth-backend <compte>@ssh-<compte>.alwaysdata.net:~/voxicraft-auth-backend/
 
 # 3. Connectez-vous et configurez
 ssh <compte>@ssh-<compte>.alwaysdata.net
 
-cd ~/minecraft-auth-backend
-chmod +x minecraft-auth-backend
+cd ~/voxicraft-auth-backend
+chmod +x voxicraft-auth-backend
 
 # 4. Créez le .env (voir section précédente)
 nano .env
 
 # 5. Testez l'exécution
-./minecraft-auth-backend
+./voxicraft-auth-backend
 ```
 
 ## 🔄 Redémarrage du site
@@ -184,7 +184,7 @@ curl -X POST \
 
 ```bash
 ssh <compte>@ssh-<compte>.alwaysdata.net
-killall minecraft-auth-backend
+killall voxicraft-auth-backend
 
 # Le site redémarrera automatiquement via le superviseur AlwaysData
 ```
@@ -197,7 +197,7 @@ killall minecraft-auth-backend
 ssh <compte>@ssh-<compte>.alwaysdata.net
 
 # Logs de l'application (si vous loggez dans un fichier)
-tail -f ~/minecraft-auth-backend/logs/app.log
+tail -f ~/voxicraft-auth-backend/logs/app.log
 
 # Logs du système AlwaysData
 # Web → Sites → Votre site → Logs
@@ -251,8 +251,8 @@ openssl rand -hex 64
 
 2. **Permissions fichiers** :
 ```bash
-chmod 600 ~/.minecraft-auth-backend/.env
-chmod 700 ~/.minecraft-auth-backend/minecraft-auth-backend
+chmod 600 ~/.voxicraft-auth-backend/.env
+chmod 700 ~/.voxicraft-auth-backend/voxicraft-auth-backend
 ```
 
 3. **Base de données** : Utilisez un utilisateur avec permissions limitées
@@ -265,7 +265,7 @@ chmod 700 ~/.minecraft-auth-backend/minecraft-auth-backend
 
 - [ ] Base de données MySQL créée
 - [ ] Site/application configuré dans AlwaysData
-- [ ] Dossier `~/minecraft-auth-backend` créé
+- [ ] Dossier `~/voxicraft-auth-backend` créé
 - [ ] Clé SSH publique ajoutée
 - [ ] Token API généré
 - [ ] Fichier `.env` configuré sur le serveur
