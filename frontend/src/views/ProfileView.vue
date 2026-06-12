@@ -116,8 +116,10 @@
 
           <div v-if="!showEditForm" class="voxicraft-panel security-panel">
             <h2 class="card-title">🔒 Sécurité et confidentialité</h2>
-            <div class="bio-content security-value">JWT Token actif</div>
-            <div class="bio-content security-value">Email : <span class="security-email">{{ authStore.user.email }}</span></div>
+            <div class="info-list">
+              <div class="info-item bio-content security-value">JWT Token actif</div>
+              <div class="info-item bio-content security-value">Email : <span class="security-email">{{ authStore.user.email }}</span></div>
+            </div>
           </div>
         </div>
       </div>
