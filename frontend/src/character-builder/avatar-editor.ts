@@ -1,3 +1,4 @@
+import type { AvatarTextureData } from '@/api'
 import type { BodyPartFaces, CharacterModel, TextureMatrix } from './types'
 import { alexModelTextures } from './alex-color-matrices'
 import { steveModelTextures } from './steve-color-matrices'
@@ -6,50 +7,68 @@ export type AvatarPartName = 'head' | 'torso' | 'rightArm' | 'leftArm' | 'rightL
 export type AvatarFaceName = keyof BodyPartFaces
 export type AvatarSource = 'steve' | 'alex' | 'custom'
 type MutableBodyPartFaces = { -readonly [K in keyof BodyPartFaces]: TextureMatrix }
+type RgbaColor = [number, number, number, number]
 
 export type EditableAvatar = {
   id: string
   name: string
   source: AvatarSource
+  baseKind: 'steve' | 'alex' | 'custom'
   overwriteLocked: boolean
   textures: Record<AvatarPartName, BodyPartFaces>
 }
 
-const STORAGE_KEY = 'voxicraft.customAvatars.v1'
-const SELECTED_KEY = 'voxicraft.selectedCustomAvatarId'
-
 const partNames: AvatarPartName[] = ['head', 'torso', 'rightArm', 'leftArm', 'rightLeg', 'leftLeg']
 const faceNames: AvatarFaceName[] = ['front', 'back', 'top', 'bottom', 'left', 'right']
+const keyPool = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
 
 export const avatarPartNames = partNames
 export const avatarFaceNames = faceNames
 
 export function createEditableAvatar(avatarName: string | undefined): EditableAvatar {
   const normalized = avatarName?.trim() || 'alex'
-  const saved = normalized.startsWith('custom:') ? loadCustomAvatar(normalized.slice('custom:'.length)) : null
-  if (saved) return saved
 
   if (normalized === 'steve') {
     return {
       id: 'steve',
       name: 'Steve',
       source: 'steve',
+      baseKind: 'steve',
       overwriteLocked: true,
       textures: cloneTextures(steveModelTextures),
     }
   }
 
   return {
-    id: normalized === 'alex' ? 'alex' : `custom-${Date.now()}`,
-    name: normalized === 'alex' ? 'Alex' : normalized,
-    source: normalized === 'alex' ? 'alex' : 'custom',
-    overwriteLocked: normalized === 'alex',
+    id: 'alex',
+    name: 'Alex',
+    source: 'alex',
+    baseKind: 'alex',
+    overwriteLocked: true,
     textures: cloneTextures(alexModelTextures),
   }
 }
 
+export function createEditableAvatarFromApi(input: {
+  id: string
+  name: string
+  base_kind: string
+  texture_data: AvatarTextureData
+}): EditableAvatar {
+  const baseKind = normalizeBaseKind(input.base_kind)
+
+  return {
+    id: input.id,
+    name: input.name,
+    source: 'custom',
+    baseKind,
+    overwriteLocked: false,
+    textures: textureDataToTextures(input.texture_data),
+  }
+}
+
 export function createCharacterModelFromAvatar(avatar: EditableAvatar): CharacterModel {
-  const isSteve = avatar.source === 'steve'
+  const isSteve = avatar.baseKind === 'steve'
   const armWidth = isSteve ? 0.25 : 0.1875
   const armOffset = isSteve ? 0.375 : 0.34375
 
@@ -67,59 +86,158 @@ export function createCharacterModelFromAvatar(avatar: EditableAvatar): Characte
   }
 }
 
-export function setMatrixPixel(texture: TextureMatrix, x: number, y: number, key: string): TextureMatrix {
+export function getTexturePixelColor(texture: TextureMatrix, x: number, y: number): RgbaColor {
+  const key = texture.matrix[y]?.[x]
+  const color = key ? texture.palette[key] : undefined
+  return color ? [color[0], color[1], color[2], color[3]] : [0, 0, 0, 0]
+}
+
+export function paintAvatarPixel(
+  avatar: EditableAvatar,
+  part: AvatarPartName,
+  face: AvatarFaceName,
+  x: number,
+  y: number,
+  color: RgbaColor,
+): EditableAvatar {
+  const next = cloneAvatar(avatar)
+  const texture = next.textures[part][face]
+  const palette = { ...texture.palette }
+  const key = findOrCreatePaletteKey(palette, color)
   const rows = [...texture.matrix]
   rows[y] = `${rows[y].slice(0, x)}${key}${rows[y].slice(x + 1)}`
-  return { ...texture, matrix: rows }
-}
 
-export function saveAvatarCopy(avatar: EditableAvatar): EditableAvatar {
-  const id = `custom-${Date.now()}`
-  const copy: EditableAvatar = {
-    ...cloneAvatar(avatar),
-    id,
-    name: `${avatar.name} - copie`,
-    source: 'custom',
-    overwriteLocked: false,
+  ;(next.textures[part] as MutableBodyPartFaces)[face] = {
+    palette,
+    width: texture.width,
+    height: texture.height,
+    matrix: rows,
   }
-  persistCustomAvatar(copy)
-  localStorage.setItem(SELECTED_KEY, id)
-  return copy
+
+  return next
 }
 
-export function overwriteAvatar(avatar: EditableAvatar): EditableAvatar {
-  if (avatar.overwriteLocked || avatar.source !== 'custom') {
-    throw new Error('Impossible d écraser Steve ou Alex')
+export function texturesToTextureData(avatar: EditableAvatar): AvatarTextureData {
+  const globalPalette: Record<string, readonly [number, number, number, number]> = {}
+  const reverse = new Map<string, string>()
+  let keyIndex = 0
+
+  const getGlobalKey = (rgba: readonly [number, number, number, number]) => {
+    const signature = rgba.join(',')
+    const existing = reverse.get(signature)
+    if (existing) return existing
+
+    const key = keyPool[keyIndex]
+    if (!key) {
+      throw new Error('Palette globale trop grande pour être sérialisée')
+    }
+
+    keyIndex += 1
+    reverse.set(signature, key)
+    globalPalette[key] = rgba
+    return key
   }
-  persistCustomAvatar(avatar)
-  localStorage.setItem(SELECTED_KEY, avatar.id)
-  return cloneAvatar(avatar)
-}
 
-export function getSelectedAvatarName(fallback: string | undefined): string {
-  const selected = localStorage.getItem(SELECTED_KEY)
-  if (selected && loadCustomAvatar(selected)) return `custom:${selected}`
-  return fallback || 'alex'
-}
+  const parts = Object.fromEntries(
+    partNames.map((partName) => {
+      const partFaces = Object.fromEntries(
+        faceNames.map((faceName) => {
+          const texture = avatar.textures[partName][faceName]
+          const matrix = texture.matrix.map((row) =>
+            row.split('').map((cellKey) => getGlobalKey(texture.palette[cellKey])).join(''),
+          )
 
-function persistCustomAvatar(avatar: EditableAvatar) {
-  const all = loadAllCustomAvatars()
-  all[avatar.id] = cloneAvatar(avatar)
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(all))
-}
+          return [
+            faceName,
+            {
+              width: texture.width,
+              height: texture.height,
+              matrix,
+            },
+          ]
+        }),
+      )
 
-function loadCustomAvatar(id: string): EditableAvatar | null {
-  return loadAllCustomAvatars()[id] ?? null
-}
+      return [partName, partFaces]
+    }),
+  ) as AvatarTextureData['parts']
 
-function loadAllCustomAvatars(): Record<string, EditableAvatar> {
-  const raw = localStorage.getItem(STORAGE_KEY)
-  if (!raw) return {}
-  try {
-    return JSON.parse(raw) as Record<string, EditableAvatar>
-  } catch {
-    return {}
+  return {
+    version: 1,
+    palette: globalPalette,
+    parts,
   }
+}
+
+export function rgbaToHex([r, g, b]: RgbaColor) {
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`
+}
+
+export function hexToRgba(hex: string, alpha = 1): RgbaColor {
+  const cleaned = hex.replace('#', '')
+  const normalized = cleaned.length === 3
+    ? cleaned.split('').map((c) => c + c).join('')
+    : cleaned
+
+  const r = parseInt(normalized.slice(0, 2), 16) / 255
+  const g = parseInt(normalized.slice(2, 4), 16) / 255
+  const b = parseInt(normalized.slice(4, 6), 16) / 255
+
+  return [r, g, b, alpha]
+}
+
+export function colorToCss([r, g, b, a]: RgbaColor) {
+  return `rgba(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)}, ${a})`
+}
+
+function normalizeBaseKind(value: string): 'steve' | 'alex' | 'custom' {
+  if (value === 'steve') return 'steve'
+  if (value === 'alex') return 'alex'
+  return 'custom'
+}
+
+function textureDataToTextures(data: AvatarTextureData): Record<AvatarPartName, BodyPartFaces> {
+  const palette = data.palette
+
+  return Object.fromEntries(
+    partNames.map((partName) => {
+      const faces = faceNames.reduce((acc, faceName) => {
+        const face = data.parts[partName][faceName]
+        acc[faceName] = {
+          palette: { ...palette },
+          width: face.width,
+          height: face.height,
+          matrix: [...face.matrix],
+        }
+        return acc
+      }, {} as MutableBodyPartFaces)
+
+      return [partName, faces as BodyPartFaces]
+    }),
+  ) as Record<AvatarPartName, BodyPartFaces>
+}
+
+function findOrCreatePaletteKey(
+  palette: Record<string, readonly [number, number, number, number]>,
+  rgba: RgbaColor,
+) {
+  const signature = rgba.join(',')
+
+  for (const [key, value] of Object.entries(palette)) {
+    if (value.join(',') === signature) {
+      return key
+    }
+  }
+
+  const used = new Set(Object.keys(palette))
+  const nextKey = keyPool.split('').find((key) => !used.has(key))
+
+  if (!nextKey) {
+    throw new Error('Palette de texture saturée')
+  }
+
+  palette[nextKey] = rgba
+  return nextKey
 }
 
 function cloneTextures(source: Record<string, BodyPartFaces>): Record<AvatarPartName, BodyPartFaces> {
@@ -147,4 +265,8 @@ function cloneTexture(texture: TextureMatrix): TextureMatrix {
     height: texture.height,
     matrix: [...texture.matrix],
   }
+}
+
+function toHex(value: number) {
+  return Math.round(value * 255).toString(16).padStart(2, '0')
 }
