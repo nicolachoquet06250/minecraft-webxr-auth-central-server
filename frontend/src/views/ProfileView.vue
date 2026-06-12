@@ -4,7 +4,7 @@
       <div class="profile-header voxicraft-panel">
         <div class="avatar-display">
           <div class="avatar-frame">
-            <AvatarHeadImage :avatar="authStore.user?.avatar" />
+            <AvatarHeadImage :avatar="authStore.user?.avatar" :custom-avatar="activeProfileAvatar || undefined" />
           </div>
           <div class="user-badge" v-if="authStore.user?.age_verified">
             <span class="badge-icon">✓</span>
@@ -32,7 +32,7 @@
           <div class="voxicraft-panel">
             <h2 class="card-title">👤 Informations personnelles</h2>
             <div class="info-list">
-              <div class="info-item"><span>🎭 Avatar</span><strong>{{ authStore.user.avatar }}</strong></div>
+              <div class="info-item"><span>🎭 Avatar</span><strong>{{ activeProfileAvatar?.name || authStore.user.avatar }}</strong></div>
               <div class="info-item"><span>🎂 Date de naissance</span><strong>{{ formatDate(authStore.user.birthdate) }}</strong></div>
               <div class="info-item"><span>✅ Âge vérifié</span><strong>{{ authStore.user.age_verified ? 'Oui' : 'Non' }}</strong></div>
               <div class="info-item" v-if="authStore.user.discord_username"><span>💬 Discord</span><strong>{{ authStore.user.discord_username }}</strong></div>
@@ -140,6 +140,7 @@ const serverStore = useServerStore()
 const showEditForm = ref(false)
 const editData = ref({ username: '', avatar: 'steve', bio: '' })
 const customAvatars = ref<UserAvatar[]>([])
+const activeProfileAvatar = ref<UserAvatar | null>(null)
 const selectedCustomAvatarId = ref('')
 const savingAvatarSelection = ref(false)
 
@@ -163,7 +164,8 @@ onMounted(async () => {
 
 const loadCustomAvatars = async () => {
   customAvatars.value = await avatarApi.list().then((response) => response.data).catch(() => [])
-  selectedCustomAvatarId.value = customAvatars.value.find((avatar) => avatar.is_active)?.id || ''
+  activeProfileAvatar.value = customAvatars.value.find((avatar) => avatar.is_active) || null
+  selectedCustomAvatarId.value = activeProfileAvatar.value?.id || ''
 }
 
 const selectPendingCustomAvatar = (avatarId: string) => {
@@ -180,6 +182,7 @@ const handleUpdate = async () => {
     if (selectedCustomAvatarId.value && selectedCustomAvatarId.value !== activeAvatarId) {
       await avatarApi.select(selectedCustomAvatarId.value)
       customAvatars.value = customAvatars.value.map((avatar) => ({ ...avatar, is_active: avatar.id === selectedCustomAvatarId.value }))
+      activeProfileAvatar.value = customAvatars.value.find((avatar) => avatar.is_active) || null
     }
 
     showEditForm.value = false
