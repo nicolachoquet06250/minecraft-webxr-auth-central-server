@@ -166,6 +166,11 @@ const handleUpdate = async () => {
   display: flex;
   flex-wrap: wrap;
 }
+.bio-content {
+  width: auto;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
 .btn-edit, .btn-avatar, .btn-submit, .btn-cancel, .action-btn { display: flex; align-items: center; justify-content: center; gap: 0.5rem; color: #fff; font-family: 'Press Start 2P', cursive; cursor: pointer; border-radius: 5px; text-decoration: none; transition: all 0.3s ease; padding: 0.9rem 1rem; border: 3px solid rgba(100, 255, 218, 0.2); background: rgba(0, 0, 0, 0.3); }
 .action-btn { flex-direction: column; min-height: 96px; padding-inline: 1rem; width: max-content; max-width: 200px; }
 .primary-avatar-action { background: linear-gradient(135deg, #8e24aa, #ba68c8); border-color: #6a1b9a; }
