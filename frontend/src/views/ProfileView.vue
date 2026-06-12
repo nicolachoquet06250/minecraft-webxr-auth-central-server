@@ -256,6 +256,8 @@ const handleUpdate = async () => {
 .btn-cancel { background: rgba(255, 107, 107, 0.2); border-color: #ff6b6b; flex: 1; }
 .stat-item { display: flex; flex-direction: column; gap: .5rem; text-align: center; }
 .stat-item strong { color: #64ffda; font-size: 1.5rem; }
-@media (max-width: 900px) { .profile { padding: 1rem .75rem; } .profile-header, .profile-content { grid-template-columns: 1fr; } .profile-header { gap: 1.25rem; } .voxicraft-panel { padding: 1.25rem; box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.5); } .actions-grid { display: grid; grid-template-columns: minmax(0, 1fr); } .action-btn { width: 100%; max-width: 100%; } }
-@media (max-width: 520px) { .profile { padding: .75rem .5rem; } .voxicraft-panel { padding: 1rem; } .username { font-size: 1.35rem; } .card-title { font-size: 1.1rem; } .info-item { flex-direction: column; align-items: flex-start; } .custom-avatar-heading, .form-actions { flex-direction: column; align-items: stretch; } }
+@media (max-width: 900px) { .profile { padding: 1rem .5rem; } .profile-header, .profile-content { grid-template-columns: 1fr; } .profile-header { gap: 1.25rem; } .voxicraft-panel { padding: 1.25rem; box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.5); } .actions-grid { display: grid; grid-template-columns: minmax(0, 1fr); } .action-btn { width: 100%; max-width: 100%; } }
+@media (max-width: 720px) and (orientation: portrait) { .profile { padding-left: .25rem; padding-right: .25rem; } .voxicraft-panel { padding-left: 1rem; padding-right: 1rem; box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.5); } }
+@media (max-width: 520px) { .profile { padding: .65rem .2rem; } .voxicraft-panel { padding: .9rem; } .username { font-size: 1.35rem; } .card-title { font-size: 1.1rem; } .info-item { flex-direction: column; align-items: flex-start; } .custom-avatar-heading, .form-actions { flex-direction: column; align-items: stretch; } }
+@media (max-width: 420px) and (orientation: portrait) { .profile { padding-left: .1rem; padding-right: .1rem; } .voxicraft-panel { padding-left: .75rem; padding-right: .75rem; box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.5); } }
 </style>
