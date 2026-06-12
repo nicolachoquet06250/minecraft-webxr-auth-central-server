@@ -192,12 +192,8 @@ jobs:
       # =====================================================
       - name: 🔄 Restart server via AlwaysData API
         run: |
-          err=$(curl -X POST --basic --user "${{secrets.ALWAYSDATA_API_KEY}} account=${{secrets.ALWAYSDATA_ACCOUNT}}:" https://api.alwaysdata.com/v1/site/${{secrets.ALWAYSDATA_SITE_ID}}/restart/ &>2);
-          if [[ "${err}" -eq "" ]]; then 
-            echo "Redémarrage OK"
-          else
-            echo "Erreur : ${err}"
-          fi
+          chmod +x restart_server.sh
+          ./restart_server.sh
 
       # =====================================================
       # 11. HEALTH CHECK
