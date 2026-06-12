@@ -67,7 +67,7 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .default(Expr::current_timestamp()),
                     )
-                    .col(updated_at)
+                    .col(&mut updated_at)
                     .engine("InnoDB")
                     .character_set("utf8mb4")
                     .collate("utf8mb4_unicode_ci")
