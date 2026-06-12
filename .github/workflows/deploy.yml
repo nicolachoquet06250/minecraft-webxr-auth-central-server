@@ -53,6 +53,14 @@ jobs:
           echo "✅ Frontend built successfully"
           ls -la frontend/dist
 
+      - name: 🔎 Check required GLIBC version
+        run: |
+          echo "Build environment glibc:"
+          ldd --version | head -n1
+
+          echo "Required GLIBC symbols:"
+          strings target/release/voxicraft-auth-backend | grep GLIBC_ | sort -V | tail -20
+
       - name: Initialize system dependencies
         run: |
           apt-get update
@@ -100,7 +108,17 @@ jobs:
           ls -lh target/release/voxicraft-auth-backend
 
       # =====================================================
-      # 6. PREPARE DEPLOYMENT PACKAGE
+      # 6. RUN MIGRATIONS (optionnel - décommenter si nécessaire)
+      # =====================================================
+      - name: 🗄️ Run database migrations
+        working-directory: .
+        env:
+           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+           ./target/release/migration up
+
+      # =====================================================
+      # 7. PREPARE DEPLOYMENT PACKAGE
       # =====================================================
       - name: 📦 Create deployment package
         run: |
@@ -112,7 +130,7 @@ jobs:
           ls -lh deploy/
 
       # =====================================================
-      # 7. BACKUP CURRENT VERSION
+      # 8. BACKUP CURRENT VERSION
       # =====================================================
       - name: 💾 Backup current version on server
         uses: appleboy/ssh-action@v1.2.0
@@ -131,7 +149,7 @@ jobs:
             fi
 
       # =====================================================
-      # 8. DEPLOY FILES TO ALWAYSDATA VIA SCP
+      # 9. DEPLOY FILES TO ALWAYSDATA VIA SCP
       # =====================================================
       - name: 🚀 Upload files to AlwaysData
         uses: appleboy/scp-action@v0.1.7
@@ -157,7 +175,20 @@ jobs:
             echo "✅ Files deployed successfully"
 
       # =====================================================
-      # 9. RESTART SERVER VIA ALWAYSDATA API
+      # 10. RUN MIGRATIONS ON SERVER (si nécessaire)
+      # =====================================================
+      # - name: 🗄️ Run migrations on server
+      #   uses: appleboy/ssh-action@v1.0.3
+      #   with:
+      #     host: ${{ secrets.ALWAYSDATA_HOST }}
+      #     username: ${{ secrets.ALWAYSDATA_USER }}
+      #     key: ${{ secrets.ALWAYSDATA_SSH_KEY }}
+      #     script: |
+      #       cd ${{ secrets.ALWAYSDATA_DEPLOY_PATH }}
+      #       ./voxicraft-auth-backend migrate
+
+      # =====================================================
+      # 11. RESTART SERVER VIA ALWAYSDATA API
       # =====================================================
       - name: 🔄 Restart server via AlwaysData API
         run: |
@@ -169,7 +200,7 @@ jobs:
           fi
 
       # =====================================================
-      # 10. HEALTH CHECK
+      # 11. HEALTH CHECK
       # =====================================================
       - name: 🏥 Health check
         env:
@@ -200,7 +231,7 @@ jobs:
           exit 1
 
       # =====================================================
-      # 11. NOTIFICATION (optionnel)
+      # 12. NOTIFICATION (optionnel)
       # =====================================================
       - name: 📢 Notify deployment success
         if: success()
