@@ -4,82 +4,70 @@
       <div class="page-header">
         <h1 class="voxicraft-title">🖥️ Mes Serveurs</h1>
         <p class="voxicraft-text subtitle">
-          Gérez vos serveurs de jeu et serveurs relais
+          Gérez vos serveurs de jeu
         </p>
       </div>
-      
+
       <div class="servers-header">
         <button @click="showCreateForm = !showCreateForm" class="voxicraft-button create-btn">
           {{ showCreateForm ? '❌ Annuler' : '➕ Créer un serveur' }}
         </button>
       </div>
-      
+
       <div v-if="showCreateForm" class="create-form voxicraft-panel">
         <h2>➕ Nouveau Serveur</h2>
         <p class="form-description voxicraft-text">
-          Enregistrez un nouveau serveur avec ses domaines de relais et de jeu
+          Enregistrez un nouveau serveur de jeu
         </p>
         <form @submit.prevent="handleCreate">
           <div class="form-group">
             <label class="voxicraft-label">Nom du serveur</label>
-            <input 
-              v-model="createData.name" 
-              type="text" 
-              class="voxicraft-input" 
+            <input
+              v-model="createData.name"
+              type="text"
+              class="voxicraft-input"
               required
               minlength="3"
               maxlength="50"
             />
           </div>
-          
+
           <div class="form-group">
-            <label class="voxicraft-label">Domaine du serveur relais (WebSocket)</label>
-            <input 
-              v-model="createData.relay_domain" 
-              type="url" 
-              class="voxicraft-input" 
-              required
-              placeholder="wss://relay.example.com"
-            />
-            <small class="voxicraft-text">URL du serveur de relais pour les connexions WebSocket</small>
-          </div>
-          
-          <div class="form-group">
-            <label class="voxicraft-label">Domaine du jeu (Frontend)</label>
-            <input 
-              v-model="createData.game_domain" 
-              type="url" 
-              class="voxicraft-input" 
+            <label class="voxicraft-label">Domaine du serveur de jeu</label>
+            <input
+              v-model="createData.game_domain"
+              type="url"
+              class="voxicraft-input"
               required
               placeholder="https://game.example.com"
             />
-            <small class="voxicraft-text">URL où le jeu WebXR est hébergé</small>
+            <small class="voxicraft-text">URL du serveur de jeu exposant le jeu, les statistiques et le WebSocket</small>
           </div>
-          
+
           <div class="form-group">
             <label class="voxicraft-label">Description</label>
-            <textarea 
-              v-model="createData.description" 
-              class="voxicraft-input" 
+            <textarea
+              v-model="createData.description"
+              class="voxicraft-input"
               rows="3"
             ></textarea>
           </div>
-          
+
           <button type="submit" class="voxicraft-button" :disabled="serverStore.loading">
             Créer
           </button>
-          
+
           <div v-if="serverStore.error" class="error-message">
             {{ serverStore.error }}
           </div>
         </form>
       </div>
-      
+
       <div class="servers-list">
         <div v-if="serverStore.loading" class="voxicraft-text loading-message">
           ⏳ Chargement...
         </div>
-        
+
         <div v-else-if="serverStore.servers.length === 0" class="empty-state voxicraft-panel">
           <div class="empty-icon">🏗️</div>
           <h3>Aucun serveur enregistré</h3>
@@ -90,35 +78,34 @@
             ➕ Créer mon premier serveur
           </button>
         </div>
-        
+
         <div v-else class="server-grid">
-          <div 
-            v-for="server in serverStore.servers" 
-            :key="server.id" 
+          <div
+            v-for="server in serverStore.servers"
+            :key="server.id"
             class="server-card voxicraft-panel"
             @click="goToDashboard(server.id)"
           >
             <h3>{{ server.name }}</h3>
-            <p><strong>Serveur relais:</strong> <a :href="server.relay_domain" target="_blank" @click.stop>{{ server.relay_domain }}</a></p>
-            <p><strong>Jeu (Frontend):</strong> <a :href="server.game_domain" target="_blank" @click.stop>{{ server.game_domain }}</a></p>
+            <p><strong>Serveur de jeu:</strong> <a :href="server.game_domain" target="_blank" @click.stop>{{ server.game_domain }}</a></p>
             <p v-if="server.description"><strong>Description:</strong> {{ server.description }}</p>
             <p><strong>Status:</strong> {{ server.is_active ? '✅ Actif' : '🔴 Inactif' }}</p>
-            
+
             <div class="button-container">
-              <button 
-                @click.stop="goToDashboard(server.id)" 
+              <button
+                @click.stop="goToDashboard(server.id)"
                 class="voxicraft-button small primary"
               >
                 📊 Dashboard
               </button>
-              <button 
-                @click.stop="toggleServerStatus(server)" 
+              <button
+                @click.stop="toggleServerStatus(server)"
                 class="voxicraft-button small"
               >
                 {{ server.is_active ? 'Désactiver' : 'Activer' }}
               </button>
-              <button 
-                @click.stop="deleteServerConfirm(server.id)" 
+              <button
+                @click.stop="deleteServerConfirm(server.id)"
                 class="voxicraft-button small danger"
               >
                 Supprimer
@@ -142,7 +129,6 @@ const serverStore = useServerStore()
 const showCreateForm = ref(false)
 const createData = ref({
   name: '',
-  relay_domain: '',
   game_domain: '',
   description: '',
 })
@@ -157,13 +143,11 @@ const handleCreate = async () => {
     const newServer = serverStore.servers[serverStore.servers.length - 1]
     createData.value = {
       name: '',
-      relay_domain: '',
       game_domain: '',
       description: '',
     }
     showCreateForm.value = false
-    
-    // Redirect to dashboard after creation
+
     router.push({ name: 'server-dashboard', params: { id: newServer.id } })
   }
 }
@@ -171,8 +155,6 @@ const handleCreate = async () => {
 const toggleServerStatus = async (server: Server) => {
   await serverStore.updateServer(server.id, {
     name: server.name,
-    relay_domain: server.relay_domain,
-    game_domain: server.game_domain,
     description: server.description,
     is_active: !server.is_active,
   } as any)
@@ -366,11 +348,11 @@ const goToDashboard = (serverId: string) => {
   .servers {
     padding: 1rem;
   }
-  
+
   .server-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .create-form {
     padding: 1.5rem;
   }
