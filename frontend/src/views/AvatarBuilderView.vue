@@ -4,7 +4,7 @@
       <section class="voxicraft-panel viewer-card">
         <div class="header-row">
           <button class="voxicraft-button" type="button" @click="router.push({ name: 'profile' })">Retour au profil</button>
-          <div>
+          <div class="header-title">
             <h1 class="voxicraft-title">Builder d'avatar</h1>
             <p class="voxicraft-text">Edition pixel par pixel avec couleur RGBA.</p>
           </div>
@@ -42,7 +42,7 @@
         </div>
 
         <div class="grid-title">{{ partLabels[selectedPart] }} / {{ faceLabels[selectedFace] }}</div>
-        <div class="pixel-grid" :style="{ gridTemplateColumns: `repeat(${activeTexture.width}, 1fr)` }">
+        <div class="pixel-grid" :style="{ gridTemplateColumns: `repeat(${activeTexture.width}, 14px)` }">
           <button
             v-for="pixel in facePixels"
             :key="`${pixel.x}-${pixel.y}`"
@@ -135,6 +135,7 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+  canvasRef.value?.removeEventListener('wheel', preventCanvasPageScroll)
   window.removeEventListener('resize', resize)
   avatarRoot?.dispose()
   scene?.dispose()
@@ -161,6 +162,10 @@ async function loadAvatar() {
   avatarName.value = currentAvatar.value.name
 }
 
+function preventCanvasPageScroll(event: WheelEvent) {
+  event.preventDefault()
+}
+
 function initScene() {
   const canvas = canvasRef.value
   if (!canvas) return
@@ -174,6 +179,7 @@ function initScene() {
   camera.wheelDeltaPercentage = 0.01
   const light = new HemisphericLight('avatar-builder-light', new Vector3(0, 1, 0), scene)
   light.intensity = 0.95
+  canvas.addEventListener('wheel', preventCanvasPageScroll, { passive: false })
   engine.runRenderLoop(() => scene?.render())
   window.addEventListener('resize', resize)
 }
@@ -243,9 +249,10 @@ async function overwrite() {
 .voxicraft-container { max-width: 1500px; margin: 0 auto; }
 .builder-layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(420px, 0.85fr); gap: 2rem; align-items: start; }
 .viewer-card, .editor-card { padding: 1.5rem; }
-.header-row { display: grid; grid-template-columns: auto 1fr auto; gap: 1rem; align-items: start; margin-bottom: 1rem; }
+.header-row { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, max-content); gap: 1rem; align-items: start; margin-bottom: 1rem; overflow: hidden; }
+.header-title { min-width: 0; }
 .avatar-canvas { display: block; width: 100%; height: 680px; outline: none; touch-action: none; border-radius: 12px; background: rgba(0, 0, 0, 0.35); }
-.status-pill { border: 1px solid rgba(100,255,218,.45); color: #64ffda; border-radius: 999px; padding: .5rem .75rem; background: rgba(0,0,0,.25); }
+.status-pill { justify-self: end; max-width: 100%; min-width: 0; box-sizing: border-box; border: 1px solid rgba(100,255,218,.45); color: #64ffda; border-radius: 999px; padding: .5rem .75rem; background: rgba(0,0,0,.25); white-space: normal; text-align: center; overflow-wrap: anywhere; }
 .editor-card { display: flex; flex-direction: column; gap: 1rem; }
 .field-label, .grid-title { color: #ffd700; font-weight: 700; }
 .text-input { padding: .75rem 1rem; border-radius: 8px; border: 2px solid #424242; background: rgba(0,0,0,.55); color: #fff; }
@@ -256,8 +263,8 @@ async function overwrite() {
 .color-input { width: 64px; height: 64px; }
 .alpha-field { display: flex; flex-direction: column; gap: .4rem; }
 .swatch { width: 52px; height: 52px; border-radius: 8px; border: 2px solid rgba(255,255,255,.3); }
-.pixel-grid { display: grid; gap: 2px; padding: .5rem; border-radius: 10px; background: rgba(0,0,0,.35); }
-.pixel { width: 100%; aspect-ratio: 1 / 1; border: 1px solid rgba(255,255,255,.12); cursor: crosshair; }
+.pixel-grid { display: grid; gap: 2px; width: max-content; max-width: 100%; overflow: auto; padding: .5rem; border-radius: 10px; background: rgba(0,0,0,.35); }
+.pixel { width: 14px; height: 14px; border: 1px solid rgba(255,255,255,.12); cursor: crosshair; padding: 0; }
 .help-text { color: rgba(255,255,255,.75); margin: 0; }
 .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 .action { padding: .9rem 1rem; border-radius: 8px; border: 3px solid transparent; font-weight: 700; cursor: pointer; }
@@ -266,6 +273,6 @@ async function overwrite() {
 .action:disabled { opacity: .5; cursor: not-allowed; }
 .success { color: #7cfc9a; font-weight: 700; }
 .error { color: #ff8a80; font-weight: 700; }
-@media (max-width: 1100px) { .builder-layout { grid-template-columns: 1fr; } .header-row { grid-template-columns: 1fr; } .avatar-canvas { height: 520px; } }
+@media (max-width: 1100px) { .builder-layout { grid-template-columns: 1fr; } .header-row { grid-template-columns: 1fr; } .status-pill { justify-self: start; } .avatar-canvas { height: 520px; } }
 @media (max-width: 720px) { .avatar-builder { padding: 1rem; } .color-row, .actions { grid-template-columns: 1fr; } }
 </style>
