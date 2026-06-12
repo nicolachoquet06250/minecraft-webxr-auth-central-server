@@ -22,7 +22,6 @@ impl MigrationTrait for Migration {
             .col(ColumnDef::new(Server::Id).char_len(36).not_null().primary_key())
             .col(ColumnDef::new(Server::OwnerId).char_len(36).not_null())
             .col(ColumnDef::new(Server::Name).string_len(255).not_null())
-            .col(ColumnDef::new(Server::RelayDomain).string_len(255).not_null().unique_key())
             .col(ColumnDef::new(Server::GameDomain).string_len(255).not_null().unique_key())
             .col(ColumnDef::new(Server::Description).text())
             .col(ColumnDef::new(Server::IsActive).boolean().not_null().default(true))
@@ -38,6 +37,7 @@ impl MigrationTrait for Migration {
 
         if is_mysql {
             table
+                .col(ColumnDef::new(Server::RelayDomain).string_len(255).not_null().unique_key())
                 .engine("InnoDB")
                 .character_set("utf8mb4")
                 .collate("utf8mb4_unicode_ci");
@@ -46,8 +46,11 @@ impl MigrationTrait for Migration {
         manager.create_table(table.to_owned()).await?;
 
         manager.create_index(Index::create().name("idx_owner_id").table(Server::Table).col(Server::OwnerId).to_owned()).await?;
-        manager.create_index(Index::create().name("idx_relay_domain").table(Server::Table).col(Server::RelayDomain).to_owned()).await?;
         manager.create_index(Index::create().name("idx_game_domain").table(Server::Table).col(Server::GameDomain).to_owned()).await?;
+
+        if is_mysql {
+            manager.create_index(Index::create().name("idx_relay_domain").table(Server::Table).col(Server::RelayDomain).to_owned()).await?;
+        }
 
         Ok(())
     }
