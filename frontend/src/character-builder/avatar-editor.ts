@@ -5,6 +5,7 @@ import { steveModelTextures } from './steve-color-matrices'
 export type AvatarPartName = 'head' | 'torso' | 'rightArm' | 'leftArm' | 'rightLeg' | 'leftLeg'
 export type AvatarFaceName = keyof BodyPartFaces
 export type AvatarSource = 'steve' | 'alex' | 'custom'
+type MutableBodyPartFaces = { -readonly [K in keyof BodyPartFaces]: TextureMatrix }
 
 export type EditableAvatar = {
   id: string
@@ -123,10 +124,11 @@ function loadAllCustomAvatars(): Record<string, EditableAvatar> {
 
 function cloneTextures(source: Record<string, BodyPartFaces>): Record<AvatarPartName, BodyPartFaces> {
   return partNames.reduce((acc, part) => {
-    acc[part] = faceNames.reduce((faces, face) => {
-      faces[face] = cloneTexture(source[part][face])
-      return faces
-    }, {} as BodyPartFaces)
+    const faces = faceNames.reduce((facesAcc, face) => {
+      facesAcc[face] = cloneTexture(source[part][face])
+      return facesAcc
+    }, {} as MutableBodyPartFaces)
+    acc[part] = faces
     return acc
   }, {} as Record<AvatarPartName, BodyPartFaces>)
 }
