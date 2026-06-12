@@ -50,8 +50,7 @@ impl MigrationTrait for Migration {
                         ColumnDef::new(Server::UpdatedAt)
                             .date_time()
                             .not_null()
-                            .default(Expr::current_timestamp())
-                            .extra("ON UPDATE CURRENT_TIMESTAMP"),
+                            .default(Expr::current_timestamp()),
                     )
                     .foreign_key(
                         ForeignKey::create()
