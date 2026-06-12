@@ -18,7 +18,7 @@
           <div class="status-list">
             <div class="status-item">✅ Babylon.js</div>
             <div class="status-item">✅ buildCharacter()</div>
-            <div class="status-item">✅ matrices Alex</div>
+            <div class="status-item">✅ matrices Steve/Alex</div>
             <div class="status-item">✅ zoom canvas isolé</div>
             <div class="status-item">✅ aucun sol</div>
           </div>
@@ -51,6 +51,7 @@ import { useAuthStore } from '@/stores/auth'
 import { buildCharacter } from '@/character-builder/character-builder'
 import { generateCharacterPerspectiveSvg } from '@/character-builder/svg-export'
 import { alexModelTextures } from '@/character-builder/alex-color-matrices'
+import { steveModelTextures } from '@/character-builder/steve-color-matrices'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -61,10 +62,9 @@ let engine: Engine | null = null
 let scene: Scene | null = null
 let avatarRoot: Mesh | null = null
 
-const hasCustomAvatar = computed(() => {
-  const avatar = authStore.user?.avatar?.trim()
-  return !!avatar && avatar !== 'steve' && avatar !== 'alex'
-})
+const avatarName = computed(() => authStore.user?.avatar?.trim() || 'alex')
+const isSteveAvatar = computed(() => avatarName.value === 'steve')
+const hasCustomAvatar = computed(() => !!avatarName.value && avatarName.value !== 'steve' && avatarName.value !== 'alex')
 
 const goBack = () => router.push({ name: 'profile' })
 
@@ -103,18 +103,24 @@ const refreshSvg = () => {
     : ''
 }
 
-const model = () => ({
-  name: 'connectedAvatar',
-  bodyType: 'custom',
-  bodyParts: [
-    { name: 'head', dimensions: { width: 0.5, height: 0.5, depth: 0.5 }, position: { x: 0, y: 1.625, z: 0 }, textures: alexModelTextures.head },
-    { name: 'torso', dimensions: { width: 0.5, height: 0.75, depth: 0.25 }, position: { x: 0, y: 1, z: 0 }, textures: alexModelTextures.torso },
-    { name: 'rightArm', dimensions: { width: 0.1875, height: 0.75, depth: 0.25 }, position: { x: -0.34375, y: 1, z: 0 }, pivot: { x: 0, y: 0.375, z: 0 }, textures: alexModelTextures.rightArm },
-    { name: 'leftArm', dimensions: { width: 0.1875, height: 0.75, depth: 0.25 }, position: { x: 0.34375, y: 1, z: 0 }, pivot: { x: 0, y: 0.375, z: 0 }, textures: alexModelTextures.leftArm },
-    { name: 'rightLeg', dimensions: { width: 0.25, height: 0.75, depth: 0.25 }, position: { x: -0.125, y: 0.25, z: 0 }, pivot: { x: 0, y: 0.375, z: 0 }, textures: alexModelTextures.rightLeg },
-    { name: 'leftLeg', dimensions: { width: 0.25, height: 0.75, depth: 0.25 }, position: { x: 0.125, y: 0.25, z: 0 }, pivot: { x: 0, y: 0.375, z: 0 }, textures: alexModelTextures.leftLeg },
-  ],
-}) as any
+const model = () => {
+  const textures = isSteveAvatar.value ? steveModelTextures : alexModelTextures
+  const armWidth = isSteveAvatar.value ? 0.25 : 0.1875
+  const armOffset = isSteveAvatar.value ? 0.375 : 0.34375
+
+  return {
+    name: 'connectedAvatar',
+    bodyType: isSteveAvatar.value ? 'masculine' : 'custom',
+    bodyParts: [
+      { name: 'head', dimensions: { width: 0.5, height: 0.5, depth: 0.5 }, position: { x: 0, y: 1.625, z: 0 }, textures: textures.head },
+      { name: 'torso', dimensions: { width: 0.5, height: 0.75, depth: 0.25 }, position: { x: 0, y: 1, z: 0 }, textures: textures.torso },
+      { name: 'rightArm', dimensions: { width: armWidth, height: 0.75, depth: 0.25 }, position: { x: -armOffset, y: 1, z: 0 }, pivot: { x: 0, y: 0.375, z: 0 }, textures: textures.rightArm },
+      { name: 'leftArm', dimensions: { width: armWidth, height: 0.75, depth: 0.25 }, position: { x: armOffset, y: 1, z: 0 }, pivot: { x: 0, y: 0.375, z: 0 }, textures: textures.leftArm },
+      { name: 'rightLeg', dimensions: { width: 0.25, height: 0.75, depth: 0.25 }, position: { x: -0.125, y: 0.25, z: 0 }, pivot: { x: 0, y: 0.375, z: 0 }, textures: textures.rightLeg },
+      { name: 'leftLeg', dimensions: { width: 0.25, height: 0.75, depth: 0.25 }, position: { x: 0.125, y: 0.25, z: 0 }, pivot: { x: 0, y: 0.375, z: 0 }, textures: textures.leftLeg },
+    ],
+  }
+}
 
 const resizeEngine = () => engine?.resize()
 
