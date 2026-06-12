@@ -59,7 +59,7 @@ jobs:
           ldd --version | head -n1
 
           echo "Required GLIBC symbols:"
-          strings target/release/minecraft-auth-backend | grep GLIBC_ | sort -V | tail -20
+          strings target/release/voxicraft-auth-backend | grep GLIBC_ | sort -V | tail -20
 
       - name: Initialize system dependencies
         run: |
@@ -100,12 +100,12 @@ jobs:
 
       - name: ✅ Verify backend build
         run: |
-          if [ ! -f "target/release/minecraft-auth-backend" ]; then
+          if [ ! -f "target/release/voxicraft-auth-backend" ]; then
             echo "❌ Backend binary not found!"
             exit 1
           fi
           echo "✅ Backend built successfully"
-          ls -lh target/release/minecraft-auth-backend
+          ls -lh target/release/voxicraft-auth-backend
 
       # =====================================================
       # 6. RUN MIGRATIONS (optionnel - décommenter si nécessaire)
@@ -123,9 +123,9 @@ jobs:
       - name: 📦 Create deployment package
         run: |
           mkdir -p deploy
-          cp target/release/minecraft-auth-backend deploy/
+          cp target/release/voxicraft-auth-backend deploy/
           cp backend/.env.production deploy/.env || echo "No .env.production file"
-          chmod +x deploy/minecraft-auth-backend
+          chmod +x deploy/voxicraft-auth-backend
           echo "✅ Deployment package created"
           ls -lh deploy/
 
@@ -141,8 +141,8 @@ jobs:
           password: ${{ secrets.ALWAYSDATA_SSH_KEY }}
           script: |
             cd ${{ secrets.ALWAYSDATA_DEPLOY_PATH }}
-            if [ -f minecraft-auth-backend ]; then
-              mv minecraft-auth-backend minecraft-auth-backend.backup.$(date +%Y%m%d_%H%M%S)
+            if [ -f voxicraft-auth-backend ]; then
+              mv voxicraft-auth-backend voxicraft-auth-backend.backup.$(date +%Y%m%d_%H%M%S)
               echo "✅ Previous version backed up"
             else
               echo "ℹ️ No previous version to backup"
@@ -170,8 +170,8 @@ jobs:
           password: ${{ secrets.ALWAYSDATA_SSH_KEY }}
           script: |
             cd ${{ secrets.ALWAYSDATA_DEPLOY_PATH }}
-            chmod +x minecraft-auth-backend
-            ls -lh minecraft-auth-backend
+            chmod +x voxicraft-auth-backend
+            ls -lh voxicraft-auth-backend
             echo "✅ Files deployed successfully"
 
       # =====================================================
@@ -185,7 +185,7 @@ jobs:
       #     key: ${{ secrets.ALWAYSDATA_SSH_KEY }}
       #     script: |
       #       cd ${{ secrets.ALWAYSDATA_DEPLOY_PATH }}
-      #       ./minecraft-auth-backend migrate
+      #       ./voxicraft-auth-backend migrate
 
       # =====================================================
       # 11. RESTART SERVER VIA ALWAYSDATA API
@@ -266,11 +266,11 @@ jobs:
           password: ${{ secrets.ALWAYSDATA_SSH_KEY }}
           script: |
             cd ${{ secrets.ALWAYSDATA_DEPLOY_PATH }}
-            backup=$(ls -t minecraft-auth-backend.backup.* 2>/dev/null | head -n1)
+            backup=$(ls -t voxicraft-auth-backend.backup.* 2>/dev/null | head -n1)
             if [ -n "$backup" ]; then
-              mv minecraft-auth-backend minecraft-auth-backend.failed
-              mv $backup minecraft-auth-backend
-              chmod +x minecraft-auth-backend
+              mv voxicraft-auth-backend voxicraft-auth-backend.failed
+              mv $backup voxicraft-auth-backend
+              chmod +x voxicraft-auth-backend
               echo "✅ Rolled back to: $backup"
             else
               echo "❌ No backup found"
