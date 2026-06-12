@@ -20,29 +20,16 @@ pub async fn create_server(
     State(state): State<Arc<AppState>>,
     Json(payload): Json<CreateServerRequest>,
 ) -> Result<Json<ServerResponse>, StatusCode> {
-    if let Err(_) = payload.validate() {
+    if payload.validate().is_err() {
         return Err(StatusCode::BAD_REQUEST);
     }
 
     let owner_id = claims.sub.clone();
 
-    // Check relay server health before registering it.
-    // Some relay deployments expose their API at the domain root (`/healthz`),
-    // while others are mounted behind the `/api` prefix (`/api/healthz`).
-    // Try both endpoints to avoid rejecting valid relays because of their reverse proxy layout.
-    check_relay_health(&payload.relay_domain).await?;
+    // Check game server health before registering it.
+    check_game_server_health(&payload.game_domain).await?;
 
-    // Check if relay_domain or game_domain are already registered
-    let existing_relay = Server::find()
-        .filter(server::Column::RelayDomain.eq(&payload.relay_domain))
-        .one(&state.db)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    if existing_relay.is_some() {
-        return Err(StatusCode::CONFLICT);
-    }
-
+    // Check if game_domain is already registered.
     let existing_game = Server::find()
         .filter(server::Column::GameDomain.eq(&payload.game_domain))
         .one(&state.db)
@@ -60,7 +47,6 @@ pub async fn create_server(
         id: Set(server_id),
         owner_id: Set(owner_id),
         name: Set(payload.name.clone()),
-        relay_domain: Set(payload.relay_domain.clone()),
         game_domain: Set(payload.game_domain.clone()),
         description: Set(payload.description.clone()),
         is_active: Set(true),
@@ -73,20 +59,10 @@ pub async fn create_server(
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    Ok(Json(ServerResponse {
-        id: server.id.to_string(),
-        owner_id: server.owner_id.to_string(),
-        name: server.name,
-        relay_domain: server.relay_domain,
-        game_domain: server.game_domain,
-        description: server.description,
-        is_active: server.is_active,
-        created_at: server.created_at.to_string(),
-        updated_at: server.updated_at.to_string(),
-    }))
+    Ok(Json(server_to_response(server)))
 }
 
-async fn check_relay_health(relay_domain: &str) -> Result<(), StatusCode> {
+async fn check_game_server_health(game_domain: &str) -> Result<(), StatusCode> {
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(10))
         .build()
@@ -95,23 +71,23 @@ async fn check_relay_health(relay_domain: &str) -> Result<(), StatusCode> {
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
-    let health_urls = build_relay_health_urls(relay_domain);
+    let health_urls = build_game_server_health_urls(game_domain);
     let mut last_error: Option<String> = None;
 
     for health_url in health_urls {
-        tracing::info!("Checking relay server health at: {}", health_url);
+        tracing::info!("Checking game server health at: {}", health_url);
 
         match client.get(&health_url).send().await {
             Ok(response) => {
                 let status = response.status();
 
                 if status.is_success() {
-                    tracing::info!("Relay server health check passed at: {}", health_url);
+                    tracing::info!("Game server health check passed at: {}", health_url);
                     return Ok(());
                 }
 
                 let message = format!(
-                    "Relay server health check failed at {} with status: {}",
+                    "Game server health check failed at {} with status: {}",
                     health_url, status
                 );
                 tracing::warn!("{}", message);
@@ -119,7 +95,7 @@ async fn check_relay_health(relay_domain: &str) -> Result<(), StatusCode> {
             }
             Err(e) => {
                 let message = format!(
-                    "Failed to connect to relay server health endpoint {}: {}",
+                    "Failed to connect to game server health endpoint {}: {}",
                     health_url, e
                 );
                 tracing::warn!("{}", message);
@@ -129,18 +105,18 @@ async fn check_relay_health(relay_domain: &str) -> Result<(), StatusCode> {
     }
 
     tracing::error!(
-        "Relay server health check failed for all known endpoints: {}",
+        "Game server health check failed for all known endpoints: {}",
         last_error.unwrap_or_else(|| "no health endpoint generated".to_string())
     );
 
     Err(StatusCode::SERVICE_UNAVAILABLE)
 }
 
-fn build_relay_health_urls(relay_domain: &str) -> Vec<String> {
-    let relay_domain = relay_domain.trim_end_matches('/');
+fn build_game_server_health_urls(game_domain: &str) -> Vec<String> {
+    let game_domain = game_domain.trim_end_matches('/');
     let mut urls = Vec::new();
 
-    push_unique(&mut urls, format!("{}/healthz", relay_domain));
+    push_unique(&mut urls, format!("{}/healthz", game_domain));
 
     urls
 }
@@ -163,20 +139,7 @@ pub async fn get_user_servers(
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let response = servers
-        .into_iter()
-        .map(|s| ServerResponse {
-            id: s.id.to_string(),
-            owner_id: s.owner_id.to_string(),
-            name: s.name,
-            relay_domain: s.relay_domain,
-            game_domain: s.game_domain,
-            description: s.description,
-            is_active: s.is_active,
-            created_at: s.created_at.to_string(),
-            updated_at: s.updated_at.to_string(),
-        })
-        .collect();
+    let response = servers.into_iter().map(server_to_response).collect();
 
     Ok(Json(response))
 }
@@ -185,25 +148,13 @@ pub async fn get_server(
     Path(server_id): Path<String>,
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<ServerResponse>, StatusCode> {
-    
-
     let server = Server::find_by_id(server_id)
         .one(&state.db)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .ok_or(StatusCode::NOT_FOUND)?;
 
-    Ok(Json(ServerResponse {
-        id: server.id.to_string(),
-        owner_id: server.owner_id.to_string(),
-        name: server.name,
-        relay_domain: server.relay_domain,
-        game_domain: server.game_domain,
-        description: server.description,
-        is_active: server.is_active,
-        created_at: server.created_at.to_string(),
-        updated_at: server.updated_at.to_string(),
-    }))
+    Ok(Json(server_to_response(server)))
 }
 
 pub async fn update_server(
@@ -212,11 +163,10 @@ pub async fn update_server(
     State(state): State<Arc<AppState>>,
     Json(payload): Json<UpdateServerRequest>,
 ) -> Result<Json<ServerResponse>, StatusCode> {
-    if let Err(_) = payload.validate() {
+    if payload.validate().is_err() {
         return Err(StatusCode::BAD_REQUEST);
     }
 
-    
     let owner_id = claims.sub.clone();
 
     let server = Server::find_by_id(server_id)
@@ -248,17 +198,7 @@ pub async fn update_server(
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    Ok(Json(ServerResponse {
-        id: updated_server.id.to_string(),
-        owner_id: updated_server.owner_id.to_string(),
-        name: updated_server.name,
-        relay_domain: updated_server.relay_domain,
-        game_domain: updated_server.game_domain,
-        description: updated_server.description,
-        is_active: updated_server.is_active,
-        created_at: updated_server.created_at.to_string(),
-        updated_at: updated_server.updated_at.to_string(),
-    }))
+    Ok(Json(server_to_response(updated_server)))
 }
 
 pub async fn delete_server(
@@ -266,7 +206,6 @@ pub async fn delete_server(
     Path(server_id): Path<String>,
     State(state): State<Arc<AppState>>,
 ) -> Result<StatusCode, StatusCode> {
-    
     let owner_id = claims.sub.clone();
 
     let server = Server::find_by_id(server_id)
@@ -286,4 +225,17 @@ pub async fn delete_server(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     Ok(StatusCode::NO_CONTENT)
+}
+
+fn server_to_response(server: server::Model) -> ServerResponse {
+    ServerResponse {
+        id: server.id,
+        owner_id: server.owner_id,
+        name: server.name,
+        game_domain: server.game_domain,
+        description: server.description,
+        is_active: server.is_active,
+        created_at: server.created_at.to_string(),
+        updated_at: server.updated_at.to_string(),
+    }
 }
