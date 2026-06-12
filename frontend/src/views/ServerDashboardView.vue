@@ -8,9 +8,7 @@
           </button>
         </div>
         <h1 class="voxicraft-title">📊 Dashboard - {{ serverName }}</h1>
-        <p class="voxicraft-text subtitle">
-          Statistiques et analyses en temps réel
-        </p>
+        <p class="voxicraft-text subtitle">Statistiques et analyses en temps réel</p>
       </div>
 
       <div v-if="loading" class="loading-state voxicraft-panel">
@@ -22,9 +20,7 @@
         <div class="error-icon">❌</div>
         <h3>Erreur de chargement</h3>
         <p class="voxicraft-text">{{ error }}</p>
-        <button @click="loadStats" class="voxicraft-button">
-          🔄 Réessayer
-        </button>
+        <button @click="loadStats" class="voxicraft-button">🔄 Réessayer</button>
       </div>
 
       <div v-else class="dashboard-content">
@@ -66,11 +62,7 @@
           <div class="chart-container voxicraft-panel">
             <h2 class="chart-title">📊 Connexions par mois</h2>
             <div class="chart-wrapper">
-              <Line
-                v-if="monthlyChartData"
-                :data="monthlyChartData"
-                :options="monthlyChartOptions"
-              />
+              <Line v-if="monthlyChartData" :data="monthlyChartData" :options="monthlyChartOptions" />
               <div v-else class="no-data">Aucune donnée disponible</div>
             </div>
           </div>
@@ -78,11 +70,7 @@
           <div class="chart-container voxicraft-panel">
             <h2 class="chart-title">⚧ Connexions par genre</h2>
             <div class="chart-wrapper">
-              <Doughnut
-                v-if="genderChartData"
-                :data="genderChartData"
-                :options="pieChartOptions"
-              />
+              <Doughnut v-if="genderChartData" :data="genderChartData" :options="pieChartOptions" />
               <div v-else class="no-data">Aucune donnée disponible</div>
             </div>
           </div>
@@ -90,11 +78,7 @@
           <div class="chart-container voxicraft-panel">
             <h2 class="chart-title">📈 Connexions par mois et genre</h2>
             <div class="chart-wrapper">
-              <Bar
-                v-if="monthlyGenderChartData"
-                :data="monthlyGenderChartData"
-                :options="monthlyGenderChartOptions"
-              />
+              <Bar v-if="monthlyGenderChartData" :data="monthlyGenderChartData" :options="monthlyGenderChartOptions" />
               <div v-else class="no-data">Aucune donnée disponible</div>
             </div>
           </div>
@@ -102,11 +86,7 @@
           <div class="chart-container voxicraft-panel">
             <h2 class="chart-title">⏱️ Durée moyenne par genre</h2>
             <div class="chart-wrapper">
-              <Bar
-                v-if="averageDurationByGenderChartData"
-                :data="averageDurationByGenderChartData"
-                :options="durationChartOptions"
-              />
+              <Bar v-if="averageDurationByGenderChartData" :data="averageDurationByGenderChartData" :options="durationChartOptions" />
               <div v-else class="no-data">Aucune donnée disponible</div>
             </div>
           </div>
@@ -132,8 +112,8 @@
           <h2>ℹ️ Informations du serveur</h2>
           <div class="info-grid">
             <div class="info-item">
-              <strong>Serveur relais:</strong>
-              <span>{{ relayDomain }}</span>
+              <strong>Serveur de jeu:</strong>
+              <span>{{ gameDomain }}</span>
             </div>
             <div class="info-item">
               <strong>Statistiques générées le:</strong>
@@ -144,7 +124,7 @@
               <span>{{ statsEndpoint }}</span>
             </div>
             <div class="info-item">
-              <strong>WebSocket relais:</strong>
+              <strong>WebSocket serveur de jeu:</strong>
               <span>{{ activeWebSocketEndpoint || 'Connexion non établie' }}</span>
             </div>
           </div>
@@ -194,6 +174,7 @@ type CountByGender = {
   total?: number
   connections?: number
   total_connections?: number
+  average_duration_seconds?: number
 }
 
 type CountByMonth = {
@@ -225,7 +206,7 @@ type ServerStats = {
   average_session_duration?: AverageSessionDuration
 }
 
-type RelayWebSocketMessage = Partial<ServerStats> & {
+type GameServerWebSocketMessage = Partial<ServerStats> & {
   type?: string
   event?: string
   player?: unknown
@@ -248,13 +229,13 @@ const serverId = route.params.id as string
 const loading = ref(true)
 const error = ref<string | null>(null)
 const stats = ref<ServerStats>({})
-const relayDomain = ref('')
+const gameDomain = ref('')
 const serverName = ref('Mon Serveur')
 const liveConnectedPlayers = ref<unknown[]>([])
 const websocketStatus = ref<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected')
 const activeWebSocketEndpoint = ref('')
 
-let relayWebSocket: WebSocket | null = null
+let gameServerWebSocket: WebSocket | null = null
 let reconnectTimeoutId: number | undefined
 let currentWebSocketCandidateIndex = 0
 let currentWebSocketCandidates: string[] = []
@@ -266,7 +247,7 @@ const connectedPlayersCount = computed(() => connectedPlayers.value.length)
 const currentConnectedPlayers = computed(() => connectedPlayersCount.value || stats.value.current_connected_players || 0)
 const averageDurationSeconds = computed(() => stats.value.average_session_duration?.average_duration_seconds ?? 0)
 const formattedAverageDuration = computed(() => formatDuration(averageDurationSeconds.value))
-const statsEndpoint = computed(() => relayDomain.value ? `${relayDomain.value.replace(/\/+$/, '')}/stats` : '')
+const statsEndpoint = computed(() => gameDomain.value ? `${gameDomain.value.replace(/\/+$/, '')}/stats` : '')
 
 const websocketStatusLabel = computed(() => {
   if (websocketStatus.value === 'connected') return '🟢 Temps réel connecté'
@@ -278,9 +259,7 @@ const websocketStatusLabel = computed(() => {
 const websocketStatusClass = computed(() => `status-${websocketStatus.value}`)
 
 const lastUpdate = computed(() => {
-  if (!stats.value.generated_at) {
-    return 'Non disponible'
-  }
+  if (!stats.value.generated_at) return 'Non disponible'
 
   return new Date(stats.value.generated_at).toLocaleString('fr-FR', {
     day: '2-digit',
@@ -293,70 +272,45 @@ const lastUpdate = computed(() => {
 
 const monthlyChartData = computed(() => {
   const rows = stats.value.connections_by_month ?? []
-
-  if (rows.length === 0) {
-    return null
-  }
+  if (rows.length === 0) return null
 
   return {
     labels: rows.map((item) => monthLabel(item)),
-    datasets: [
-      {
-        label: 'Connexions',
-        data: rows.map((item) => numericCount(item)),
-        borderColor: '#64ffda',
-        backgroundColor: 'rgba(100, 255, 218, 0.1)',
-        fill: true,
-        tension: 0.4,
-        borderWidth: 3,
-        pointRadius: 5,
-        pointHoverRadius: 7,
-        pointBackgroundColor: '#64ffda',
-        pointBorderColor: '#1a1a1a',
-        pointBorderWidth: 2
-      }
-    ]
+    datasets: [{
+      label: 'Connexions',
+      data: rows.map((item) => numericCount(item)),
+      borderColor: '#64ffda',
+      backgroundColor: 'rgba(100, 255, 218, 0.1)',
+      fill: true,
+      tension: 0.4,
+      borderWidth: 3,
+      pointRadius: 5,
+      pointHoverRadius: 7,
+      pointBackgroundColor: '#64ffda',
+      pointBorderColor: '#1a1a1a',
+      pointBorderWidth: 2
+    }]
   }
 })
 
 const genderChartData = computed(() => {
   const rows = stats.value.connections_by_gender ?? []
-
-  if (rows.length === 0) {
-    return null
-  }
+  if (rows.length === 0) return null
 
   return {
     labels: rows.map((item) => genderLabel(item)),
-    datasets: [
-      {
-        data: rows.map((item) => numericCount(item)),
-        backgroundColor: [
-          'rgba(100, 255, 218, 0.8)',
-          'rgba(255, 107, 107, 0.8)',
-          'rgba(255, 193, 7, 0.8)',
-          'rgba(76, 175, 80, 0.8)',
-          'rgba(156, 39, 176, 0.8)'
-        ],
-        borderColor: [
-          '#64ffda',
-          '#ff6b6b',
-          '#ffc107',
-          '#4caf50',
-          '#9c27b0'
-        ],
-        borderWidth: 2
-      }
-    ]
+    datasets: [{
+      data: rows.map((item) => numericCount(item)),
+      backgroundColor: chartBackgroundColors,
+      borderColor: chartBorderColors,
+      borderWidth: 2
+    }]
   }
 })
 
 const monthlyGenderChartData = computed(() => {
   const rows = stats.value.connections_by_month_and_gender ?? []
-
-  if (rows.length === 0) {
-    return null
-  }
+  if (rows.length === 0) return null
 
   const months = uniqueValues(rows.map((item) => monthLabel(item)))
   const genders = uniqueValues(rows.map((item) => genderLabel(item)))
@@ -379,23 +333,18 @@ const monthlyGenderChartData = computed(() => {
 
 const averageDurationByGenderChartData = computed(() => {
   const rows = stats.value.average_session_duration?.by_gender ?? []
-
-  if (rows.length === 0) {
-    return null
-  }
+  if (rows.length === 0) return null
 
   return {
     labels: rows.map((item) => genderLabel(item)),
-    datasets: [
-      {
-        label: 'Durée moyenne (secondes)',
-        data: rows.map((item) => durationSeconds(item)),
-        backgroundColor: 'rgba(100, 255, 218, 0.6)',
-        borderColor: '#64ffda',
-        borderWidth: 2,
-        borderRadius: 5
-      }
-    ]
+    datasets: [{
+      label: 'Durée moyenne (secondes)',
+      data: rows.map((item) => durationSeconds(item)),
+      backgroundColor: 'rgba(100, 255, 218, 0.6)',
+      borderColor: '#64ffda',
+      borderWidth: 2,
+      borderRadius: 5
+    }]
   }
 })
 
@@ -407,25 +356,13 @@ const chartBackgroundColors = [
   'rgba(156, 39, 176, 0.6)'
 ]
 
-const chartBorderColors = [
-  '#64ffda',
-  '#ff6b6b',
-  '#ffc107',
-  '#4caf50',
-  '#9c27b0'
-]
+const chartBorderColors = ['#64ffda', '#ff6b6b', '#ffc107', '#4caf50', '#9c27b0']
 
-const monthlyChartOptions = {
+const baseChartOptions = {
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
-    legend: {
-      display: true,
-      labels: {
-        color: '#ffffff',
-        font: { size: 14 }
-      }
-    },
+    legend: { labels: { color: '#ffffff', font: { size: 14 } } },
     tooltip: {
       backgroundColor: 'rgba(0, 0, 0, 0.8)',
       titleColor: '#64ffda',
@@ -435,102 +372,25 @@ const monthlyChartOptions = {
     }
   },
   scales: {
-    y: {
-      beginAtZero: true,
-      ticks: { color: '#ffffff' },
-      grid: { color: 'rgba(255, 255, 255, 0.1)' }
-    },
-    x: {
-      ticks: { color: '#ffffff' },
-      grid: { color: 'rgba(255, 255, 255, 0.1)' }
-    }
+    y: { beginAtZero: true, ticks: { color: '#ffffff' }, grid: { color: 'rgba(255, 255, 255, 0.1)' } },
+    x: { ticks: { color: '#ffffff' }, grid: { color: 'rgba(255, 255, 255, 0.1)' } }
   }
 }
 
+const monthlyChartOptions = baseChartOptions
 const monthlyGenderChartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      display: true,
-      labels: {
-        color: '#ffffff',
-        font: { size: 14 }
-      }
-    },
-    tooltip: {
-      backgroundColor: 'rgba(0, 0, 0, 0.8)',
-      titleColor: '#64ffda',
-      bodyColor: '#ffffff',
-      borderColor: '#64ffda',
-      borderWidth: 1
-    }
-  },
+  ...baseChartOptions,
   scales: {
-    y: {
-      beginAtZero: true,
-      stacked: true,
-      ticks: { color: '#ffffff' },
-      grid: { color: 'rgba(255, 255, 255, 0.1)' }
-    },
-    x: {
-      stacked: true,
-      ticks: { color: '#ffffff' },
-      grid: { color: 'rgba(255, 255, 255, 0.1)' }
-    }
+    y: { beginAtZero: true, stacked: true, ticks: { color: '#ffffff' }, grid: { color: 'rgba(255, 255, 255, 0.1)' } },
+    x: { stacked: true, ticks: { color: '#ffffff' }, grid: { color: 'rgba(255, 255, 255, 0.1)' } }
   }
 }
-
-const durationChartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      display: true,
-      labels: {
-        color: '#ffffff',
-        font: { size: 14 }
-      }
-    },
-    tooltip: {
-      backgroundColor: 'rgba(0, 0, 0, 0.8)',
-      titleColor: '#64ffda',
-      bodyColor: '#ffffff',
-      borderColor: '#64ffda',
-      borderWidth: 1,
-      callbacks: {
-        label: (context: any) => `Durée moyenne: ${formatDuration(Number(context.raw) || 0)}`
-      }
-    }
-  },
-  scales: {
-    y: {
-      beginAtZero: true,
-      ticks: {
-        color: '#ffffff',
-        callback: (value: any) => formatDuration(Number(value) || 0)
-      },
-      grid: { color: 'rgba(255, 255, 255, 0.1)' }
-    },
-    x: {
-      ticks: { color: '#ffffff' },
-      grid: { color: 'rgba(255, 255, 255, 0.1)' }
-    }
-  }
-}
-
+const durationChartOptions = baseChartOptions
 const pieChartOptions = {
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
-    legend: {
-      position: 'bottom' as const,
-      labels: {
-        color: '#ffffff',
-        font: { size: 14 },
-        padding: 15
-      }
-    },
+    legend: { position: 'bottom' as const, labels: { color: '#ffffff', font: { size: 14 }, padding: 15 } },
     tooltip: {
       backgroundColor: 'rgba(0, 0, 0, 0.8)',
       titleColor: '#64ffda',
@@ -549,15 +409,13 @@ const loadStats = async () => {
     const server = serverStore.servers.find((s: any) => s.id === serverId)
     if (!server) {
       error.value = 'Serveur non trouvé'
-      loading.value = false
       return
     }
 
     serverName.value = server.name
-    relayDomain.value = server.relay_domain
+    gameDomain.value = server.game_domain
 
     const response = await fetch(statsEndpoint.value)
-
     if (!response.ok) {
       throw new Error(`Erreur HTTP: ${response.status}`)
     }
@@ -565,29 +423,27 @@ const loadStats = async () => {
     const data = await response.json()
     stats.value = data
     liveConnectedPlayers.value = normalizePlayers(data.connected_players)
-    connectRelayWebSocket()
+    connectGameServerWebSocket()
   } catch (err: any) {
     console.error('Error loading stats:', err)
     error.value = err.message || 'Impossible de charger les statistiques'
     stats.value = {}
     liveConnectedPlayers.value = []
-    closeRelayWebSocket(false)
+    closeGameServerWebSocket(false)
   } finally {
     loading.value = false
   }
 }
 
-const connectRelayWebSocket = () => {
-  closeRelayWebSocket(false)
-
-  currentWebSocketCandidates = buildWebSocketCandidates(relayDomain.value)
+const connectGameServerWebSocket = () => {
+  closeGameServerWebSocket(false)
+  currentWebSocketCandidates = buildWebSocketCandidates(gameDomain.value)
   currentWebSocketCandidateIndex = 0
   shouldReconnectWebSocket = true
-
-  openCurrentRelayWebSocket()
+  openCurrentGameServerWebSocket()
 }
 
-const openCurrentRelayWebSocket = () => {
+const openCurrentGameServerWebSocket = () => {
   if (!shouldReconnectWebSocket || currentWebSocketCandidates.length === 0) {
     websocketStatus.value = 'error'
     return
@@ -598,79 +454,61 @@ const openCurrentRelayWebSocket = () => {
   websocketStatus.value = 'connecting'
 
   try {
-    relayWebSocket = new WebSocket(endpoint)
-
-    relayWebSocket.onopen = () => {
+    gameServerWebSocket = new WebSocket(endpoint)
+    gameServerWebSocket.onopen = () => {
       websocketStatus.value = 'connected'
       currentWebSocketCandidateIndex = 0
     }
-
-    relayWebSocket.onmessage = (event) => {
-      handleRelayWebSocketMessage(event.data)
-    }
-
-    relayWebSocket.onerror = () => {
+    gameServerWebSocket.onmessage = (event) => handleGameServerWebSocketMessage(event.data)
+    gameServerWebSocket.onerror = () => {
       websocketStatus.value = 'error'
     }
-
-    relayWebSocket.onclose = () => {
-      relayWebSocket = null
-
+    gameServerWebSocket.onclose = () => {
+      gameServerWebSocket = null
       if (!shouldReconnectWebSocket) {
         websocketStatus.value = 'disconnected'
         return
       }
-
       currentWebSocketCandidateIndex = (currentWebSocketCandidateIndex + 1) % currentWebSocketCandidates.length
       websocketStatus.value = 'connecting'
-      reconnectTimeoutId = window.setTimeout(openCurrentRelayWebSocket, 1500)
+      reconnectTimeoutId = window.setTimeout(openCurrentGameServerWebSocket, 1500)
     }
   } catch (err) {
-    console.error('Unable to open relay websocket:', err)
+    console.error('Unable to open game server websocket:', err)
     websocketStatus.value = 'error'
     currentWebSocketCandidateIndex = (currentWebSocketCandidateIndex + 1) % currentWebSocketCandidates.length
-    reconnectTimeoutId = window.setTimeout(openCurrentRelayWebSocket, 1500)
+    reconnectTimeoutId = window.setTimeout(openCurrentGameServerWebSocket, 1500)
   }
 }
 
-const closeRelayWebSocket = (disableReconnect = true) => {
+const closeGameServerWebSocket = (disableReconnect = true) => {
   shouldReconnectWebSocket = !disableReconnect
-
   if (reconnectTimeoutId !== undefined) {
     window.clearTimeout(reconnectTimeoutId)
     reconnectTimeoutId = undefined
   }
-
-  if (relayWebSocket) {
-    relayWebSocket.close()
-    relayWebSocket = null
+  if (gameServerWebSocket) {
+    gameServerWebSocket.close()
+    gameServerWebSocket = null
   }
-
   if (disableReconnect) {
     websocketStatus.value = 'disconnected'
     activeWebSocketEndpoint.value = ''
   }
 }
 
-const handleRelayWebSocketMessage = (rawMessage: unknown) => {
-  const message = parseRelayMessage(rawMessage)
-
+const handleGameServerWebSocketMessage = (rawMessage: unknown) => {
+  const message = parseMessage(rawMessage)
   if (Array.isArray(message)) {
     updateConnectedPlayers(message)
     return
   }
+  if (!message || typeof message !== 'object') return
 
-  if (!message || typeof message !== 'object') {
-    return
-  }
-
-  const typedMessage = message as RelayWebSocketMessage
+  const typedMessage = message as GameServerWebSocketMessage
   const nestedData = typedMessage.data ?? {}
   const statsPayload = typedMessage.stats ?? (hasStatsShape(typedMessage) ? typedMessage : undefined)
-
-  if (statsPayload) {
-    mergeStats(statsPayload)
-  }
+  if (statsPayload) mergeStats(statsPayload)
 
   const playerList = typedMessage.connected_players
     ?? typedMessage.players
@@ -686,28 +524,15 @@ const handleRelayWebSocketMessage = (rawMessage: unknown) => {
 
   const eventType = String(typedMessage.type ?? typedMessage.event ?? '').toLowerCase()
   const player = typedMessage.player ?? nestedData.player
-
-  if (eventType.includes('connect') && !eventType.includes('disconnect') && player) {
-    addConnectedPlayer(player)
-  }
-
-  if ((eventType.includes('disconnect') || eventType.includes('leave')) && player) {
-    removeConnectedPlayer(player)
-  }
-
+  if (eventType.includes('connect') && !eventType.includes('disconnect') && player) addConnectedPlayer(player)
+  if ((eventType.includes('disconnect') || eventType.includes('leave')) && player) removeConnectedPlayer(player)
   if (typeof typedMessage.current_connected_players === 'number') {
-    stats.value = {
-      ...stats.value,
-      current_connected_players: typedMessage.current_connected_players
-    }
+    stats.value = { ...stats.value, current_connected_players: typedMessage.current_connected_players }
   }
 }
 
-const parseRelayMessage = (rawMessage: unknown) => {
-  if (typeof rawMessage !== 'string') {
-    return rawMessage
-  }
-
+const parseMessage = (rawMessage: unknown) => {
+  if (typeof rawMessage !== 'string') return rawMessage
   try {
     return JSON.parse(rawMessage)
   } catch {
@@ -734,10 +559,7 @@ const mergeStats = (partialStats: Partial<ServerStats>) => {
       ...partialStats.average_session_duration
     }
   }
-
-  if (Array.isArray(partialStats.connected_players)) {
-    updateConnectedPlayers(partialStats.connected_players)
-  }
+  if (Array.isArray(partialStats.connected_players)) updateConnectedPlayers(partialStats.connected_players)
 }
 
 const updateConnectedPlayers = (players: unknown[]) => {
@@ -752,11 +574,7 @@ const updateConnectedPlayers = (players: unknown[]) => {
 const addConnectedPlayer = (player: unknown) => {
   const nextPlayers = [...liveConnectedPlayers.value]
   const key = playerKey(player)
-
-  if (!nextPlayers.some((currentPlayer) => playerKey(currentPlayer) === key)) {
-    nextPlayers.push(player)
-  }
-
+  if (!nextPlayers.some((currentPlayer) => playerKey(currentPlayer) === key)) nextPlayers.push(player)
   updateConnectedPlayers(nextPlayers)
 }
 
@@ -765,21 +583,15 @@ const removeConnectedPlayer = (player: unknown) => {
   updateConnectedPlayers(liveConnectedPlayers.value.filter((currentPlayer) => playerKey(currentPlayer) !== key))
 }
 
-const normalizePlayers = (players: unknown) => {
-  return Array.isArray(players) ? players.filter((player) => player !== null && player !== undefined) : []
-}
+const normalizePlayers = (players: unknown) => Array.isArray(players) ? players.filter((player) => player !== null && player !== undefined) : []
 
 const buildWebSocketCandidates = (domain: string) => {
-  if (!domain) {
-    return []
-  }
-
+  if (!domain) return []
   try {
     const url = new URL(domain)
     const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
     const basePath = url.pathname.replace(/\/+$/, '')
     const origin = `${protocol}//${url.host}`
-
     return uniqueValues([
       `${origin}${basePath}/ws`,
       `${origin}${basePath}/api/ws`,
@@ -792,47 +604,28 @@ const buildWebSocketCandidates = (domain: string) => {
   }
 }
 
-const monthLabel = (item: CountByMonth) => {
-  return String(item.month ?? item.label ?? item.period ?? item.date ?? 'Non renseigné')
-}
-
-const genderLabel = (item: CountByGender) => {
-  return String(item.gender ?? item.label ?? item.name ?? 'Non renseigné')
-}
-
-const numericCount = (item: CountByGender | CountByMonth | CountByMonthAndGender) => {
-  return Number(item.count ?? item.total ?? item.connections ?? item.total_connections ?? 0)
-}
-
-const durationSeconds = (item: CountByGender) => {
-  return Number((item as any).average_duration_seconds ?? item.count ?? item.total ?? 0)
-}
-
-const uniqueValues = (values: string[]) => {
-  return Array.from(new Set(values))
-}
+const monthLabel = (item: CountByMonth) => String(item.month ?? item.label ?? item.period ?? item.date ?? 'Non renseigné')
+const genderLabel = (item: CountByGender) => String(item.gender ?? item.label ?? item.name ?? 'Non renseigné')
+const numericCount = (item: CountByGender | CountByMonth | CountByMonthAndGender) => Number(item.count ?? item.total ?? item.connections ?? item.total_connections ?? 0)
+const durationSeconds = (item: CountByGender) => Number(item.average_duration_seconds ?? item.count ?? item.total ?? 0)
+const uniqueValues = (values: string[]) => Array.from(new Set(values))
 
 const formatDuration = (seconds: number) => {
   const safeSeconds = Math.max(0, Math.floor(seconds))
   const hours = Math.floor(safeSeconds / 3600)
   const minutes = Math.floor((safeSeconds % 3600) / 60)
   const remainingSeconds = safeSeconds % 60
-
   if (hours > 0) return `${hours}h ${minutes}m`
   if (minutes > 0) return `${minutes}m ${remainingSeconds}s`
   return `${remainingSeconds}s`
 }
 
 const playerLabel = (player: unknown) => {
-  if (typeof player === 'string') {
-    return player
-  }
-
+  if (typeof player === 'string') return player
   if (player && typeof player === 'object') {
     const record = player as Record<string, unknown>
     return String(record.username ?? record.name ?? record.display_name ?? record.player_name ?? record.id ?? JSON.stringify(record))
   }
-
   return String(player)
 }
 
@@ -841,7 +634,6 @@ const playerKey = (player: unknown) => {
     const record = player as Record<string, unknown>
     return String(record.id ?? record.uuid ?? record.username ?? record.name ?? record.display_name ?? record.player_name ?? JSON.stringify(record))
   }
-
   return String(player)
 }
 
@@ -850,14 +642,12 @@ const goBack = () => {
 }
 
 onMounted(async () => {
-  if (serverStore.servers.length === 0) {
-    await serverStore.fetchUserServers()
-  }
+  if (serverStore.servers.length === 0) await serverStore.fetchUserServers()
   await loadStats()
 })
 
 onBeforeUnmount(() => {
-  closeRelayWebSocket(true)
+  closeGameServerWebSocket(true)
 })
 </script>
 
@@ -890,10 +680,6 @@ onBeforeUnmount(() => {
   font-size: 0.95rem;
 }
 
-.back-button:hover {
-  background-color: #616161;
-}
-
 .subtitle {
   font-size: 1.1rem;
   opacity: 0.9;
@@ -905,27 +691,12 @@ onBeforeUnmount(() => {
   text-align: center;
   padding: 3rem 2rem;
   max-width: 600px;
-  margin: 2rem auto;
+  margin: 0 auto;
 }
 
-.loading-spinner {
-  font-size: 4rem;
-  margin-bottom: 1rem;
-  animation: spin 2s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
+.loading-spinner,
 .error-icon {
-  font-size: 4rem;
-  margin-bottom: 1rem;
-}
-
-.error-state h3 {
-  font-size: 1.5rem;
+  font-size: 3rem;
   margin-bottom: 1rem;
 }
 
@@ -939,36 +710,28 @@ onBeforeUnmount(() => {
 .stat-card {
   display: flex;
   align-items: center;
+  gap: 1rem;
   padding: 1.5rem;
-  gap: 1.5rem;
 }
 
 .stat-icon {
-  font-size: 3rem;
-  line-height: 1;
-}
-
-.stat-info {
-  flex: 1;
-  text-align: left;
+  font-size: 2.5rem;
 }
 
 .stat-value {
   font-size: 2rem;
   font-weight: bold;
   color: #64ffda;
-  margin-bottom: 0.25rem;
 }
 
 .stat-label {
-  font-size: 0.95rem;
-  opacity: 0.8;
-  color: #ffffff;
+  opacity: 0.85;
+  margin-top: 0.25rem;
 }
 
 .charts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
   gap: 2rem;
   margin-bottom: 2rem;
 }
@@ -978,14 +741,69 @@ onBeforeUnmount(() => {
 }
 
 .chart-title {
-  font-size: 1.3rem;
   margin-bottom: 1rem;
   color: #64ffda;
 }
 
 .chart-wrapper {
-  height: 300px;
-  position: relative;
+  height: 320px;
+}
+
+.info-section {
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.websocket-status {
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 0.9rem;
+}
+
+.status-connected {
+  color: #64ffda;
+}
+
+.status-error {
+  color: #ff6b6b;
+}
+
+.players-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.player-item {
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  word-break: break-word;
+}
+
+.info-item strong {
+  color: #64ffda;
 }
 
 .no-data {
@@ -993,100 +811,11 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #999;
-  font-size: 1.1rem;
+  opacity: 0.75;
 }
 
 .no-players {
-  height: auto;
-  padding: 1.5rem;
-}
-
-.info-section {
-  padding: 2rem;
-  margin-bottom: 2rem;
-}
-
-.info-section h2 {
-  font-size: 1.5rem;
-  margin: 0;
-  color: #64ffda;
-}
-
-.section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.websocket-status {
-  font-size: 0.9rem;
-  padding: 0.4rem 0.8rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(0, 0, 0, 0.25);
-}
-
-.status-connected {
-  color: #64ffda;
-  border-color: rgba(100, 255, 218, 0.5);
-}
-
-.status-connecting {
-  color: #ffc107;
-  border-color: rgba(255, 193, 7, 0.5);
-}
-
-.status-error {
-  color: #ff6b6b;
-  border-color: rgba(255, 107, 107, 0.5);
-}
-
-.status-disconnected {
-  color: #999;
-}
-
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
-}
-
-.info-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.info-item strong {
-  color: #64ffda;
-  font-size: 0.95rem;
-}
-
-.info-item span {
-  color: #ffffff;
-  font-size: 1.05rem;
-  word-break: break-word;
-}
-
-.players-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1rem;
-}
-
-.player-item {
-  padding: 1rem;
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(100, 255, 218, 0.35);
-  color: #ffffff;
-}
-
-@media (max-width: 1200px) {
-  .charts-grid {
-    grid-template-columns: 1fr;
-  }
+  min-height: 80px;
 }
 
 @media (max-width: 768px) {
@@ -1094,21 +823,17 @@ onBeforeUnmount(() => {
     padding: 1rem;
   }
 
-  .header-top {
-    margin-bottom: 1rem;
-  }
-
-  .stats-cards {
+  .charts-grid {
     grid-template-columns: 1fr;
   }
 
-  .info-grid {
-    grid-template-columns: 1fr;
+  .chart-wrapper {
+    height: 260px;
   }
 
   .section-header {
-    align-items: flex-start;
     flex-direction: column;
+    align-items: flex-start;
   }
 }
 </style>
