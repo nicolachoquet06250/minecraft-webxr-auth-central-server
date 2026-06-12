@@ -96,7 +96,7 @@ jobs:
       # =====================================================
       - name: 🏗️ Build backend (release mode)
         working-directory: .
-        run: cargo build --release
+        run: cargo build --features embed-frontend --release
 
       - name: ✅ Verify backend build
         run: |
