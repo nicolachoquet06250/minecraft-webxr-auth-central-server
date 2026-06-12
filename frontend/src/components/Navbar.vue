@@ -3,7 +3,7 @@
     <div class="navbar-container">
       <router-link to="/" class="navbar-brand">
         <span class="brand-icon">⛏️</span>
-        <span class="brand-text">Voxicraft WebXR</span>
+        <span class="brand-text">Voxicraft VR</span>
       </router-link>
       
       <div class="navbar-menu">

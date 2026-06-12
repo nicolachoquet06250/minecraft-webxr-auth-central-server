@@ -1,35 +1,35 @@
 <template>
-  <div class="dashboard minecraft-bg">
-    <div class="minecraft-container">
+  <div class="dashboard voxicraft-bg">
+    <div class="voxicraft-container">
       <div class="page-header">
         <div class="header-top">
-          <button @click="goBack" class="back-button minecraft-button">
+          <button @click="goBack" class="back-button voxicraft-button">
             ← Retour aux serveurs
           </button>
         </div>
-        <h1 class="minecraft-title">📊 Dashboard - {{ serverName }}</h1>
-        <p class="minecraft-text subtitle">
+        <h1 class="voxicraft-title">📊 Dashboard - {{ serverName }}</h1>
+        <p class="voxicraft-text subtitle">
           Statistiques et analyses en temps réel
         </p>
       </div>
 
-      <div v-if="loading" class="loading-state minecraft-panel">
+      <div v-if="loading" class="loading-state voxicraft-panel">
         <div class="loading-spinner">⏳</div>
-        <p class="minecraft-text">Chargement des statistiques...</p>
+        <p class="voxicraft-text">Chargement des statistiques...</p>
       </div>
 
-      <div v-else-if="error" class="error-state minecraft-panel">
+      <div v-else-if="error" class="error-state voxicraft-panel">
         <div class="error-icon">❌</div>
         <h3>Erreur de chargement</h3>
-        <p class="minecraft-text">{{ error }}</p>
-        <button @click="loadStats" class="minecraft-button">
+        <p class="voxicraft-text">{{ error }}</p>
+        <button @click="loadStats" class="voxicraft-button">
           🔄 Réessayer
         </button>
       </div>
 
       <div v-else class="dashboard-content">
         <div class="stats-cards">
-          <div class="stat-card minecraft-panel">
+          <div class="stat-card voxicraft-panel">
             <div class="stat-icon">🔌</div>
             <div class="stat-info">
               <div class="stat-value">{{ totalConnections }}</div>
@@ -37,7 +37,7 @@
             </div>
           </div>
 
-          <div class="stat-card minecraft-panel">
+          <div class="stat-card voxicraft-panel">
             <div class="stat-icon">🎮</div>
             <div class="stat-info">
               <div class="stat-value">{{ currentConnectedPlayers }}</div>
@@ -45,7 +45,7 @@
             </div>
           </div>
 
-          <div class="stat-card minecraft-panel">
+          <div class="stat-card voxicraft-panel">
             <div class="stat-icon">👥</div>
             <div class="stat-info">
               <div class="stat-value">{{ connectedPlayersCount }}</div>
@@ -53,7 +53,7 @@
             </div>
           </div>
 
-          <div class="stat-card minecraft-panel">
+          <div class="stat-card voxicraft-panel">
             <div class="stat-icon">⏱️</div>
             <div class="stat-info">
               <div class="stat-value">{{ formattedAverageDuration }}</div>
@@ -63,7 +63,7 @@
         </div>
 
         <div class="charts-grid">
-          <div class="chart-container minecraft-panel">
+          <div class="chart-container voxicraft-panel">
             <h2 class="chart-title">📊 Connexions par mois</h2>
             <div class="chart-wrapper">
               <Line
@@ -75,7 +75,7 @@
             </div>
           </div>
 
-          <div class="chart-container minecraft-panel">
+          <div class="chart-container voxicraft-panel">
             <h2 class="chart-title">⚧ Connexions par genre</h2>
             <div class="chart-wrapper">
               <Doughnut
@@ -87,7 +87,7 @@
             </div>
           </div>
 
-          <div class="chart-container minecraft-panel">
+          <div class="chart-container voxicraft-panel">
             <h2 class="chart-title">📈 Connexions par mois et genre</h2>
             <div class="chart-wrapper">
               <Bar
@@ -99,7 +99,7 @@
             </div>
           </div>
 
-          <div class="chart-container minecraft-panel">
+          <div class="chart-container voxicraft-panel">
             <h2 class="chart-title">⏱️ Durée moyenne par genre</h2>
             <div class="chart-wrapper">
               <Bar
@@ -112,7 +112,7 @@
           </div>
         </div>
 
-        <div class="info-section minecraft-panel">
+        <div class="info-section voxicraft-panel">
           <div class="section-header">
             <h2>👥 Joueurs actuellement connectés</h2>
             <span :class="['websocket-status', websocketStatusClass]">
@@ -128,7 +128,7 @@
           <div v-else class="no-data no-players">Aucun joueur connecté</div>
         </div>
 
-        <div class="info-section minecraft-panel">
+        <div class="info-section voxicraft-panel">
           <h2>ℹ️ Informations du serveur</h2>
           <div class="info-grid">
             <div class="info-item">
@@ -867,7 +867,7 @@ onBeforeUnmount(() => {
   padding: 2rem 1rem;
 }
 
-.minecraft-container {
+.voxicraft-container {
   max-width: 1400px;
   margin: 0 auto;
 }

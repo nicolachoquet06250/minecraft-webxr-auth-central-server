@@ -1,6 +1,6 @@
 <template>
-  <div class="profile minecraft-bg">
-    <div class="minecraft-container">
+  <div class="profile voxicraft-bg">
+    <div class="voxicraft-container">
       <!-- Header avec avatar -->
       <div class="profile-header">
         <div class="avatar-display">
@@ -38,7 +38,7 @@
         <!-- Colonne gauche - Informations -->
         <div class="left-column">
           <!-- Carte Informations personnelles -->
-          <div class="info-card minecraft-panel">
+          <div class="info-card voxicraft-panel">
             <h2 class="card-title">
               <span class="title-icon">👤</span>
               Informations personnelles
@@ -66,7 +66,7 @@
           </div>
 
           <!-- Carte Bio -->
-          <div class="bio-card minecraft-panel">
+          <div class="bio-card voxicraft-panel">
             <h2 class="card-title">
               <span class="title-icon">📝</span>
               À propos
@@ -77,7 +77,7 @@
           </div>
 
           <!-- Carte Actions rapides -->
-          <div class="quick-actions-card minecraft-panel">
+          <div class="quick-actions-card voxicraft-panel">
             <h2 class="card-title">
               <span class="title-icon">⚡</span>
               Actions rapides
@@ -102,7 +102,7 @@
         <!-- Colonne droite - Édition -->
         <div class="right-column">
           <!-- Formulaire d'édition -->
-          <div v-if="showEditForm" class="edit-card minecraft-panel">
+          <div v-if="showEditForm" class="edit-card voxicraft-panel">
             <h2 class="card-title">
               <span class="title-icon">✏️</span>
               Modifier mon profil
@@ -180,7 +180,7 @@
           </div>
 
           <!-- Carte Statistiques (si pas en mode édition) -->
-          <div v-else class="stats-card minecraft-panel">
+          <div v-else class="stats-card voxicraft-panel">
             <h2 class="card-title">
               <span class="title-icon">📊</span>
               Statistiques
@@ -211,7 +211,7 @@
           </div>
 
           <!-- Carte Sécurité -->
-          <div v-if="!showEditForm" class="security-card minecraft-panel">
+          <div v-if="!showEditForm" class="security-card voxicraft-panel">
             <h2 class="card-title">
               <span class="title-icon">🔒</span>
               Sécurité et confidentialité
@@ -478,7 +478,7 @@ const handleUpdate = async () => {
 }
 
 /* ========== Cards ========== */
-.minecraft-panel {
+.voxicraft-panel {
   background: rgba(139, 69, 19, 0.9);
   border: 4px solid #5D4037;
   border-radius: 12px;
@@ -960,7 +960,7 @@ const handleUpdate = async () => {
     padding: 0.7rem 1.2rem;
   }
   
-  .minecraft-panel {
+  .voxicraft-panel {
     padding: 1.5rem;
   }
   
@@ -1133,7 +1133,7 @@ const handleUpdate = async () => {
     gap: 0.5rem;
   }
   
-  .minecraft-panel {
+  .voxicraft-panel {
     padding: 1rem;
     max-width: 100%;
   }

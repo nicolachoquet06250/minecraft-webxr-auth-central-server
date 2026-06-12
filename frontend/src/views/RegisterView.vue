@@ -1,15 +1,15 @@
 <template>
-  <div class="register minecraft-bg">
-    <div class="minecraft-panel">
-      <h1 class="minecraft-title">Inscription</h1>
+  <div class="register voxicraft-bg">
+    <div class="voxicraft-panel">
+      <h1 class="voxicraft-title">Inscription</h1>
       
       <form @submit.prevent="handleRegister" class="register-form">
         <div class="form-group">
-          <label class="minecraft-label">Pseudo</label>
+          <label class="voxicraft-label">Pseudo</label>
           <input 
             v-model="registerData.username" 
             type="text" 
-            class="minecraft-input" 
+            class="voxicraft-input" 
             required 
             minlength="3"
             maxlength="20"
@@ -17,28 +17,28 @@
         </div>
         
         <div class="form-group">
-          <label class="minecraft-label">Email</label>
+          <label class="voxicraft-label">Email</label>
           <input 
             v-model="registerData.email" 
             type="email" 
-            class="minecraft-input" 
+            class="voxicraft-input" 
             required 
           />
         </div>
         
         <div class="form-group">
-          <label class="minecraft-label">Mot de passe</label>
+          <label class="voxicraft-label">Mot de passe</label>
           <input 
             v-model="registerData.password" 
             type="password" 
-            class="minecraft-input" 
+            class="voxicraft-input" 
             required 
             minlength="8"
           />
         </div>
         
         <div class="form-group">
-          <label class="minecraft-label">Avatar</label>
+          <label class="voxicraft-label">Avatar</label>
           <div class="avatar-selector">
             <label class="avatar-option">
               <input type="radio" v-model="registerData.avatar" value="steve" />
@@ -52,25 +52,25 @@
         </div>
         
         <div class="form-group">
-          <label class="minecraft-label">Date de naissance</label>
+          <label class="voxicraft-label">Date de naissance</label>
           <input 
             v-model="registerData.birthdate" 
             type="date" 
-            class="minecraft-input" 
+            class="voxicraft-input" 
             required 
           />
         </div>
         
         <div class="form-group">
-          <label class="minecraft-label">Bio (optionnel)</label>
+          <label class="voxicraft-label">Bio (optionnel)</label>
           <textarea 
             v-model="registerData.bio" 
-            class="minecraft-input" 
+            class="voxicraft-input" 
             rows="3"
           ></textarea>
         </div>
         
-        <button type="submit" class="minecraft-button" :disabled="authStore.loading">
+        <button type="submit" class="voxicraft-button" :disabled="authStore.loading">
           {{ authStore.loading ? 'Inscription...' : 'S\'inscrire' }}
         </button>
         
@@ -79,7 +79,7 @@
         </div>
       </form>
       
-      <p class="minecraft-text text-center">
+      <p class="voxicraft-text text-center">
         Déjà un compte ? 
         <router-link to="/login" class="link">Se connecter</router-link>
       </p>
@@ -88,7 +88,7 @@
         <span>OU</span>
       </div>
       
-      <router-link to="/" class="minecraft-button secondary-btn">
+      <router-link to="/" class="voxicraft-button secondary-btn">
         ← Retour à l'accueil
       </router-link>
     </div>
@@ -129,7 +129,7 @@ const handleRegister = async () => {
   padding: 2rem 1rem;
 }
 
-.minecraft-panel {
+.voxicraft-panel {
   width: 100%;
   max-width: 500px;
 }

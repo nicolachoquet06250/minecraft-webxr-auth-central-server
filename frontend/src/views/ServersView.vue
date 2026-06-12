@@ -1,31 +1,31 @@
 <template>
-  <div class="servers minecraft-bg">
-    <div class="minecraft-container">
+  <div class="servers voxicraft-bg">
+    <div class="voxicraft-container">
       <div class="page-header">
-        <h1 class="minecraft-title">🖥️ Mes Serveurs</h1>
-        <p class="minecraft-text subtitle">
+        <h1 class="voxicraft-title">🖥️ Mes Serveurs</h1>
+        <p class="voxicraft-text subtitle">
           Gérez vos serveurs de jeu et serveurs relais
         </p>
       </div>
       
       <div class="servers-header">
-        <button @click="showCreateForm = !showCreateForm" class="minecraft-button create-btn">
+        <button @click="showCreateForm = !showCreateForm" class="voxicraft-button create-btn">
           {{ showCreateForm ? '❌ Annuler' : '➕ Créer un serveur' }}
         </button>
       </div>
       
-      <div v-if="showCreateForm" class="create-form minecraft-panel">
+      <div v-if="showCreateForm" class="create-form voxicraft-panel">
         <h2>➕ Nouveau Serveur</h2>
-        <p class="form-description minecraft-text">
+        <p class="form-description voxicraft-text">
           Enregistrez un nouveau serveur avec ses domaines de relais et de jeu
         </p>
         <form @submit.prevent="handleCreate">
           <div class="form-group">
-            <label class="minecraft-label">Nom du serveur</label>
+            <label class="voxicraft-label">Nom du serveur</label>
             <input 
               v-model="createData.name" 
               type="text" 
-              class="minecraft-input" 
+              class="voxicraft-input" 
               required
               minlength="3"
               maxlength="50"
@@ -33,39 +33,39 @@
           </div>
           
           <div class="form-group">
-            <label class="minecraft-label">Domaine du serveur relais (WebSocket)</label>
+            <label class="voxicraft-label">Domaine du serveur relais (WebSocket)</label>
             <input 
               v-model="createData.relay_domain" 
               type="url" 
-              class="minecraft-input" 
+              class="voxicraft-input" 
               required
               placeholder="wss://relay.example.com"
             />
-            <small class="minecraft-text">URL du serveur de relais pour les connexions WebSocket</small>
+            <small class="voxicraft-text">URL du serveur de relais pour les connexions WebSocket</small>
           </div>
           
           <div class="form-group">
-            <label class="minecraft-label">Domaine du jeu (Frontend)</label>
+            <label class="voxicraft-label">Domaine du jeu (Frontend)</label>
             <input 
               v-model="createData.game_domain" 
               type="url" 
-              class="minecraft-input" 
+              class="voxicraft-input" 
               required
               placeholder="https://game.example.com"
             />
-            <small class="minecraft-text">URL où le jeu WebXR est hébergé</small>
+            <small class="voxicraft-text">URL où le jeu WebXR est hébergé</small>
           </div>
           
           <div class="form-group">
-            <label class="minecraft-label">Description</label>
+            <label class="voxicraft-label">Description</label>
             <textarea 
               v-model="createData.description" 
-              class="minecraft-input" 
+              class="voxicraft-input" 
               rows="3"
             ></textarea>
           </div>
           
-          <button type="submit" class="minecraft-button" :disabled="serverStore.loading">
+          <button type="submit" class="voxicraft-button" :disabled="serverStore.loading">
             Créer
           </button>
           
@@ -76,17 +76,17 @@
       </div>
       
       <div class="servers-list">
-        <div v-if="serverStore.loading" class="minecraft-text loading-message">
+        <div v-if="serverStore.loading" class="voxicraft-text loading-message">
           ⏳ Chargement...
         </div>
         
-        <div v-else-if="serverStore.servers.length === 0" class="empty-state minecraft-panel">
+        <div v-else-if="serverStore.servers.length === 0" class="empty-state voxicraft-panel">
           <div class="empty-icon">🏗️</div>
           <h3>Aucun serveur enregistré</h3>
-          <p class="minecraft-text">
+          <p class="voxicraft-text">
             Commencez par créer votre premier serveur pour gérer votre expérience Minecraft WebXR
           </p>
-          <button @click="showCreateForm = true" class="minecraft-button">
+          <button @click="showCreateForm = true" class="voxicraft-button">
             ➕ Créer mon premier serveur
           </button>
         </div>
@@ -95,7 +95,7 @@
           <div 
             v-for="server in serverStore.servers" 
             :key="server.id" 
-            class="server-card minecraft-panel"
+            class="server-card voxicraft-panel"
             @click="goToDashboard(server.id)"
           >
             <h3>{{ server.name }}</h3>
@@ -107,19 +107,19 @@
             <div class="button-container">
               <button 
                 @click.stop="goToDashboard(server.id)" 
-                class="minecraft-button small primary"
+                class="voxicraft-button small primary"
               >
                 📊 Dashboard
               </button>
               <button 
                 @click.stop="toggleServerStatus(server)" 
-                class="minecraft-button small"
+                class="voxicraft-button small"
               >
                 {{ server.is_active ? 'Désactiver' : 'Activer' }}
               </button>
               <button 
                 @click.stop="deleteServerConfirm(server.id)" 
-                class="minecraft-button small danger"
+                class="voxicraft-button small danger"
               >
                 Supprimer
               </button>
@@ -195,7 +195,7 @@ const goToDashboard = (serverId: string) => {
   padding: 2rem 1rem;
 }
 
-.minecraft-container {
+.voxicraft-container {
   max-width: 1200px;
   margin: 0 auto;
 }
@@ -328,28 +328,28 @@ const goToDashboard = (serverId: string) => {
   flex-wrap: wrap;
 }
 
-.minecraft-button.small {
+.voxicraft-button.small {
   padding: 0.6rem 1rem;
   font-size: 0.9rem;
 }
 
-.minecraft-button.small.primary {
+.voxicraft-button.small.primary {
   background-color: #64ffda;
   color: #1a1a1a;
   border-color: #4dd0ba;
   font-weight: bold;
 }
 
-.minecraft-button.small.primary:hover {
+.voxicraft-button.small.primary:hover {
   background-color: #7fffeb;
 }
 
-.minecraft-button.danger {
+.voxicraft-button.danger {
   background-color: #d32f2f;
   border-color: #b71c1c;
 }
 
-.minecraft-button.danger:hover {
+.voxicraft-button.danger:hover {
   background-color: #f44336;
 }
 

@@ -1,30 +1,30 @@
 <template>
-  <div class="login minecraft-bg">
-    <div class="minecraft-panel">
-      <h1 class="minecraft-title">Connexion</h1>
+  <div class="login voxicraft-bg">
+    <div class="voxicraft-panel">
+      <h1 class="voxicraft-title">Connexion</h1>
       
       <form @submit.prevent="handleLogin" class="login-form">
         <div class="form-group">
-          <label class="minecraft-label">Email</label>
+          <label class="voxicraft-label">Email</label>
           <input 
             v-model="loginData.email" 
             type="email" 
-            class="minecraft-input" 
+            class="voxicraft-input" 
             required 
           />
         </div>
         
         <div class="form-group">
-          <label class="minecraft-label">Mot de passe</label>
+          <label class="voxicraft-label">Mot de passe</label>
           <input 
             v-model="loginData.password" 
             type="password" 
-            class="minecraft-input" 
+            class="voxicraft-input" 
             required 
           />
         </div>
         
-        <button type="submit" class="minecraft-button" :disabled="authStore.loading">
+        <button type="submit" class="voxicraft-button" :disabled="authStore.loading">
           {{ authStore.loading ? 'Connexion...' : 'Se connecter' }}
         </button>
         
@@ -37,11 +37,11 @@
         <span>OU</span>
       </div>
       
-      <button @click="loginWithDiscord" class="minecraft-button discord-button">
+      <button @click="loginWithDiscord" class="voxicraft-button discord-button">
         Se connecter avec Discord
       </button>
       
-      <p class="minecraft-text">
+      <p class="voxicraft-text">
         Pas encore de compte ? 
         <router-link to="/register" class="link">S'inscrire</router-link>
       </p>

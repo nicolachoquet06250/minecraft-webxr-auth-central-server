@@ -1,20 +1,20 @@
 <template>
-  <div class="home minecraft-bg">
+  <div class="home voxicraft-bg">
     <!-- Hero Section -->
     <section class="hero-section">
-      <div class="hero-content minecraft-container">
+      <div class="hero-content voxicraft-container">
         <div class="hero-badge">
           <span class="badge-icon">⭐</span>
-          <span class="badge-text">Plateforme d'authentification #1 pour Minecraft WebXR</span>
+          <span class="badge-text">Plateforme d'authentification #1 pour VoxiCraft</span>
         </div>
         
         <h1 class="hero-title">
           Votre passerelle vers<br/>
-          <span class="gradient-text">Minecraft en VR</span>
+          <span class="gradient-text">VoxiCraft VR</span>
         </h1>
         
         <p class="hero-description">
-          Gérez, sécurisez et analysez vos serveurs Minecraft WebXR depuis une plateforme centralisée. 
+          Gérez, sécurisez et analysez vos serveurs VoxiCraft depuis une plateforme centralisée. 
           Une authentification unique, des statistiques en temps réel, et une expérience immersive.
         </p>
         
@@ -68,12 +68,12 @@
 
     <!-- Features Section -->
     <section class="features-section">
-      <div class="minecraft-container">
+      <div class="voxicraft-container">
         <div class="section-header">
           <span class="section-badge">✨ Fonctionnalités</span>
           <h2 class="section-title">Tout ce dont vous avez besoin</h2>
           <p class="section-description">
-            Une plateforme complète pour gérer vos serveurs Minecraft WebXR
+            Une plateforme complète pour gérer vos serveurs VoxiCraft
           </p>
         </div>
         
@@ -143,7 +143,7 @@
 
     <!-- How It Works Section -->
     <section class="how-it-works-section">
-      <div class="minecraft-container">
+      <div class="voxicraft-container">
         <div class="section-header">
           <span class="section-badge">🚀 Comment ça marche</span>
           <h2 class="section-title">Lancez-vous en 3 étapes simples</h2>
@@ -156,7 +156,7 @@
             <h3 class="step-title">Créez votre compte</h3>
             <p class="step-description">
               Inscription gratuite en moins de 2 minutes. Choisissez votre avatar 
-              Minecraft préféré (Steve, Alex, ou Creeper).
+              VoxiCraft préféré (Steve, Alex, ou Creeper).
             </p>
             <router-link v-if="!authStore.isAuthenticated" to="/register" class="step-link">
               S'inscrire maintenant →
@@ -195,14 +195,14 @@
 
     <!-- Benefits Section -->
     <section class="benefits-section">
-      <div class="minecraft-container">
+      <div class="voxicraft-container">
         <div class="benefits-content">
           <div class="benefits-text">
             <span class="section-badge dark">💎 Avantages</span>
             <h2 class="benefits-title">Pourquoi choisir notre plateforme ?</h2>
             <p class="benefits-description">
               Nous avons conçu cette plateforme pour offrir la meilleure expérience 
-              possible aux administrateurs de serveurs Minecraft WebXR.
+              possible aux administrateurs de serveurs VoxiCraft.
             </p>
             
             <div class="benefits-list">
@@ -271,12 +271,12 @@
 
     <!-- CTA Section -->
     <section class="cta-section">
-      <div class="minecraft-container">
+      <div class="voxicraft-container">
         <div class="cta-content">
           <h2 class="cta-title">Prêt à commencer votre aventure ?</h2>
           <p class="cta-description">
             Rejoignez des centaines d'administrateurs qui font confiance à notre plateforme 
-            pour gérer leurs serveurs Minecraft WebXR.
+            pour gérer leurs serveurs VoxiCraft.
           </p>
           
           <div class="cta-buttons">

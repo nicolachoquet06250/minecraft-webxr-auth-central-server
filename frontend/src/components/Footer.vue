@@ -38,7 +38,7 @@
       </div>
       
       <div class="footer-bottom">
-        <p>&copy; 2024 Voxicraft Auth Platform. Tous droits réservés.</p>
+        <p>&copy; {{ date.getFullYear() }} Voxicraft Auth Platform. Tous droits réservés.</p>
         <p class="tech-stack">Propulsé par Rust 🦀 & Vue.js 💚</p>
       </div>
     </div>
@@ -49,6 +49,8 @@
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
+
+const date = new Date();
 </script>
 
 <style scoped>
