@@ -2,7 +2,7 @@
   <nav class="navbar">
     <div class="navbar-container">
       <router-link to="/" class="navbar-brand">
-        <span class="brand-icon">⛏️</span>
+        <span class="brand-icon"><img src="/favicon.png" alt="Voxicraft VR" /></span>
         <span class="brand-text">Voxicraft VR</span>
       </router-link>
       
@@ -120,7 +120,12 @@ const handleLogout = () => {
 }
 
 .brand-icon {
-  font-size: 1.5rem;
+  display: flex;
+  
+  img {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
 }
 
 .navbar-menu {
