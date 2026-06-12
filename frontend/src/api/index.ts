@@ -37,7 +37,6 @@ export interface Server {
   id: string
   owner_id: string
   name: string
-  relay_domain: string
   game_domain: string
   description?: string
   is_active: boolean
@@ -47,7 +46,6 @@ export interface Server {
 
 export interface CreateServerData {
   name: string
-  relay_domain: string
   game_domain: string
   description?: string
 }
@@ -88,9 +86,8 @@ export const serverApi = {
   updateServer: (id: string, data: Partial<CreateServerData>) =>
     api.put<Server>(`/servers/${id}`, data),
   deleteServer: (id: string) => api.delete(`/servers/${id}`),
-  getServerStats: async (relayDomain: string) => {
-    // Call the /stats endpoint on the relay server
-    const statsUrl = `${relayDomain}/stats`
+  getServerStats: async (gameDomain: string) => {
+    const statsUrl = `${gameDomain.replace(/\/+$/, '')}/stats`
     const response = await fetch(statsUrl)
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
