@@ -6,21 +6,19 @@ use serde::{Deserialize, Serialize};
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: String,
-    
+
     pub owner_id: String,
-    
+
     pub name: String,
-    
-    pub relay_domain: String,
-    
+
     pub game_domain: String,
-    
+
     pub description: Option<String>,
-    
+
     pub is_active: bool,
-    
+
     pub created_at: DateTime,
-    
+
     pub updated_at: DateTime,
 }
 
