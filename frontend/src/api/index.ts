@@ -101,6 +101,7 @@ export const userApi = {
 
 export const avatarApi = {
   getActive: (): ApiResponse<ActiveAvatarResponse> => request<ActiveAvatarResponse>('/users/me/avatar'),
+  clearActive: (): ApiResponse<null> => request<null>('/users/me/avatar', { method: 'DELETE' }),
   list: (): ApiResponse<UserAvatar[]> => request<UserAvatar[]>('/users/me/avatars'),
   createCopy: (data: SaveAvatarData): ApiResponse<UserAvatar> => request<UserAvatar>('/users/me/avatars', { method: 'POST', body: jsonBody(data) }),
   update: (id: string, data: UpdateAvatarData): ApiResponse<UserAvatar> => request<UserAvatar>(`/users/me/avatars/${id}`, { method: 'PUT', body: jsonBody(data) }),
