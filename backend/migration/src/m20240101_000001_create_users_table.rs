@@ -1,4 +1,4 @@
-use sea_orm_migration::prelude::*;
+use sea_orm_migration::{prelude::*, sea_orm::DatabaseBackend};
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -6,6 +6,16 @@ pub struct Migration;
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        let mut updated_at = ColumnDef::new(User::UpdatedAt);
+        updated_at
+            .date_time()
+            .not_null()
+            .default(Expr::current_timestamp());
+
+        if manager.get_database_backend() == DatabaseBackend::MySql {
+            updated_at.extra("ON UPDATE CURRENT_TIMESTAMP");
+        }
+
         // Create users table
         manager
             .create_table(
@@ -57,12 +67,7 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .default(Expr::current_timestamp()),
                     )
-                    .col(
-                        ColumnDef::new(User::UpdatedAt)
-                            .date_time()
-                            .not_null()
-                            .default(Expr::current_timestamp()),
-                    )
+                    .col(updated_at)
                     .engine("InnoDB")
                     .character_set("utf8mb4")
                     .collate("utf8mb4_unicode_ci")
