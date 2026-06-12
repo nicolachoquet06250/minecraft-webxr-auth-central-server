@@ -32,13 +32,13 @@ export const useServerStore = defineStore('server', () => {
       return true
     } catch (err: any) {
       if (err.response?.status === 503) {
-        error.value = 'Le serveur relais est injoignable. Vérifiez que le serveur est en ligne et que l\'URL est correcte.'
+        error.value = 'Le serveur de jeu est injoignable. Verifiez que le serveur est en ligne et que l URL est correcte.'
       } else if (err.response?.status === 409) {
-        error.value = 'Ce domaine est déjà enregistré par un autre serveur.'
+        error.value = 'Ce domaine est deja enregistre par un autre serveur.'
       } else if (err.response?.status === 400) {
-        error.value = 'Données invalides. Vérifiez les champs du formulaire.'
+        error.value = 'Donnees invalides. Verifiez les champs du formulaire.'
       } else {
-        error.value = err.response?.data?.message || 'Échec de la création du serveur'
+        error.value = err.response?.data?.message || 'Echec de la creation du serveur'
       }
       return false
     } finally {
