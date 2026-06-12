@@ -3,12 +3,19 @@ use axum::{
     http::{header, StatusCode, Uri},
     response::{IntoResponse, Response},
 };
+#[cfg(feature = "embed-frontend")]
 use include_dir::{include_dir, Dir};
 use std::env;
 
+#[cfg(feature = "embed-frontend")]
 static ASSETS: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/../frontend/dist");
 
 pub async fn static_handler(uri: Uri) -> impl IntoResponse {
+    static_handler_impl(uri).await
+}
+
+#[cfg(feature = "embed-frontend")]
+async fn static_handler_impl(uri: Uri) -> Response {
     let path = uri.path().trim_start_matches('/');
 
     if path.is_empty() || path == "index.html" {
@@ -46,6 +53,17 @@ pub async fn static_handler(uri: Uri) -> impl IntoResponse {
     }
 }
 
+#[cfg(not(feature = "embed-frontend"))]
+async fn static_handler_impl(_uri: Uri) -> Response {
+    Response::builder()
+        .status(StatusCode::NOT_FOUND)
+        .body(Body::from(
+            "Frontend is not embedded in this build. In development, run the Vue/Vite frontend separately.",
+        ))
+        .unwrap()
+}
+
+#[cfg(feature = "embed-frontend")]
 async fn index_html() -> Response {
     match ASSETS.get_file("index.html") {
         Some(file) => Response::builder()
@@ -60,12 +78,14 @@ async fn index_html() -> Response {
     }
 }
 
+#[cfg(feature = "embed-frontend")]
 fn should_return_index(path: &str) -> bool {
     // Retourne index.html pour les routes SPA (pas de point = pas d'extension de fichier)
     !path.contains('.')
 }
 
 /// Remplace l'URL de l'API par défaut par la valeur de la variable DOMAIN
+#[cfg(feature = "embed-frontend")]
 fn replace_api_url(content: &[u8]) -> Vec<u8> {
     let domain = env::var("DOMAIN").unwrap_or_else(|_| "http://localhost:8080".to_string());
     let api_url = format!("{}/api", domain);
