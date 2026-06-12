@@ -21,7 +21,11 @@ tokio = { version = "1", features = ["full"] }
 # - sqlite://./data/dev.sqlite?mode=rwc for local development
 # - mysql://user:password@host:3306/database for production
 sea-orm = { version = "0.12", features = ["sqlx-mysql", "sqlx-sqlite", "runtime-tokio-rustls", "macros"] }
-sea-orm-migration = { version = "0.12", features = ["sqlx-mysql", "sqlx-sqlite", "runtime-tokio-rustls"] }
+sea-orm-migration = { version = "0.12", default-features = false, features = ["sqlx-mysql", "sqlx-sqlite", "runtime-tokio-rustls"] }
+
+# Keep sqlx 0.7.x on a compatible time release.
+# Newer time 0.3.x releases can trigger conflicting trait impls in sqlx-core 0.7.4.
+time = "=0.3.36"
 
 # Serialization
 serde = { version = "1", features = ["derive"] }
