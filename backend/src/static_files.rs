@@ -3,12 +3,10 @@ use axum::{
     http::{header, StatusCode, Uri},
     response::{IntoResponse, Response},
 };
-use rust_embed::Embed;
+use include_dir::{include_dir, Dir};
 use std::env;
 
-#[derive(Embed)]
-#[folder = "../frontend/dist"]
-pub struct Assets;
+static ASSETS: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/../frontend/dist");
 
 pub async fn static_handler(uri: Uri) -> impl IntoResponse {
     let path = uri.path().trim_start_matches('/');
@@ -17,17 +15,17 @@ pub async fn static_handler(uri: Uri) -> impl IntoResponse {
         return index_html().await;
     }
 
-    match Assets::get(path) {
-        Some(content) => {
+    match ASSETS.get_file(path) {
+        Some(file) => {
             let mime = mime_guess::from_path(path).first_or_octet_stream();
-            
+
             // Si c'est un fichier JavaScript, remplacer l'URL de l'API
             let body = if mime.as_ref() == "application/javascript" || mime.as_ref() == "text/javascript" {
-                replace_api_url(content.data.as_ref())
+                replace_api_url(file.contents())
             } else {
-                content.data.to_vec()
+                file.contents().to_vec()
             };
-            
+
             Response::builder()
                 .status(StatusCode::OK)
                 .header(header::CONTENT_TYPE, mime.as_ref())
@@ -49,11 +47,11 @@ pub async fn static_handler(uri: Uri) -> impl IntoResponse {
 }
 
 async fn index_html() -> Response {
-    match Assets::get("index.html") {
-        Some(content) => Response::builder()
+    match ASSETS.get_file("index.html") {
+        Some(file) => Response::builder()
             .status(StatusCode::OK)
             .header(header::CONTENT_TYPE, "text/html")
-            .body(Body::from(content.data))
+            .body(Body::from(file.contents().to_vec()))
             .unwrap(),
         None => Response::builder()
             .status(StatusCode::NOT_FOUND)
@@ -71,14 +69,14 @@ fn should_return_index(path: &str) -> bool {
 fn replace_api_url(content: &[u8]) -> Vec<u8> {
     let domain = env::var("DOMAIN").unwrap_or_else(|_| "http://localhost:8080".to_string());
     let api_url = format!("{}/api", domain);
-    
+
     // Convertir le contenu en String
     if let Ok(mut text) = String::from_utf8(content.to_vec()) {
         // Remplacer l'URL par défaut par la valeur de DOMAIN
         text = text.replace("http://localhost:8080/api", &api_url);
-        
+
         tracing::debug!("Replaced API URL with: {}", api_url);
-        
+
         text.into_bytes()
     } else {
         // Si ce n'est pas du texte valide UTF-8, retourner tel quel
