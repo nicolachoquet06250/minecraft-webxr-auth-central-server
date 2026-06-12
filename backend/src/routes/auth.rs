@@ -15,7 +15,7 @@ use crate::{
         UserResponse,
     },
     models::{user, User},
-    services::{hash_password, verify_password, DiscordService, JwtService},
+    services::{hash_password, verify_password},
     AppState,
 };
 

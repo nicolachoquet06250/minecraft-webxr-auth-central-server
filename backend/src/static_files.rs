@@ -1,11 +1,10 @@
 use axum::{
     body::Body,
-    http::{header, StatusCode, Uri},
+    http::{StatusCode, Uri},
     response::{IntoResponse, Response},
 };
 #[cfg(feature = "embed-frontend")]
 use include_dir::{include_dir, Dir};
-use std::env;
 
 #[cfg(feature = "embed-frontend")]
 static ASSETS: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/../frontend/dist");

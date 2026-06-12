@@ -1,4 +1,4 @@
-use axum::{
+/*use axum::{
     body::Body,
     extract::State,
     http::{header, HeaderValue, Method, Request, StatusCode},
@@ -11,10 +11,6 @@ use url::Url;
 
 use crate::{models::server, AppState};
 
-/// Middleware pour gérer le CORS de manière dynamique en fonction des serveurs enregistrés.
-///
-/// Les origines configurées via `CORS_ORIGIN` sont toujours prioritaires et ne dépendent pas de la DB.
-/// `CORS_ORIGIN` accepte une ou plusieurs origines séparées par des virgules.
 pub async fn dynamic_cors_middleware(
     State(state): State<Arc<AppState>>,
     request: Request<Body>,
@@ -157,3 +153,4 @@ mod tests {
         );
     }
 }
+*/

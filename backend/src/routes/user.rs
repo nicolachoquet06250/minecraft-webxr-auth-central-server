@@ -3,9 +3,8 @@ use axum::{
     http::StatusCode,
     response::Json,
 };
-use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
+use sea_orm::{ActiveModelTrait, EntityTrait, Set};
 use std::sync::Arc;
-use uuid::Uuid;
 use validator::Validate;
 
 use crate::{
