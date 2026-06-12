@@ -186,7 +186,7 @@ jobs:
       #     script: |
       #       cd ${{ secrets.ALWAYSDATA_DEPLOY_PATH }}
       #       ./voxicraft-auth-backend migrate
-      
+
       # =====================================================
       # 1. CHECKOUT CODE
       # =====================================================
@@ -198,8 +198,8 @@ jobs:
       # =====================================================
       - name: 🔄 Restart server via AlwaysData API
         run: |
-          chmod +x restart_server.sh
-          ./restart_server.sh ${{secrets.ALWAYSDATA_API_KEY}} ${{secrets.ALWAYSDATA_ACCOUNT}} ${{secrets.ALWAYSDATA_SITE_ID}}
+          chmod +x restart-server.sh
+          ./restart-server.sh ${{secrets.ALWAYSDATA_API_KEY}} ${{secrets.ALWAYSDATA_ACCOUNT}} ${{secrets.ALWAYSDATA_SITE_ID}}
 
       # =====================================================
       # 11. HEALTH CHECK
