@@ -62,7 +62,6 @@ async fn main() -> anyhow::Result<()> {
         discord_service,
     });
 
-    // Public routes (no auth required)
     let public_routes = Router::new()
         .route("/auth/register", post(routes::auth::register))
         .route("/auth/login", post(routes::auth::login))
@@ -71,11 +70,15 @@ async fn main() -> anyhow::Result<()> {
         .route("/users/:id", get(routes::user::get_user_by_id))
         .route("/servers/:id", get(routes::server::get_server));
 
-    // Protected routes (auth required)
     let protected_routes = Router::new()
         .route("/users/me", get(routes::user::get_profile))
         .route("/users/me", put(routes::user::update_profile))
         .route("/users/me", delete(routes::user::delete_account))
+        .route("/users/me/avatar", get(routes::avatar::get_active_avatar))
+        .route("/users/me/avatars", get(routes::avatar::list_avatars))
+        .route("/users/me/avatars", post(routes::avatar::create_avatar_copy))
+        .route("/users/me/avatars/:id", put(routes::avatar::update_avatar))
+        .route("/users/me/avatars/:id/select", put(routes::avatar::select_avatar))
         .route("/servers", post(routes::server::create_server))
         .route("/servers", get(routes::server::get_user_servers))
         .route("/servers/:id", put(routes::server::update_server))
