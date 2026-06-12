@@ -17,9 +17,11 @@ tower-http = { version = "0.5", features = ["cors", "trace"] }
 # Async runtime
 tokio = { version = "1", features = ["full"] }
 
-# Database ORM (using rustls instead of native-tls)
-sea-orm = { version = "0.12", features = ["sqlx-mysql", "runtime-tokio-rustls", "macros"] }
-sea-orm-migration = "0.12"
+# Database ORM. The selected engine is driven by DATABASE_URL:
+# - sqlite://./data/dev.sqlite?mode=rwc for local development
+# - mysql://user:password@host:3306/database for production
+sea-orm = { version = "0.12", features = ["sqlx-mysql", "sqlx-sqlite", "runtime-tokio-rustls", "macros"] }
+sea-orm-migration = { version = "0.12", features = ["sqlx-mysql", "sqlx-sqlite", "runtime-tokio-rustls"] }
 
 # Serialization
 serde = { version = "1", features = ["derive"] }
