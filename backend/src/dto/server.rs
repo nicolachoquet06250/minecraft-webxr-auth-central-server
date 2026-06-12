@@ -5,13 +5,10 @@ use validator::Validate;
 pub struct CreateServerRequest {
     #[validate(length(min = 3, max = 50))]
     pub name: String,
-    
-    #[validate(url)]
-    pub relay_domain: String,
-    
+
     #[validate(url)]
     pub game_domain: String,
-    
+
     #[validate(length(max = 500))]
     pub description: Option<String>,
 }
@@ -20,10 +17,10 @@ pub struct CreateServerRequest {
 pub struct UpdateServerRequest {
     #[validate(length(min = 3, max = 50))]
     pub name: Option<String>,
-    
+
     #[validate(length(max = 500))]
     pub description: Option<String>,
-    
+
     pub is_active: Option<bool>,
 }
 
@@ -32,7 +29,6 @@ pub struct ServerResponse {
     pub id: String,
     pub owner_id: String,
     pub name: String,
-    pub relay_domain: String,
     pub game_domain: String,
     pub description: Option<String>,
     pub is_active: bool,
