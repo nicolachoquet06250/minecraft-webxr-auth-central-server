@@ -1,163 +1,271 @@
 <template>
   <div class="avatar-builder voxicraft-bg">
-    <div class="voxicraft-container">
-      <div class="builder-header">
-        <button @click="goBack" class="voxicraft-button back-button">← Retour au profil</button>
-        <div>
-          <h1 class="voxicraft-title">🎭 Builder d'avatar</h1>
-          <p class="voxicraft-text subtitle">Personnage généré avec le character-builder du repo Minecraft WebXR.</p>
-        </div>
-      </div>
-
-      <div class="builder-layout">
-        <section class="viewport-card voxicraft-panel">
-          <canvas ref="canvasRef" class="avatar-canvas" />
-        </section>
-        <aside class="tools-card voxicraft-panel">
-          <h2>Configuration</h2>
-          <div class="status-list">
-            <div class="status-item">✅ Babylon.js</div>
-            <div class="status-item">✅ buildCharacter()</div>
-            <div class="status-item">✅ matrices Steve/Alex</div>
-            <div class="status-item">✅ SVG toujours généré</div>
-            <div class="status-item">✅ zoom canvas isolé</div>
-            <div class="status-item">✅ aucun sol</div>
-          </div>
-        </aside>
-      </div>
-
-      <section class="custom-avatar-svg-card voxicraft-panel">
-        <div class="svg-card-header">
+    <div class="voxicraft-container builder-layout">
+      <section class="voxicraft-panel viewer-card">
+        <div class="header-row">
+          <button class="voxicraft-button" type="button" @click="router.push({ name: 'profile' })">Retour au profil</button>
           <div>
-            <h2>Avatar du viewer en SVG</h2>
-            <p class="voxicraft-text">Conversion du mesh actuellement affiché dans le viewer, qu'il soit standard ou custom.</p>
+            <h1 class="voxicraft-title">Builder d'avatar</h1>
+            <p class="voxicraft-text">Edition pixel par pixel avec couleur RGBA.</p>
           </div>
-          <span class="custom-status enabled">SVG généré</span>
+          <span class="status-pill">{{ overwriteAllowed ? 'Original modifiable' : 'Original protege' }}</span>
         </div>
-        <div v-if="connectedAvatarSvg" class="svg-preview-box" v-html="connectedAvatarSvg"></div>
-        <div v-else class="svg-empty-state">Génération SVG en attente du mesh du viewer.</div>
+        <canvas ref="canvasRef" class="avatar-canvas" />
       </section>
+
+      <aside v-if="currentAvatar" class="voxicraft-panel editor-card">
+        <label class="field-label">Nom</label>
+        <input v-model="avatarName" class="text-input" maxlength="80" />
+
+        <label class="field-label">Partie</label>
+        <div class="chips">
+          <button v-for="part in avatarPartNames" :key="part" class="chip" :class="{ active: selectedPart === part }" type="button" @click="selectedPart = part">
+            {{ partLabels[part] }}
+          </button>
+        </div>
+
+        <label class="field-label">Face</label>
+        <div class="chips">
+          <button v-for="face in avatarFaceNames" :key="face" class="chip" :class="{ active: selectedFace === face }" type="button" @click="selectedFace = face">
+            {{ faceLabels[face] }}
+          </button>
+        </div>
+
+        <label class="field-label">Couleur</label>
+        <div class="color-row">
+          <input v-model="selectedHex" type="color" class="color-input" />
+          <label class="alpha-field">
+            Alpha {{ selectedAlpha.toFixed(2) }}
+            <input v-model.number="selectedAlpha" type="range" min="0" max="1" step="0.01" />
+          </label>
+          <span class="swatch" :style="{ background: selectedColorCss }"></span>
+        </div>
+
+        <div class="grid-title">{{ partLabels[selectedPart] }} / {{ faceLabels[selectedFace] }}</div>
+        <div class="pixel-grid" :style="{ gridTemplateColumns: `repeat(${activeTexture.width}, 1fr)` }">
+          <button
+            v-for="pixel in facePixels"
+            :key="`${pixel.x}-${pixel.y}`"
+            class="pixel"
+            type="button"
+            :style="{ background: pixel.cssColor }"
+            @click="paint(pixel.x, pixel.y)"
+            @contextmenu.prevent="pick(pixel.x, pixel.y)"
+          />
+        </div>
+        <p class="help-text">Clic gauche: peindre. Clic droit: reprendre la couleur.</p>
+
+        <div class="actions">
+          <button class="action primary" type="button" :disabled="saving || !avatarName.trim()" @click="saveCopy">Enregistrer comme copie</button>
+          <button class="action secondary" type="button" :disabled="saving || !overwriteAllowed || !avatarName.trim()" @click="overwrite">Ecraser l'original</button>
+        </div>
+
+        <p v-if="successMessage" class="success">{{ successMessage }}</p>
+        <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
+      </aside>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import '@babylonjs/loaders'
 import { ArcRotateCamera, Color4, Engine, HemisphericLight, Mesh, Scene, Vector3 } from '@babylonjs/core'
+import { avatarApi } from '@/api'
 import { useAuthStore } from '@/stores/auth'
 import { buildCharacter } from '@/character-builder/character-builder'
-import { generateCharacterPerspectiveSvg } from '@/character-builder/svg-export'
-import { alexModelTextures } from '@/character-builder/alex-color-matrices'
-import { steveModelTextures } from '@/character-builder/steve-color-matrices'
-import type { BodyType, CharacterModel } from '@/character-builder/types'
+import {
+  avatarFaceNames,
+  avatarPartNames,
+  colorToCss,
+  createCharacterModelFromAvatar,
+  createEditableAvatar,
+  createEditableAvatarFromApi,
+  getTexturePixelColor,
+  hexToRgba,
+  paintAvatarPixel,
+  rgbaToHex,
+  texturesToTextureData,
+  type AvatarFaceName,
+  type AvatarPartName,
+  type EditableAvatar,
+} from '@/character-builder/avatar-editor'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const canvasRef = ref<HTMLCanvasElement | null>(null)
-const connectedAvatarSvg = ref('')
+const currentAvatar = ref<EditableAvatar | null>(null)
+const avatarName = ref('')
+const selectedPart = ref<AvatarPartName>('head')
+const selectedFace = ref<AvatarFaceName>('front')
+const selectedHex = ref('#000000')
+const selectedAlpha = ref(1)
+const saving = ref(false)
+const successMessage = ref('')
+const errorMessage = ref('')
+
+const partLabels: Record<AvatarPartName, string> = { head: 'Tete', torso: 'Torse', rightArm: 'Bras droit', leftArm: 'Bras gauche', rightLeg: 'Jambe droite', leftLeg: 'Jambe gauche' }
+const faceLabels: Record<AvatarFaceName, string> = { front: 'Avant', back: 'Arriere', top: 'Dessus', bottom: 'Dessous', left: 'Gauche', right: 'Droite' }
 
 let engine: Engine | null = null
 let scene: Scene | null = null
 let avatarRoot: Mesh | null = null
 
-const avatarName = computed(() => authStore.user?.avatar?.trim() || 'alex')
-const isSteveAvatar = computed(() => avatarName.value === 'steve')
+const overwriteAllowed = computed(() => !!currentAvatar.value && !currentAvatar.value.overwriteLocked)
+const activeTexture = computed(() => currentAvatar.value!.textures[selectedPart.value][selectedFace.value])
+const selectedColor = computed(() => hexToRgba(selectedHex.value, selectedAlpha.value))
+const selectedColorCss = computed(() => colorToCss(selectedColor.value))
+const facePixels = computed(() => {
+  const texture = activeTexture.value
+  const pixels: Array<{ x: number; y: number; cssColor: string }> = []
+  for (let y = 0; y < texture.matrix.length; y += 1) {
+    for (let x = 0; x < texture.matrix[y].length; x += 1) {
+      pixels.push({ x, y, cssColor: colorToCss(getTexturePixelColor(texture, x, y)) })
+    }
+  }
+  return pixels
+})
 
-const goBack = () => router.push({ name: 'profile' })
+onMounted(async () => {
+  await loadAvatar()
+  await nextTick()
+  initScene()
+  renderAvatar()
+})
 
-const preventCanvasPageScroll = (event: WheelEvent) => {
-  event.preventDefault()
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', resize)
+  avatarRoot?.dispose()
+  scene?.dispose()
+  engine?.dispose()
+})
+
+watch(() => currentAvatar.value, () => {
+  if (!currentAvatar.value) return
+  avatarName.value = currentAvatar.value.name
+  syncColorFromPixel()
+  renderAvatar()
+}, { deep: true })
+
+watch([selectedPart, selectedFace], syncColorFromPixel)
+
+async function loadAvatar() {
+  if (!authStore.user) await authStore.fetchProfile()
+  const active = await avatarApi.getActive().then((response) => response.data).catch(() => null)
+  if (active?.avatar) {
+    currentAvatar.value = createEditableAvatarFromApi(active.avatar)
+  } else {
+    currentAvatar.value = createEditableAvatar(authStore.user?.avatar || 'alex')
+  }
+  avatarName.value = currentAvatar.value.name
 }
 
-const initializeBabylon = () => {
+function initScene() {
   const canvas = canvasRef.value
   if (!canvas) return
-
   engine = new Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true, antialias: true })
   scene = new Scene(engine)
   scene.clearColor = new Color4(0.03, 0.04, 0.08, 1)
-
   const camera = new ArcRotateCamera('avatar-builder-camera', Math.PI / 2, Math.PI / 2.35, 4.2, new Vector3(0, 1, 0), scene)
   camera.attachControl(canvas, true)
   camera.lowerRadiusLimit = 2.4
   camera.upperRadiusLimit = 7
   camera.wheelDeltaPercentage = 0.01
-
   const light = new HemisphericLight('avatar-builder-light', new Vector3(0, 1, 0), scene)
   light.intensity = 0.95
-
-  avatarRoot = buildCharacter(scene, model(), Vector3.Zero(), { physics: false })
-  refreshSvg()
-
-  canvas.addEventListener('wheel', preventCanvasPageScroll, { passive: false })
   engine.runRenderLoop(() => scene?.render())
-  window.addEventListener('resize', resizeEngine)
+  window.addEventListener('resize', resize)
 }
 
-const refreshSvg = () => {
-  connectedAvatarSvg.value = avatarRoot
-    ? generateCharacterPerspectiveSvg(avatarRoot, { width: 360, height: 360, padding: 18, background: 'rgba(3, 4, 8, 1)' })
-    : ''
+function renderAvatar() {
+  if (!scene || !currentAvatar.value) return
+  avatarRoot?.dispose()
+  avatarRoot = buildCharacter(scene, createCharacterModelFromAvatar(currentAvatar.value), Vector3.Zero(), { physics: false })
 }
 
-const model = (): CharacterModel => {
-  const textures = isSteveAvatar.value ? steveModelTextures : alexModelTextures
-  const armWidth = isSteveAvatar.value ? 0.25 : 0.1875
-  const armOffset = isSteveAvatar.value ? 0.375 : 0.34375
-  const bodyType: BodyType = isSteveAvatar.value ? 'masculine' : 'custom'
+function resize() { engine?.resize() }
 
-  return {
-    name: 'connectedAvatar',
-    bodyType,
-    bodyParts: [
-      { name: 'head', dimensions: { width: 0.5, height: 0.5, depth: 0.5 }, position: { x: 0, y: 1.625, z: 0 }, textures: textures.head },
-      { name: 'torso', dimensions: { width: 0.5, height: 0.75, depth: 0.25 }, position: { x: 0, y: 1, z: 0 }, textures: textures.torso },
-      { name: 'rightArm', dimensions: { width: armWidth, height: 0.75, depth: 0.25 }, position: { x: -armOffset, y: 1, z: 0 }, pivot: { x: 0, y: 0.375, z: 0 }, textures: textures.rightArm },
-      { name: 'leftArm', dimensions: { width: armWidth, height: 0.75, depth: 0.25 }, position: { x: armOffset, y: 1, z: 0 }, pivot: { x: 0, y: 0.375, z: 0 }, textures: textures.leftArm },
-      { name: 'rightLeg', dimensions: { width: 0.25, height: 0.75, depth: 0.25 }, position: { x: -0.125, y: 0.25, z: 0 }, pivot: { x: 0, y: 0.375, z: 0 }, textures: textures.rightLeg },
-      { name: 'leftLeg', dimensions: { width: 0.25, height: 0.75, depth: 0.25 }, position: { x: 0.125, y: 0.25, z: 0 }, pivot: { x: 0, y: 0.375, z: 0 }, textures: textures.leftLeg },
-    ],
+function syncColorFromPixel() {
+  if (!currentAvatar.value) return
+  const color = getTexturePixelColor(activeTexture.value, 0, 0)
+  selectedHex.value = rgbaToHex(color)
+  selectedAlpha.value = color[3]
+}
+
+function paint(x: number, y: number) {
+  if (!currentAvatar.value) return
+  currentAvatar.value = paintAvatarPixel(currentAvatar.value, selectedPart.value, selectedFace.value, x, y, selectedColor.value)
+}
+
+function pick(x: number, y: number) {
+  const color = getTexturePixelColor(activeTexture.value, x, y)
+  selectedHex.value = rgbaToHex(color)
+  selectedAlpha.value = color[3]
+}
+
+async function saveCopy() {
+  if (!currentAvatar.value || !avatarName.value.trim()) return
+  saving.value = true
+  successMessage.value = ''
+  errorMessage.value = ''
+  try {
+    const created = await avatarApi.createCopy({ name: avatarName.value.trim(), base_kind: currentAvatar.value.baseKind, texture_data: texturesToTextureData({ ...currentAvatar.value, name: avatarName.value.trim() }) }).then((response) => response.data)
+    await avatarApi.select(created.id)
+    currentAvatar.value = createEditableAvatarFromApi(created)
+    successMessage.value = 'Copie enregistree.'
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : 'Erreur lors de la sauvegarde.'
+  } finally {
+    saving.value = false
   }
 }
 
-const resizeEngine = () => engine?.resize()
-
-onMounted(async () => {
-  if (!authStore.user) await authStore.fetchProfile()
-  initializeBabylon()
-})
-
-onBeforeUnmount(() => {
-  canvasRef.value?.removeEventListener('wheel', preventCanvasPageScroll)
-  window.removeEventListener('resize', resizeEngine)
-  scene?.dispose()
-  engine?.dispose()
-})
+async function overwrite() {
+  if (!currentAvatar.value || !avatarName.value.trim() || currentAvatar.value.overwriteLocked) return
+  saving.value = true
+  successMessage.value = ''
+  errorMessage.value = ''
+  try {
+    const updated = await avatarApi.update(currentAvatar.value.id, { name: avatarName.value.trim(), texture_data: texturesToTextureData({ ...currentAvatar.value, name: avatarName.value.trim() }) }).then((response) => response.data)
+    currentAvatar.value = createEditableAvatarFromApi(updated)
+    successMessage.value = 'Avatar ecrase.'
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : 'Erreur lors de la sauvegarde.'
+  } finally {
+    saving.value = false
+  }
+}
 </script>
 
 <style scoped>
 .avatar-builder { min-height: calc(100vh - 80px); padding: 2rem 1rem; }
-.voxicraft-container { max-width: 1400px; margin: 0 auto; }
-.builder-header { display: flex; align-items: center; gap: 1.5rem; margin-bottom: 2rem; }
-.back-button { flex-shrink: 0; background-color: #424242; border-color: #212121; }
-.subtitle { margin-top: 0.5rem; opacity: 0.85; }
-.builder-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 2rem; }
-.viewport-card { min-height: 680px; padding: 0; overflow: hidden; }
-.avatar-canvas { display: block; width: 100%; height: 680px; outline: none; touch-action: none; }
-.tools-card, .custom-avatar-svg-card { padding: 1.5rem; }
-.tools-card h2, .custom-avatar-svg-card h2 { margin-bottom: 1rem; color: #64ffda; }
-.status-list { display: grid; gap: 0.75rem; margin-top: 1.5rem; }
-.status-item { padding: 0.75rem; border: 1px solid rgba(100, 255, 218, 0.25); border-radius: 8px; background: rgba(0, 0, 0, 0.2); }
-.custom-avatar-svg-card { margin-top: 2rem; }
-.svg-card-header { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; margin-bottom: 1.5rem; }
-.custom-status { flex-shrink: 0; border-radius: 999px; padding: 0.45rem 0.75rem; font-size: 0.75rem; font-weight: bold; }
-.custom-status.enabled { background: rgba(100, 255, 218, 0.16); color: #64ffda; border: 1px solid rgba(100, 255, 218, 0.45); }
-.custom-status.disabled { background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.15); }
-.svg-preview-box { display: flex; justify-content: center; align-items: center; min-height: 420px; border: 3px solid rgba(100, 255, 218, 0.35); border-radius: 12px; background: rgba(0, 0, 0, 0.35); overflow: hidden; }
-.svg-preview-box :deep(svg) { width: min(360px, 100%); height: auto; display: block; }
-.svg-empty-state { padding: 2rem; border: 2px dashed rgba(255, 255, 255, 0.25); border-radius: 12px; color: rgba(255, 255, 255, 0.75); background: rgba(0, 0, 0, 0.25); line-height: 1.7; }
-@media (max-width: 1024px) { .builder-layout { grid-template-columns: 1fr; } .viewport-card, .avatar-canvas { min-height: 520px; height: 520px; } }
-@media (max-width: 768px) { .builder-header, .svg-card-header { align-items: flex-start; flex-direction: column; } .avatar-builder { padding: 1rem; } }
+.voxicraft-container { max-width: 1500px; margin: 0 auto; }
+.builder-layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(420px, 0.85fr); gap: 2rem; align-items: start; }
+.viewer-card, .editor-card { padding: 1.5rem; }
+.header-row { display: grid; grid-template-columns: auto 1fr auto; gap: 1rem; align-items: start; margin-bottom: 1rem; }
+.avatar-canvas { display: block; width: 100%; height: 680px; outline: none; touch-action: none; border-radius: 12px; background: rgba(0, 0, 0, 0.35); }
+.status-pill { border: 1px solid rgba(100,255,218,.45); color: #64ffda; border-radius: 999px; padding: .5rem .75rem; background: rgba(0,0,0,.25); }
+.editor-card { display: flex; flex-direction: column; gap: 1rem; }
+.field-label, .grid-title { color: #ffd700; font-weight: 700; }
+.text-input { padding: .75rem 1rem; border-radius: 8px; border: 2px solid #424242; background: rgba(0,0,0,.55); color: #fff; }
+.chips { display: flex; flex-wrap: wrap; gap: .5rem; }
+.chip { border: 2px solid rgba(100,255,218,.2); background: rgba(0,0,0,.3); color: #fff; border-radius: 999px; padding: .55rem .75rem; cursor: pointer; }
+.chip.active { border-color: #64ffda; color: #64ffda; background: rgba(100,255,218,.18); }
+.color-row { display: grid; grid-template-columns: auto 1fr auto; gap: 1rem; align-items: center; color: #fff; }
+.color-input { width: 64px; height: 64px; }
+.alpha-field { display: flex; flex-direction: column; gap: .4rem; }
+.swatch { width: 52px; height: 52px; border-radius: 8px; border: 2px solid rgba(255,255,255,.3); }
+.pixel-grid { display: grid; gap: 2px; padding: .5rem; border-radius: 10px; background: rgba(0,0,0,.35); }
+.pixel { width: 100%; aspect-ratio: 1 / 1; border: 1px solid rgba(255,255,255,.12); cursor: crosshair; }
+.help-text { color: rgba(255,255,255,.75); margin: 0; }
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.action { padding: .9rem 1rem; border-radius: 8px; border: 3px solid transparent; font-weight: 700; cursor: pointer; }
+.action.primary { background: #4caf50; border-color: #2e7d32; color: #fff; }
+.action.secondary { background: #ff9800; border-color: #ef6c00; color: #1a1a1a; }
+.action:disabled { opacity: .5; cursor: not-allowed; }
+.success { color: #7cfc9a; font-weight: 700; }
+.error { color: #ff8a80; font-weight: 700; }
+@media (max-width: 1100px) { .builder-layout { grid-template-columns: 1fr; } .header-row { grid-template-columns: 1fr; } .avatar-canvas { height: 520px; } }
+@media (max-width: 720px) { .avatar-builder { padding: 1rem; } .color-row, .actions { grid-template-columns: 1fr; } }
 </style>
