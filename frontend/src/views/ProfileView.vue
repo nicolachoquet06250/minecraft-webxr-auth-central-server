@@ -21,9 +21,9 @@
         </div>
 
         <div class="header-actions">
-          <router-link to="/profile/avatar-builder" class="btn-avatar primary-avatar-action">🎨 Créer son avatar</router-link>
-          <router-link to="/profile/avatar-builder" class="btn-avatar secondary-avatar-action">🧩 Modifier son avatar</router-link>
-          <button @click="showEditForm = !showEditForm" class="btn-edit">{{ showEditForm ? 'Annuler' : 'Modifier' }}</button>
+          <router-link to="/profile/avatar-builder" class="btn-avatar primary-avatar-action">🎨 Créer mon avatar</router-link>
+          <router-link to="/profile/avatar-builder" class="btn-avatar secondary-avatar-action">🧩 Modifier mon avatar</router-link>
+          <button @click="showEditForm = !showEditForm" class="btn-edit">{{ showEditForm ? 'Annuler' : 'Modifier mon profile' }}</button>
         </div>
       </div>
 
@@ -47,8 +47,14 @@
           <div class="voxicraft-panel">
             <h2 class="card-title">⚡ Actions rapides</h2>
             <div class="actions-grid">
-              <router-link to="/profile/avatar-builder" class="action-btn primary-avatar-action">🎨<span>Créer son avatar</span></router-link>
-              <router-link to="/profile/avatar-builder" class="action-btn secondary-avatar-action">🧩<span>Modifier son avatar</span></router-link>
+              <router-link to="/profile/avatar-builder" class="btn-avatar primary-avatar-action">
+                <span class="btn-icon">🎨</span>
+                Créer mon avatar
+              </router-link>
+              <router-link to="/profile/avatar-builder" class="btn-avatar secondary-avatar-action">
+                <span class="btn-icon">🧩</span>
+                Modifier mon avatar
+              </router-link>
               <router-link to="/servers" class="action-btn">🖥️<span>Mes serveurs</span></router-link>
               <button @click="showEditForm = true" class="action-btn" v-if="!showEditForm">✏️<span>Modifier profil</span></button>
             </div>
@@ -92,13 +98,13 @@
             <div class="stats-grid">
               <div class="stat-item"><strong>{{ serverCount }}</strong><span>Serveurs</span></div>
               <div class="stat-item"><strong>{{ daysSinceJoined }}</strong><span>Jours</span></div>
-              <div class="stat-item"><strong>{{ authStore.user.age_verified ? 'Oui' : 'Non' }}</strong><span>Vérifié</span></div>
             </div>
           </div>
 
           <div v-if="!showEditForm" class="voxicraft-panel">
             <h2 class="card-title">🔒 Sécurité et confidentialité</h2>
-            <div class="bio-content">JWT Token actif · Email : {{ authStore.user.email }}</div>
+            <div class="bio-content">JWT Token actif</div>
+            <div class="bio-content">Email : {{ authStore.user.email }}</div>
           </div>
         </div>
       </div>
@@ -156,8 +162,12 @@ const handleUpdate = async () => {
 .info-item, .bio-content, .stat-item { padding: 1rem; background: rgba(0, 0, 0, 0.3); border: 2px solid rgba(100, 255, 218, 0.2); border-radius: 8px; }
 .info-item { display: flex; justify-content: space-between; gap: 1rem; color: #fff; }
 .actions-grid, .stats-grid, .avatar-selector { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1rem; }
+.actions-grid {
+  display: flex;
+  flex-wrap: wrap;
+}
 .btn-edit, .btn-avatar, .btn-submit, .btn-cancel, .action-btn { display: flex; align-items: center; justify-content: center; gap: 0.5rem; color: #fff; font-family: 'Press Start 2P', cursive; cursor: pointer; border-radius: 5px; text-decoration: none; transition: all 0.3s ease; padding: 0.9rem 1rem; border: 3px solid rgba(100, 255, 218, 0.2); background: rgba(0, 0, 0, 0.3); }
-.action-btn { flex-direction: column; min-height: 96px; }
+.action-btn { flex-direction: column; min-height: 96px; padding-inline: 1rem; width: max-content; max-width: 200px; }
 .primary-avatar-action { background: linear-gradient(135deg, #8e24aa, #ba68c8); border-color: #6a1b9a; }
 .secondary-avatar-action { background: linear-gradient(135deg, #ff8f00, #ffb300); border-color: #ef6c00; color: #1a1a1a; }
 .form-label { color: #ffd700; font-size: 0.75rem; }
