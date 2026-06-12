@@ -21,6 +21,9 @@ let engine: NullEngine | null = null
 let scene: Scene | null = null
 let mesh: Mesh | null = null
 
+const PREVIEW_WIDTH = 180
+const PREVIEW_HEIGHT = 280
+
 const altText = computed(() => props.customAvatar ? `Avatar ${props.customAvatar.name}` : 'Avatar SVG')
 
 const renderSvg = () => {
@@ -31,7 +34,7 @@ const renderSvg = () => {
     ? createEditableAvatarFromApi(props.customAvatar)
     : createEditableAvatar(getSelectedAvatarName(props.avatar))
   mesh = buildCharacter(scene, createCharacterModelFromAvatar(avatar), Vector3.Zero(), { physics: false })
-  const svg = generateCharacterPerspectiveSvg(mesh, { width: 280, height: 280, padding: 14, background: 'rgba(3, 4, 8, 1)' })
+  const svg = generateCharacterPerspectiveSvg(mesh, { width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT, padding: 14, background: 'rgba(3, 4, 8, 1)' })
   svgUrl.value = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
 }
 
@@ -51,7 +54,7 @@ onBeforeUnmount(disposeScene)
 
 <style scoped>
 .avatar-svg-preview { width: 100%; }
-.svg-preview-box { display: flex; align-items: center; justify-content: center; min-height: 300px; border: 3px solid rgba(100, 255, 218, 0.35); border-radius: 12px; background: rgba(0, 0, 0, 0.35); overflow: hidden; }
-.svg-image { width: min(280px, 100%); height: auto; display: block; image-rendering: crisp-edges; }
+.svg-preview-box { display: flex; align-items: center; justify-content: center; min-height: 300px; aspect-ratio: 9 / 14; border: 3px solid rgba(100, 255, 218, 0.35); border-radius: 12px; background: rgba(0, 0, 0, 0.35); overflow: hidden; }
+.svg-image { width: min(180px, 100%); height: auto; display: block; image-rendering: crisp-edges; }
 .svg-empty-state { padding: 2rem; border: 2px dashed rgba(255, 255, 255, 0.25); border-radius: 12px; color: rgba(255, 255, 255, 0.75); background: rgba(0, 0, 0, 0.25); line-height: 1.7; }
 </style>
