@@ -1,30 +1,35 @@
 <template>
   <div class="avatar-svg-preview">
     <div v-if="svgUrl" class="svg-preview-box">
-      <img :src="svgUrl" alt="Avatar SVG" class="svg-image" />
+      <img :src="svgUrl" :alt="altText" class="svg-image" />
     </div>
     <div v-else class="svg-empty-state">Génération SVG en attente.</div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { NullEngine, Scene, Mesh, Vector3 } from '@babylonjs/core'
+import type { UserAvatar } from '@/api'
 import { buildCharacter } from '@/character-builder/character-builder'
 import { generateCharacterPerspectiveSvg } from '@/character-builder/svg-export'
-import { createCharacterModelFromAvatar, createEditableAvatar, getSelectedAvatarName } from '@/character-builder/avatar-editor'
+import { createCharacterModelFromAvatar, createEditableAvatar, createEditableAvatarFromApi, getSelectedAvatarName } from '@/character-builder/avatar-editor'
 
-const props = defineProps<{ avatar?: string }>()
+const props = defineProps<{ avatar?: string; customAvatar?: UserAvatar }>()
 const svgUrl = ref('')
 let engine: NullEngine | null = null
 let scene: Scene | null = null
 let mesh: Mesh | null = null
 
+const altText = computed(() => props.customAvatar ? `Avatar ${props.customAvatar.name}` : 'Avatar SVG')
+
 const renderSvg = () => {
   disposeScene()
   engine = new NullEngine()
   scene = new Scene(engine)
-  const avatar = createEditableAvatar(getSelectedAvatarName(props.avatar))
+  const avatar = props.customAvatar
+    ? createEditableAvatarFromApi(props.customAvatar)
+    : createEditableAvatar(getSelectedAvatarName(props.avatar))
   mesh = buildCharacter(scene, createCharacterModelFromAvatar(avatar), Vector3.Zero(), { physics: false })
   const svg = generateCharacterPerspectiveSvg(mesh, { width: 280, height: 280, padding: 14, background: 'rgba(3, 4, 8, 1)' })
   svgUrl.value = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
@@ -39,6 +44,7 @@ const disposeScene = () => {
 }
 
 watch(() => props.avatar, renderSvg)
+watch(() => props.customAvatar, renderSvg, { deep: true })
 onMounted(renderSvg)
 onBeforeUnmount(disposeScene)
 </script>
