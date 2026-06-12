@@ -3,6 +3,10 @@ name = "voxicraft-auth-backend"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = []
+embed-frontend = ["dep:include_dir"]
+
 [dependencies]
 # Web framework
 axum = "0.7"
@@ -51,5 +55,5 @@ urlencoding = "2"
 url = "2"
 
 # Static file embedding
-include_dir = "0.7"
+include_dir = { version = "0.7", optional = true }
 mime_guess = "2"
