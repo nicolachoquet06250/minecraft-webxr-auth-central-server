@@ -186,6 +186,12 @@ jobs:
       #     script: |
       #       cd ${{ secrets.ALWAYSDATA_DEPLOY_PATH }}
       #       ./voxicraft-auth-backend migrate
+      
+      # =====================================================
+      # 1. CHECKOUT CODE
+      # =====================================================
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
 
       # =====================================================
       # 11. RESTART SERVER VIA ALWAYSDATA API
