@@ -136,6 +136,26 @@ pub async fn select_avatar(
     Ok(StatusCode::NO_CONTENT)
 }
 
+pub async fn clear_active_avatar(
+    Extension(claims): Extension<Claims>,
+    State(state): State<Arc<AppState>>,
+) -> Result<StatusCode, StatusCode> {
+    let avatars = Avatar::find()
+        .filter(avatar::Column::UserId.eq(claims.sub))
+        .all(&state.db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    for item in avatars {
+        let mut active: avatar::ActiveModel = item.into();
+        active.is_active = Set(false);
+        active.updated_at = Set(chrono::Utc::now().naive_utc());
+        active.update(&state.db).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    }
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
 fn normalize_base_kind(value: &str) -> String {
     match value {
         "steve" => "steve".to_string(),
