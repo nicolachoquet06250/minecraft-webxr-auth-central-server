@@ -25,7 +25,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Server::Description).text())
                     .col(ColumnDef::new(Server::IsActive).boolean().not_null().default(true))
                     .col(ColumnDef::new(Server::CreatedAt).date_time().not_null().default(Expr::current_timestamp()))
-                    .col(updated_at)
+                    .col(&mut updated_at)
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_servers_owner_id")
