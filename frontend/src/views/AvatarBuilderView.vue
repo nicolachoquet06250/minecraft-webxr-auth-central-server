@@ -5,11 +5,11 @@
         <div class="header-row">
           <div class="header-actions">
             <button class="voxicraft-button back-button" type="button" @click="router.push({ name: 'profile' })">Retour au profil</button>
-            <span class="status-pill">{{ overwriteAllowed ? 'Original modifiable' : 'Original protege' }}</span>
+            <span class="status-pill">{{ overwriteAllowed ? 'Original modifiable' : 'Original protégé' }}</span>
           </div>
           <div class="header-title">
-            <h1>Builder d'avatar</h1>
-            <p class="voxicraft-text">Edition pixel par pixel avec couleur RGBA.</p>
+            <h1>Éditeur d'avatar</h1>
+            <p class="voxicraft-text">Édition pixel par pixel avec couleur RGBA.</p>
           </div>
         </div>
         <canvas ref="canvasRef" class="avatar-canvas" />
@@ -107,8 +107,8 @@ const saving = ref(false)
 const successMessage = ref('')
 const errorMessage = ref('')
 
-const partLabels: Record<AvatarPartName, string> = { head: 'Tete', torso: 'Torse', rightArm: 'Bras droit', leftArm: 'Bras gauche', rightLeg: 'Jambe droite', leftLeg: 'Jambe gauche' }
-const faceLabels: Record<AvatarFaceName, string> = { front: 'Avant', back: 'Arriere', top: 'Dessus', bottom: 'Dessous', left: 'Gauche', right: 'Droite' }
+const partLabels: Record<AvatarPartName, string> = { head: 'Tête', torso: 'Torse', rightArm: 'Bras droit', leftArm: 'Bras gauche', rightLeg: 'Jambe droite', leftLeg: 'Jambe gauche' }
+const faceLabels: Record<AvatarFaceName, string> = { front: 'Avant', back: 'Arrière', top: 'Dessus', bottom: 'Dessous', left: 'Gauche', right: 'Droite' }
 
 let engine: Engine | null = null
 let scene: Scene | null = null

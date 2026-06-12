@@ -56,7 +56,7 @@
                 Modifier mon avatar
               </router-link>
               <router-link to="/servers" class="action-btn">🖥️<span>Mes serveurs</span></router-link>
-              <button @click="showEditForm = true" class="action-btn" v-if="!showEditForm">✏️<span>Modifier profil</span></button>
+              <button @click="showEditForm = true" class="action-btn" v-if="!showEditForm">✏️<span style="line-height: 25px;">Modifier profil</span></button>
             </div>
           </div>
         </div>
