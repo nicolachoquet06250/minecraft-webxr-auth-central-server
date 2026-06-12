@@ -51,5 +51,5 @@ urlencoding = "2"
 url = "2"
 
 # Static file embedding
-rust-embed = "8"
+include_dir = "0.7"
 mime_guess = "2"
