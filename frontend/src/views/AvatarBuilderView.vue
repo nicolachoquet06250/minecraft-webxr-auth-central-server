@@ -52,6 +52,7 @@ import { buildCharacter } from '@/character-builder/character-builder'
 import { generateCharacterPerspectiveSvg } from '@/character-builder/svg-export'
 import { alexModelTextures } from '@/character-builder/alex-color-matrices'
 import { steveModelTextures } from '@/character-builder/steve-color-matrices'
+import type { BodyType, CharacterModel } from '@/character-builder/types'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -103,14 +104,15 @@ const refreshSvg = () => {
     : ''
 }
 
-const model = () => {
+const model = (): CharacterModel => {
   const textures = isSteveAvatar.value ? steveModelTextures : alexModelTextures
   const armWidth = isSteveAvatar.value ? 0.25 : 0.1875
   const armOffset = isSteveAvatar.value ? 0.375 : 0.34375
+  const bodyType: BodyType = isSteveAvatar.value ? 'masculine' : 'custom'
 
   return {
     name: 'connectedAvatar',
-    bodyType: isSteveAvatar.value ? 'masculine' : 'custom',
+    bodyType,
     bodyParts: [
       { name: 'head', dimensions: { width: 0.5, height: 0.5, depth: 0.5 }, position: { x: 0, y: 1.625, z: 0 }, textures: textures.head },
       { name: 'torso', dimensions: { width: 0.5, height: 0.75, depth: 0.25 }, position: { x: 0, y: 1, z: 0 }, textures: textures.torso },
