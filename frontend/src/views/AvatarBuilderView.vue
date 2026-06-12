@@ -19,6 +19,7 @@
             <div class="status-item">✅ Babylon.js</div>
             <div class="status-item">✅ buildCharacter()</div>
             <div class="status-item">✅ matrices Steve/Alex</div>
+            <div class="status-item">✅ SVG toujours généré</div>
             <div class="status-item">✅ zoom canvas isolé</div>
             <div class="status-item">✅ aucun sol</div>
           </div>
@@ -28,15 +29,13 @@
       <section class="custom-avatar-svg-card voxicraft-panel">
         <div class="svg-card-header">
           <div>
-            <h2>Avatar custom connecté en SVG</h2>
-            <p class="voxicraft-text">Conversion du mesh courant en SVG.</p>
+            <h2>Avatar du viewer en SVG</h2>
+            <p class="voxicraft-text">Conversion du mesh actuellement affiché dans le viewer, qu'il soit standard ou custom.</p>
           </div>
-          <span :class="['custom-status', hasCustomAvatar ? 'enabled' : 'disabled']">
-            {{ hasCustomAvatar ? 'Custom détecté' : 'Aucun custom' }}
-          </span>
+          <span class="custom-status enabled">SVG généré</span>
         </div>
-        <div v-if="hasCustomAvatar && connectedAvatarSvg" class="svg-preview-box" v-html="connectedAvatarSvg"></div>
-        <div v-else class="svg-empty-state">Aucun avatar custom à convertir pour l'utilisateur connecté.</div>
+        <div v-if="connectedAvatarSvg" class="svg-preview-box" v-html="connectedAvatarSvg"></div>
+        <div v-else class="svg-empty-state">Génération SVG en attente du mesh du viewer.</div>
       </section>
     </div>
   </div>
@@ -65,7 +64,6 @@ let avatarRoot: Mesh | null = null
 
 const avatarName = computed(() => authStore.user?.avatar?.trim() || 'alex')
 const isSteveAvatar = computed(() => avatarName.value === 'steve')
-const hasCustomAvatar = computed(() => !!avatarName.value && avatarName.value !== 'steve' && avatarName.value !== 'alex')
 
 const goBack = () => router.push({ name: 'profile' })
 
@@ -99,7 +97,7 @@ const initializeBabylon = () => {
 }
 
 const refreshSvg = () => {
-  connectedAvatarSvg.value = hasCustomAvatar.value && avatarRoot
+  connectedAvatarSvg.value = avatarRoot
     ? generateCharacterPerspectiveSvg(avatarRoot, { width: 360, height: 360, padding: 18, background: 'rgba(3, 4, 8, 1)' })
     : ''
 }
