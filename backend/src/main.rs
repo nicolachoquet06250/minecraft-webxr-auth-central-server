@@ -75,6 +75,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/users/me", put(routes::user::update_profile))
         .route("/users/me", delete(routes::user::delete_account))
         .route("/users/me/avatar", get(routes::avatar::get_active_avatar))
+        .route("/users/me/avatar", delete(routes::avatar::clear_active_avatar))
         .route("/users/me/avatars", get(routes::avatar::list_avatars))
         .route("/users/me/avatars", post(routes::avatar::create_avatar_copy))
         .route("/users/me/avatars/:id", put(routes::avatar::update_avatar))
@@ -140,7 +141,7 @@ fn configured_cors_origins() -> Vec<HeaderValue> {
         .filter_map(|origin| match HeaderValue::from_str(origin) {
             Ok(value) => Some(value),
             Err(error) => {
-                tracing::warn!("Ignoring invalid CORS_ORIGIN value `{}`: {}", origin, error);
+                tracing::warn!("Invalid CORS_ORIGIN entry '{}': {}", origin, error);
                 None
             }
         })
