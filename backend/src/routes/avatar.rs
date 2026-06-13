@@ -16,6 +16,10 @@ use crate::{
     AppState,
 };
 
+pub async fn profile_pic_preflight() -> StatusCode {
+    StatusCode::NO_CONTENT
+}
+
 pub async fn list_avatars(
     Extension(claims): Extension<Claims>,
     State(state): State<Arc<AppState>>,

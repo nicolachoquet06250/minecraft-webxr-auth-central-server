@@ -8,7 +8,7 @@ mod static_files;
 use axum::{
     http::{header, HeaderName, HeaderValue, Method},
     middleware as axum_middleware,
-    routing::{delete, get, post, put},
+    routing::{delete, get, options, post, put},
     Router,
 };
 use dotenvy::dotenv;
@@ -80,7 +80,8 @@ async fn main() -> anyhow::Result<()> {
         .route("/users/me/avatars", post(routes::avatar::create_avatar_copy))
         .route("/users/me/avatars/:id", put(routes::avatar::update_avatar))
         .route("/users/me/avatars/:id/select", put(routes::avatar::select_avatar))
-        .route("/me/profile-pic.svg", get(routes::avatar::get_profile_pic_svg))
+        .route("/users/me/profile-pic.svg", get(routes::avatar::get_profile_pic_svg))
+        .route("/users/me/profile-pic.svg", options(routes::avatar::profile_pic_preflight))
         .route("/servers", post(routes::server::create_server))
         .route("/servers", get(routes::server::get_user_servers))
         .route("/servers/:id", put(routes::server::update_server))
