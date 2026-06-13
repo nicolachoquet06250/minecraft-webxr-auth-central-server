@@ -1,6 +1,6 @@
 use axum::{
     extract::{Request, State},
-    http::{header, HeaderValue, Method, StatusCode},
+    http::{header, HeaderMap, HeaderValue, Method, StatusCode},
     middleware::Next,
     response::{IntoResponse, Response},
 };
@@ -91,7 +91,7 @@ fn normalize_origin(value: &str) -> Option<String> {
     }
 }
 
-fn add_preflight_cors_headers(headers: &mut header::HeaderMap, origin: &HeaderValue) {
+fn add_preflight_cors_headers(headers: &mut HeaderMap, origin: &HeaderValue) {
     add_common_cors_headers(headers, origin);
     headers.insert(
         header::ACCESS_CONTROL_ALLOW_METHODS,
@@ -107,7 +107,7 @@ fn add_preflight_cors_headers(headers: &mut header::HeaderMap, origin: &HeaderVa
     );
 }
 
-fn add_response_cors_headers(headers: &mut header::HeaderMap, origin: &HeaderValue) {
+fn add_response_cors_headers(headers: &mut HeaderMap, origin: &HeaderValue) {
     add_common_cors_headers(headers, origin);
     headers.insert(
         header::ACCESS_CONTROL_EXPOSE_HEADERS,
@@ -115,7 +115,7 @@ fn add_response_cors_headers(headers: &mut header::HeaderMap, origin: &HeaderVal
     );
 }
 
-fn add_common_cors_headers(headers: &mut header::HeaderMap, origin: &HeaderValue) {
+fn add_common_cors_headers(headers: &mut HeaderMap, origin: &HeaderValue) {
     headers.insert(header::ACCESS_CONTROL_ALLOW_ORIGIN, origin.clone());
     headers.insert(
         header::ACCESS_CONTROL_ALLOW_CREDENTIALS,
