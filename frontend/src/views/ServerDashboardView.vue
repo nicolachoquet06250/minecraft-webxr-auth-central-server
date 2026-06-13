@@ -3,9 +3,7 @@
     <div class="voxicraft-container">
       <div class="page-header">
         <div class="header-top">
-          <button @click="goBack" class="back-button voxicraft-button">
-            ← Retour aux serveurs
-          </button>
+          <button @click="goBack" class="back-button voxicraft-button">← Retour aux serveurs</button>
         </div>
         <h1 class="voxicraft-title">📊 Dashboard - {{ serverName }}</h1>
         <p class="voxicraft-text subtitle">Statistiques et analyses en temps réel</p>
@@ -95,9 +93,7 @@
         <div class="info-section voxicraft-panel">
           <div class="section-header">
             <h2>👥 Joueurs actuellement connectés</h2>
-            <span :class="['websocket-status', websocketStatusClass]">
-              {{ websocketStatusLabel }}
-            </span>
+            <span :class="['websocket-status', websocketStatusClass]">{{ websocketStatusLabel }}</span>
           </div>
 
           <div v-if="connectedPlayers.length > 0" class="players-list">
@@ -106,10 +102,10 @@
                 <img
                   v-if="playerAvatarUrl(player)"
                   :src="playerAvatarUrl(player)"
-                  :alt="`Photo de profil de ${playerLabel(player)}`"
+                  :alt="`Tête de ${playerLabel(player)}`"
                   class="player-avatar-image"
                 >
-                <span v-else class="player-avatar-fallback">{{ playerInitial(player) }}</span>
+                <span v-else class="player-avatar-loading" aria-label="Image de profil en chargement"></span>
               </div>
               <div class="player-main">
                 <span class="player-name">{{ playerLabel(player) }}</span>
@@ -208,6 +204,8 @@ type AverageSessionDuration = {
   by_gender?: CountByGender[]
 }
 
+type ConnectedPlayer = Record<string, unknown>
+
 type ServerStats = {
   generated_at?: string
   total_connections?: number
@@ -274,7 +272,6 @@ const websocketStatusClass = computed(() => `status-${websocketStatus.value}`)
 
 const lastUpdate = computed(() => {
   if (!stats.value.generated_at) return 'Non disponible'
-
   return new Date(stats.value.generated_at).toLocaleString('fr-FR', {
     day: '2-digit',
     month: '2-digit',
@@ -287,7 +284,6 @@ const lastUpdate = computed(() => {
 const monthlyChartData = computed(() => {
   const rows = stats.value.connections_by_month ?? []
   if (rows.length === 0) return null
-
   return {
     labels: rows.map((item) => monthLabel(item)),
     datasets: [{
@@ -310,7 +306,6 @@ const monthlyChartData = computed(() => {
 const genderChartData = computed(() => {
   const rows = stats.value.connections_by_gender ?? []
   if (rows.length === 0) return null
-
   return {
     labels: rows.map((item) => genderLabel(item)),
     datasets: [{
@@ -348,7 +343,6 @@ const monthlyGenderChartData = computed(() => {
 const averageDurationByGenderChartData = computed(() => {
   const rows = stats.value.average_session_duration?.by_gender ?? []
   if (rows.length === 0) return null
-
   return {
     labels: rows.map((item) => genderLabel(item)),
     datasets: [{
@@ -430,9 +424,7 @@ const loadStats = async () => {
     gameDomain.value = server.game_domain
 
     const response = await fetch(statsEndpoint.value)
-    if (!response.ok) {
-      throw new Error(`Erreur HTTP: ${response.status}`)
-    }
+    if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`)
 
     const data = await response.json()
     stats.value = data
@@ -638,15 +630,17 @@ const loadPlayerAvatar = async (key: string, source: string) => {
 }
 
 const playerProfilePictureSource = (player: unknown) => {
+  const centralUserId = playerCentralUserId(player)
+  if (!centralUserId) return ''
+  return `${API_BASE_URL}/users/${encodeURIComponent(centralUserId)}/profile-pic.svg`
+}
+
+const playerCentralUserId = (player: unknown) => {
   if (!player || typeof player !== 'object') return ''
-  const record = player as Record<string, unknown>
-  const explicitUrl = record.profile_pic_url ?? record.profilePictureUrl ?? record.avatar_url ?? record.avatarUrl
-  if (typeof explicitUrl === 'string' && explicitUrl.trim()) return explicitUrl.trim()
-
-  const centralUserId = record.user_id ?? record.userId ?? record.central_user_id ?? record.centralUserId
-  if (centralUserId === undefined || centralUserId === null || centralUserId === '') return ''
-
-  return `${API_BASE_URL}/users/${encodeURIComponent(String(centralUserId))}/profile-pic.svg`
+  const record = player as ConnectedPlayer
+  const value = record.user_id ?? record.userId ?? record.central_user_id ?? record.centralUserId ?? record.auth_user_id ?? record.authUserId
+  if (value === undefined || value === null) return ''
+  return String(value).trim()
 }
 
 const buildWebSocketCandidates = (domain: string) => {
@@ -687,22 +681,23 @@ const formatDuration = (seconds: number) => {
 const playerLabel = (player: unknown) => {
   if (typeof player === 'string') return player
   if (player && typeof player === 'object') {
-    const record = player as Record<string, unknown>
+    const record = player as ConnectedPlayer
     return String(record.nickname ?? record.username ?? record.name ?? record.display_name ?? record.player_name ?? record.player_id ?? record.id ?? 'Joueur connecté')
   }
   return String(player)
 }
 
 const playerKey = (player: unknown) => {
+  const centralUserId = playerCentralUserId(player)
+  if (centralUserId) return `user:${centralUserId}`
   if (player && typeof player === 'object') {
-    const record = player as Record<string, unknown>
-    return String(record.user_id ?? record.userId ?? record.central_user_id ?? record.centralUserId ?? record.player_id ?? record.id ?? record.uuid ?? record.nickname ?? record.username ?? record.name ?? record.display_name ?? record.player_name ?? JSON.stringify(record))
+    const record = player as ConnectedPlayer
+    return String(record.player_id ?? record.id ?? record.uuid ?? record.nickname ?? record.username ?? record.name ?? record.display_name ?? record.player_name ?? JSON.stringify(record))
   }
   return String(player)
 }
 
-const playerInitial = (player: unknown) => playerLabel(player).trim().charAt(0).toUpperCase() || '?'
-const playerAvatarUrl = (player: unknown) => playerAvatarUrls.value[playerKey(player)]
+const playerAvatarUrl = (player: unknown) => playerAvatarUrls.value[playerKey(player)] || ''
 
 const goBack = () => {
   router.push({ name: 'servers' })
@@ -884,11 +879,12 @@ onBeforeUnmount(() => {
   image-rendering: crisp-edges;
 }
 
-.player-avatar-fallback {
-  color: #64ffda;
-  font-size: 1.45rem;
-  font-weight: 800;
-  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45);
+.player-avatar-loading {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, rgba(100, 255, 218, 0.22), rgba(255, 255, 255, 0.08));
+  box-shadow: inset 0 0 0 2px rgba(100, 255, 218, 0.3);
 }
 
 .player-main {
