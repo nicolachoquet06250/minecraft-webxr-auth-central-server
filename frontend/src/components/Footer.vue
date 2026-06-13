@@ -21,8 +21,8 @@
         <div class="footer-section">
           <h4>À propos</h4>
           <ul>
-            <li><router-link to="/api/documentation">Documentation API</router-link></li>
-            <li><router-link to="/api/swagger">Swagger API</router-link></li>
+            <li><router-link to="/api/documentation">Documentation</router-link></li>
+            <li><router-link to="/api/swagger">API</router-link></li>
             <li><a href="#" @click.prevent>Support</a></li>
             <li><a href="#" @click.prevent>Contact</a></li>
           </ul>
