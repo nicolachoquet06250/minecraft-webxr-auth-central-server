@@ -77,7 +77,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/users/me/avatars", get(routes::avatar::list_avatars))
         .route("/users/me/avatars", post(routes::avatar::create_avatar_copy))
         .route("/users/me/avatars/:id", put(routes::avatar::update_avatar))
-        .route("/users/me/avatars/:id", delete(routes::avatar::delete_avatar))
+        .route("/users/me/avatars/:id", delete(routes::avatar_delete::delete_avatar))
         .route("/users/me/avatars/:id/select", put(routes::avatar::select_avatar))
         .route("/users/me/profile-pic.svg", get(routes::avatar::get_profile_pic_svg))
         .route("/users/me/profile-pic.svg", options(routes::avatar::profile_pic_preflight))
