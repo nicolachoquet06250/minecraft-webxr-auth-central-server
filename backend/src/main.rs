@@ -80,6 +80,8 @@ async fn main() -> anyhow::Result<()> {
         .route("/users/me/avatars/:id/select", put(routes::avatar::select_avatar))
         .route("/users/me/profile-pic.svg", get(routes::avatar::get_profile_pic_svg))
         .route("/users/me/profile-pic.svg", options(routes::avatar::profile_pic_preflight))
+        .route("/users/:id/profile-pic.svg", get(routes::avatar::get_user_profile_pic_svg))
+        .route("/users/:id/profile-pic.svg", options(routes::avatar::profile_pic_preflight))
         .route("/servers", post(routes::server::create_server))
         .route("/servers", get(routes::server::get_user_servers))
         .route("/servers/:id", put(routes::server::update_server))
