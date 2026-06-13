@@ -142,10 +142,9 @@ export function texturesToTextureData(avatar: EditableAvatar): AvatarTextureData
 
   const parts = Object.fromEntries(
     partNames.map((partName) => {
-      const sourcePartName = savedTextureSourcePartName(partName)
       const partFaces = Object.fromEntries(
         faceNames.map((faceName) => {
-          const texture = avatar.textures[sourcePartName][faceName]
+          const texture = avatar.textures[partName][faceName]
           const matrix = texture.matrix.map((row) =>
             row.split('').map((cellKey) => getGlobalKey(texture.palette[cellKey])).join(''),
           )
@@ -187,14 +186,6 @@ function normalizeBaseKind(value: string): 'steve' | 'alex' | 'custom' {
   if (value === 'steve') return 'steve'
   if (value === 'alex') return 'alex'
   return 'custom'
-}
-
-function savedTextureSourcePartName(partName: AvatarPartName): AvatarPartName {
-  if (partName === 'rightArm') return 'leftArm'
-  if (partName === 'leftArm') return 'rightArm'
-  if (partName === 'rightLeg') return 'leftLeg'
-  if (partName === 'leftLeg') return 'rightLeg'
-  return partName
 }
 
 function textureDataToTextures(data: AvatarTextureData): Record<AvatarPartName, BodyPartFaces> {
