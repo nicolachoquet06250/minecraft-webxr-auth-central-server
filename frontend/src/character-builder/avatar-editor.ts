@@ -82,10 +82,10 @@ export function createCharacterModelFromAvatar(avatar: EditableAvatar): Characte
     bodyParts: [
       { name: 'head', dimensions: { width: 0.5, height: 0.5, depth: 0.5 }, position: { x: 0, y: 1.625, z: 0 }, textures: avatar.textures.head },
       { name: 'torso', dimensions: { width: 0.5, height: 0.75, depth: 0.25 }, position: { x: 0, y: 1, z: 0 }, textures: avatar.textures.torso },
-      { name: 'rightArm', dimensions: { width: armWidth, height: 0.75, depth: 0.25 }, position: { x: -armOffset, y: 1, z: 0 }, pivot: { x: 0, y: 0.375, z: 0 }, textures: avatar.textures.rightArm },
-      { name: 'leftArm', dimensions: { width: armWidth, height: 0.75, depth: 0.25 }, position: { x: armOffset, y: 1, z: 0 }, pivot: { x: 0, y: 0.375, z: 0 }, textures: avatar.textures.leftArm },
-      { name: 'rightLeg', dimensions: { width: 0.25, height: 0.75, depth: 0.25 }, position: { x: -0.125, y: 0.25, z: 0 }, pivot: { x: 0, y: 0.375, z: 0 }, textures: avatar.textures.rightLeg },
-      { name: 'leftLeg', dimensions: { width: 0.25, height: 0.75, depth: 0.25 }, position: { x: 0.125, y: 0.25, z: 0 }, pivot: { x: 0, y: 0.375, z: 0 }, textures: avatar.textures.leftLeg },
+      { name: 'rightArm', dimensions: { width: armWidth, height: 0.75, depth: 0.25 }, position: { x: -armOffset, y: 1, z: 0 }, pivot: { x: 0, y: 0.375, z: 0 }, textures: avatar.textures.leftArm },
+      { name: 'leftArm', dimensions: { width: armWidth, height: 0.75, depth: 0.25 }, position: { x: armOffset, y: 1, z: 0 }, pivot: { x: 0, y: 0.375, z: 0 }, textures: avatar.textures.rightArm },
+      { name: 'rightLeg', dimensions: { width: 0.25, height: 0.75, depth: 0.25 }, position: { x: -0.125, y: 0.25, z: 0 }, pivot: { x: 0, y: 0.375, z: 0 }, textures: avatar.textures.leftLeg },
+      { name: 'leftLeg', dimensions: { width: 0.25, height: 0.75, depth: 0.25 }, position: { x: 0.125, y: 0.25, z: 0 }, pivot: { x: 0, y: 0.375, z: 0 }, textures: avatar.textures.rightLeg },
     ],
   }
 }
