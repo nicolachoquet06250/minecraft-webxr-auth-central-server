@@ -132,9 +132,7 @@ export function texturesToTextureData(avatar: EditableAvatar): AvatarTextureData
     if (existing) return existing
 
     const key = keyPool[keyIndex]
-    if (!key) {
-      throw new Error('Palette globale trop grande pour être sérialisée')
-    }
+    if (!key) throw new Error('Palette globale trop grande pour être sérialisée')
 
     keyIndex += 1
     reverse.set(signature, key)
@@ -144,20 +142,17 @@ export function texturesToTextureData(avatar: EditableAvatar): AvatarTextureData
 
   const parts = Object.fromEntries(
     partNames.map((partName) => {
+      const sourcePartName = savedTextureSourcePartName(partName)
       const partFaces = Object.fromEntries(
         faceNames.map((faceName) => {
-          const texture = avatar.textures[partName][faceName]
+          const texture = avatar.textures[sourcePartName][faceName]
           const matrix = texture.matrix.map((row) =>
             row.split('').map((cellKey) => getGlobalKey(texture.palette[cellKey])).join(''),
           )
 
           return [
             faceName,
-            {
-              width: texture.width,
-              height: texture.height,
-              matrix,
-            },
+            { width: texture.width, height: texture.height, matrix },
           ]
         }),
       )
@@ -166,11 +161,7 @@ export function texturesToTextureData(avatar: EditableAvatar): AvatarTextureData
     }),
   ) as AvatarTextureData['parts']
 
-  return {
-    version: 1,
-    palette: globalPalette,
-    parts,
-  }
+  return { version: 1, palette: globalPalette, parts }
 }
 
 export function rgbaToHex([r, g, b]: RgbaColor) {
@@ -179,9 +170,7 @@ export function rgbaToHex([r, g, b]: RgbaColor) {
 
 export function hexToRgba(hex: string, alpha = 1): RgbaColor {
   const cleaned = hex.replace('#', '')
-  const normalized = cleaned.length === 3
-    ? cleaned.split('').map((c) => c + c).join('')
-    : cleaned
+  const normalized = cleaned.length === 3 ? cleaned.split('').map((c) => c + c).join('') : cleaned
 
   const r = parseInt(normalized.slice(0, 2), 16) / 255
   const g = parseInt(normalized.slice(2, 4), 16) / 255
@@ -198,6 +187,14 @@ function normalizeBaseKind(value: string): 'steve' | 'alex' | 'custom' {
   if (value === 'steve') return 'steve'
   if (value === 'alex') return 'alex'
   return 'custom'
+}
+
+function savedTextureSourcePartName(partName: AvatarPartName): AvatarPartName {
+  if (partName === 'rightArm') return 'leftArm'
+  if (partName === 'leftArm') return 'rightArm'
+  if (partName === 'rightLeg') return 'leftLeg'
+  if (partName === 'leftLeg') return 'rightLeg'
+  return partName
 }
 
 function textureDataToTextures(data: AvatarTextureData): Record<AvatarPartName, BodyPartFaces> {
@@ -228,17 +225,12 @@ function findOrCreatePaletteKey(
   const signature = rgba.join(',')
 
   for (const [key, value] of Object.entries(palette)) {
-    if (value.join(',') === signature) {
-      return key
-    }
+    if (value.join(',') === signature) return key
   }
 
   const used = new Set(Object.keys(palette))
   const nextKey = keyPool.split('').find((key) => !used.has(key))
-
-  if (!nextKey) {
-    throw new Error('Palette de texture saturée')
-  }
+  if (!nextKey) throw new Error('Palette de texture saturée')
 
   palette[nextKey] = rgba
   return nextKey

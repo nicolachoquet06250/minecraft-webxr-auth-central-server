@@ -116,7 +116,7 @@
         </div>
 
         <div class="info-section voxicraft-panel">
-          <h2>ℹ️ Informations du serveur</h2>
+          <h2 class="chart-title">ℹ️ Informations du serveur</h2>
           <div class="info-grid">
             <div class="info-item">
               <strong>Serveur de jeu:</strong>
@@ -718,23 +718,23 @@ onBeforeUnmount(() => {
 <style scoped>
 .dashboard {
   min-height: calc(100vh - 80px);
-  padding: 2rem 1rem;
+  padding: 1.25rem;
 }
 
 .voxicraft-container {
-  max-width: 1400px;
+  max-width: 1680px;
   margin: 0 auto;
 }
 
 .page-header {
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.25rem;
 }
 
 .header-top {
   display: flex;
   justify-content: flex-start;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .back-button {
@@ -745,7 +745,7 @@ onBeforeUnmount(() => {
 }
 
 .subtitle {
-  font-size: 1.1rem;
+  font-size: 1rem;
   opacity: 0.9;
   margin-top: 0.5rem;
 }
@@ -764,73 +764,96 @@ onBeforeUnmount(() => {
   margin-bottom: 1rem;
 }
 
-.stats-cards {
+.dashboard-content {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.stats-cards {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1rem;
 }
 
 .stat-card {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1.5rem;
+  gap: 0.75rem;
+  padding: 1rem;
+  max-width: none;
+  margin: 0;
 }
 
 .stat-icon {
-  font-size: 2.5rem;
+  font-size: 2rem;
 }
 
 .stat-value {
-  font-size: 2rem;
+  font-size: 1.45rem;
   font-weight: bold;
   color: #64ffda;
 }
 
 .stat-label {
   opacity: 0.85;
-  margin-top: 0.25rem;
+  margin-top: 0.2rem;
+  font-size: 0.72rem;
 }
 
 .charts-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
-  gap: 2rem;
-  margin-bottom: 2rem;
+  display: contents;
 }
 
-.chart-container {
-  padding: 1.5rem;
+.chart-container,
+.info-section {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  margin: 0;
+  padding: 1rem;
 }
 
-.chart-title {
-  margin-bottom: 1rem;
+.chart-title,
+.info-section > h2 {
+  margin-bottom: 0.8rem;
   color: #64ffda;
+  font-size: 0.78rem;
+  line-height: 1.35;
 }
 
 .chart-wrapper {
-  height: 320px;
+  height: 205px;
+  min-height: 0;
 }
 
 .info-section {
-  padding: 1.5rem;
-  margin-bottom: 2rem;
+  min-height: 205px;
 }
 
 .section-header {
   display: flex;
   justify-content: space-between;
-  gap: 1rem;
-  align-items: center;
-  margin-bottom: 1rem;
+  gap: 0.65rem;
+  align-items: flex-start;
+  margin-bottom: 0.8rem;
+}
+
+.section-header h2 {
+  color: #64ffda;
+  font-size: 0.78rem;
+  line-height: 1.35;
 }
 
 .websocket-status {
-  padding: 0.35rem 0.7rem;
+  padding: 0.3rem 0.55rem;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.08);
-  font-size: 0.9rem;
+  font-size: 0.62rem;
+  line-height: 1.35;
+  white-space: nowrap;
 }
 
 .status-connected {
@@ -844,25 +867,25 @@ onBeforeUnmount(() => {
 .players-list {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.55rem;
 }
 
 .player-item {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 0.85rem 1rem;
+  gap: 0.75rem;
+  padding: 0.65rem;
   background: linear-gradient(135deg, rgba(100, 255, 218, 0.12), rgba(255, 255, 255, 0.06));
   border: 1px solid rgba(100, 255, 218, 0.22);
   border-radius: 10px;
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
 }
 
 .player-avatar {
-  width: 54px;
-  height: 54px;
-  flex: 0 0 54px;
-  border-radius: 12px;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  border-radius: 10px;
   overflow: hidden;
   border: 2px solid rgba(100, 255, 218, 0.55);
   background: rgba(0, 0, 0, 0.35);
@@ -880,8 +903,8 @@ onBeforeUnmount(() => {
 }
 
 .player-avatar-loading {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: 6px;
   background: linear-gradient(135deg, rgba(100, 255, 218, 0.22), rgba(255, 255, 255, 0.08));
   box-shadow: inset 0 0 0 2px rgba(100, 255, 218, 0.3);
@@ -896,7 +919,7 @@ onBeforeUnmount(() => {
 
 .player-name {
   color: #ffffff;
-  font-size: 1rem;
+  font-size: 0.72rem;
   font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -905,15 +928,17 @@ onBeforeUnmount(() => {
 
 .info-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1rem;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
 }
 
 .info-item {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.35rem;
   word-break: break-word;
+  font-size: 0.68rem;
+  line-height: 1.45;
 }
 
 .info-item strong {
@@ -926,10 +951,30 @@ onBeforeUnmount(() => {
   justify-content: center;
   height: 100%;
   opacity: 0.75;
+  font-size: 0.72rem;
+  text-align: center;
 }
 
 .no-players {
-  min-height: 80px;
+  min-height: 120px;
+}
+
+@media (min-width: 1440px) {
+  .dashboard-content {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1200px) {
+  .dashboard-content {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+
+  .chart-wrapper,
+  .info-section {
+    height: auto;
+    min-height: 240px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -937,17 +982,32 @@ onBeforeUnmount(() => {
     padding: 1rem;
   }
 
-  .charts-grid {
+  .voxicraft-container {
+    max-width: 100%;
+  }
+
+  .dashboard-content,
+  .stats-cards {
     grid-template-columns: 1fr;
   }
 
+  .chart-container,
+  .info-section,
+  .stat-card {
+    padding: 1rem;
+  }
+
   .chart-wrapper {
-    height: 260px;
+    height: 250px;
   }
 
   .section-header {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .websocket-status {
+    white-space: normal;
   }
 }
 </style>
