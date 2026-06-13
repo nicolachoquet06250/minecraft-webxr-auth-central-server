@@ -3,158 +3,282 @@
     <section class="voxicraft-panel api-panel">
       <div class="page-header">
         <h1 class="voxicraft-title">Swagger API</h1>
-        <p class="voxicraft-text">Vue OpenAPI protégée par authentification pour l'API Voxicraft Auth.</p>
+        <p class="voxicraft-text">Swagger UI officiel, protégé par authentification, avec JWT préchargé automatiquement.</p>
       </div>
 
-      <section class="auth-panel">
-        <div>
-          <h2>Autorisation Swagger</h2>
-          <p>Le JWT de la session courante est injecté automatiquement dans l'autorisation Bearer.</p>
-        </div>
-        <label class="auth-field">
-          Token utilisé par défaut
-          <textarea v-model="swaggerBearerToken" readonly spellcheck="false" />
-        </label>
-        <button class="copy-button" type="button" @click="copyBearerToken">Copier le token Bearer</button>
-        <p v-if="copyMessage" class="copy-message">{{ copyMessage }}</p>
-      </section>
-
-      <div class="swagger-layout">
-        <aside class="endpoint-list">
-          <h2>Endpoints</h2>
-          <button
-            v-for="endpoint in endpoints"
-            :key="`${endpoint.method}-${endpoint.path}`"
-            class="endpoint-button"
-            :class="[`method-${endpoint.method.toLowerCase()}`, { active: selectedEndpoint === endpoint }]"
-            type="button"
-            @click="selectedEndpoint = endpoint"
-          >
-            <span class="method">{{ endpoint.method }}</span>
-            <span class="path">{{ endpoint.path }}</span>
-          </button>
-        </aside>
-
-        <section class="endpoint-detail">
-          <div class="endpoint-heading">
-            <span class="method-badge" :class="`method-${selectedEndpoint.method.toLowerCase()}`">{{ selectedEndpoint.method }}</span>
-            <code>{{ selectedEndpoint.path }}</code>
-          </div>
-          <p>{{ selectedEndpoint.summary }}</p>
-
-          <template v-if="selectedEndpoint.authenticated">
-            <h3>Authentification</h3>
-            <p>Requiert l'en-tête <code>Authorization</code>, automatiquement prérempli avec le JWT courant :</p>
-            <pre>{{ authorizationHeaderExample }}</pre>
-          </template>
-
-          <template v-if="selectedEndpoint.body">
-            <h3>Body JSON</h3>
-            <pre>{{ selectedEndpoint.body }}</pre>
-          </template>
-
-          <template v-if="selectedEndpoint.response">
-            <h3>Réponse</h3>
-            <pre>{{ selectedEndpoint.response }}</pre>
-          </template>
-        </section>
-      </div>
-
-      <section class="openapi-block">
-        <h2>Spécification OpenAPI</h2>
-        <p>La sécurité Bearer est déclarée dans la spécification. Le token local est également exposé dans <code>x-default-bearer-token</code> pour préremplissage côté interface.</p>
-        <pre>{{ openApiSpec }}</pre>
-      </section>
+      <div ref="swaggerContainer" class="swagger-container"></div>
     </section>
   </main>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
+import SwaggerUI from 'swagger-ui-dist/swagger-ui-bundle'
+import 'swagger-ui-dist/swagger-ui.css'
 
-type Endpoint = {
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE'
-  path: string
-  summary: string
-  authenticated: boolean
-  body?: string
-  response?: string
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
+const swaggerContainer = ref<HTMLElement | null>(null)
+let swaggerUi: any = null
+
+const openApiSpec = {
+  openapi: '3.0.3',
+  info: {
+    title: 'Voxicraft Auth API',
+    version: '1.0.0',
+    description: 'API centrale d’authentification, gestion des avatars personnalisés et registre de serveurs Voxicraft.',
+  },
+  servers: [{ url: API_BASE_URL }],
+  components: {
+    securitySchemes: {
+      bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+    },
+    schemas: {
+      User: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          username: { type: 'string' },
+          email: { type: 'string' },
+          avatar: { type: 'string', enum: ['steve', 'alex'] },
+          bio: { type: 'string', nullable: true },
+          birthdate: { type: 'string' },
+          age_verified: { type: 'boolean' },
+          discord_username: { type: 'string', nullable: true },
+          created_at: { type: 'string' },
+        },
+      },
+      AuthResponse: {
+        type: 'object',
+        properties: {
+          token: { type: 'string' },
+          user: { $ref: '#/components/schemas/User' },
+        },
+      },
+      RegisterData: {
+        type: 'object',
+        required: ['username', 'email', 'password', 'avatar', 'birthdate'],
+        properties: {
+          username: { type: 'string' },
+          email: { type: 'string' },
+          password: { type: 'string', format: 'password' },
+          avatar: { type: 'string', enum: ['steve', 'alex'] },
+          birthdate: { type: 'string' },
+          bio: { type: 'string' },
+        },
+      },
+      LoginData: {
+        type: 'object',
+        required: ['email', 'password'],
+        properties: {
+          email: { type: 'string' },
+          password: { type: 'string', format: 'password' },
+        },
+      },
+      Server: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          owner_id: { type: 'string' },
+          name: { type: 'string' },
+          game_domain: { type: 'string' },
+          description: { type: 'string', nullable: true },
+          is_active: { type: 'boolean' },
+          created_at: { type: 'string' },
+          updated_at: { type: 'string' },
+        },
+      },
+      CreateServerData: {
+        type: 'object',
+        required: ['name', 'game_domain'],
+        properties: {
+          name: { type: 'string' },
+          game_domain: { type: 'string' },
+          description: { type: 'string' },
+        },
+      },
+      AvatarTextureData: {
+        type: 'object',
+        properties: {
+          version: { type: 'number', enum: [1] },
+          palette: { type: 'object', additionalProperties: { type: 'array', items: { type: 'number' }, minItems: 4, maxItems: 4 } },
+          parts: { type: 'object' },
+        },
+      },
+      UserAvatar: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          name: { type: 'string' },
+          base_kind: { type: 'string', enum: ['steve', 'alex', 'custom'] },
+          is_active: { type: 'boolean' },
+          texture_data: { $ref: '#/components/schemas/AvatarTextureData' },
+          created_at: { type: 'string' },
+          updated_at: { type: 'string' },
+        },
+      },
+      SaveAvatarData: {
+        type: 'object',
+        required: ['name', 'base_kind', 'texture_data'],
+        properties: {
+          name: { type: 'string' },
+          base_kind: { type: 'string', enum: ['steve', 'alex', 'custom'] },
+          texture_data: { $ref: '#/components/schemas/AvatarTextureData' },
+        },
+      },
+      UpdateAvatarData: {
+        type: 'object',
+        required: ['texture_data'],
+        properties: {
+          name: { type: 'string' },
+          texture_data: { $ref: '#/components/schemas/AvatarTextureData' },
+        },
+      },
+      ActiveAvatarResponse: {
+        type: 'object',
+        properties: {
+          kind: { type: 'string', enum: ['default', 'custom'] },
+          avatar: { oneOf: [{ $ref: '#/components/schemas/UserAvatar' }, { type: 'null' }] },
+        },
+      },
+    },
+  },
+  paths: {
+    '/auth/register': {
+      post: {
+        summary: 'Créer un compte utilisateur',
+        requestBody: jsonBody('#/components/schemas/RegisterData'),
+        responses: { 200: jsonResponse('#/components/schemas/AuthResponse'), 400: description('Requête invalide') },
+      },
+    },
+    '/auth/login': {
+      post: {
+        summary: 'Connecter un utilisateur',
+        requestBody: jsonBody('#/components/schemas/LoginData'),
+        responses: { 200: jsonResponse('#/components/schemas/AuthResponse'), 401: description('Identifiants invalides') },
+      },
+    },
+    '/auth/discord/url': {
+      get: { summary: 'Récupérer l’URL OAuth Discord', responses: { 200: inlineJsonResponse({ url: { type: 'string' } }) } },
+    },
+    '/users/me': {
+      get: protectedOperation('Récupérer le profil connecté', { 200: jsonResponse('#/components/schemas/User') }),
+      put: protectedOperation('Mettre à jour le profil connecté', { 200: jsonResponse('#/components/schemas/User') }),
+      delete: protectedOperation('Supprimer le compte connecté', { 204: description('Compte supprimé') }),
+    },
+    '/users/{id}': {
+      get: {
+        summary: 'Récupérer un profil public',
+        parameters: pathParams('id'),
+        responses: { 200: jsonResponse('#/components/schemas/User'), 404: description('Utilisateur introuvable') },
+      },
+    },
+    '/users/me/avatar': {
+      get: protectedOperation('Récupérer l’avatar actif', { 200: jsonResponse('#/components/schemas/ActiveAvatarResponse') }),
+      delete: protectedOperation('Désactiver l’avatar personnalisé actif', { 204: description('Avatar actif supprimé') }),
+    },
+    '/users/me/avatars': {
+      get: protectedOperation('Lister les avatars personnalisés', { 200: arrayResponse('#/components/schemas/UserAvatar') }),
+      post: protectedOperation('Créer une copie d’avatar', { 200: jsonResponse('#/components/schemas/UserAvatar') }, jsonBody('#/components/schemas/SaveAvatarData')),
+    },
+    '/users/me/avatars/{id}': {
+      put: protectedOperation('Modifier un avatar personnalisé', { 200: jsonResponse('#/components/schemas/UserAvatar') }, jsonBody('#/components/schemas/UpdateAvatarData'), pathParams('id')),
+      delete: protectedOperation('Supprimer un avatar personnalisé', { 204: description('Avatar supprimé') }, undefined, pathParams('id')),
+    },
+    '/users/me/avatars/{id}/select': {
+      put: protectedOperation('Sélectionner un avatar personnalisé', { 204: description('Avatar sélectionné') }, undefined, pathParams('id')),
+    },
+    '/users/me/profile-pic.svg': {
+      get: protectedOperation('Récupérer la tête SVG de l’avatar connecté', { 200: { description: 'Image SVG', content: { 'image/svg+xml': { schema: { type: 'string' } } } } }),
+    },
+    '/users/{id}/profile-pic.svg': {
+      get: protectedOperation('Récupérer la tête SVG d’un utilisateur', { 200: { description: 'Image SVG', content: { 'image/svg+xml': { schema: { type: 'string' } } } } }, undefined, pathParams('id')),
+    },
+    '/users/{id}/matrix-color': {
+      get: protectedOperation('Récupérer la couleur Matrix d’un utilisateur', { 200: inlineJsonResponse({ color: { type: 'string' } }) }, undefined, pathParams('id')),
+    },
+    '/servers': {
+      get: protectedOperation('Lister les serveurs du compte connecté', { 200: arrayResponse('#/components/schemas/Server') }),
+      post: protectedOperation('Créer un serveur de jeu', { 200: jsonResponse('#/components/schemas/Server') }, jsonBody('#/components/schemas/CreateServerData')),
+    },
+    '/servers/{id}': {
+      get: { summary: 'Récupérer un serveur public', parameters: pathParams('id'), responses: { 200: jsonResponse('#/components/schemas/Server') } },
+      put: protectedOperation('Modifier un serveur', { 200: jsonResponse('#/components/schemas/Server') }, jsonBody('#/components/schemas/CreateServerData'), pathParams('id')),
+      delete: protectedOperation('Supprimer un serveur', { 204: description('Serveur supprimé') }, undefined, pathParams('id')),
+    },
+  },
 }
 
-const storedJwt = localStorage.getItem('auth_token') || ''
-const swaggerBearerToken = ref(storedJwt ? `Bearer ${storedJwt}` : '')
-const copyMessage = ref('')
+onMounted(() => {
+  if (!swaggerContainer.value) return
 
-const endpoints: Endpoint[] = [
-  { method: 'POST', path: '/api/auth/register', summary: 'Créer un compte utilisateur.', authenticated: false, body: '{ username, email, password, avatar, birthdate, bio? }', response: '{ token, user }' },
-  { method: 'POST', path: '/api/auth/login', summary: 'Connecter un utilisateur.', authenticated: false, body: '{ email, password }', response: '{ token, user }' },
-  { method: 'GET', path: '/api/auth/discord/url', summary: 'Récupérer l’URL OAuth Discord.', authenticated: false, response: '{ url }' },
-  { method: 'GET', path: '/api/users/me', summary: 'Récupérer le profil connecté.', authenticated: true, response: 'User' },
-  { method: 'PUT', path: '/api/users/me', summary: 'Mettre à jour le profil connecté.', authenticated: true, body: 'Partial<User>', response: 'User' },
-  { method: 'DELETE', path: '/api/users/me', summary: 'Supprimer le compte connecté.', authenticated: true, response: '204 No Content' },
-  { method: 'GET', path: '/api/users/:id', summary: 'Récupérer un profil public.', authenticated: false, response: 'User' },
-  { method: 'GET', path: '/api/users/me/avatar', summary: 'Récupérer l’avatar actif.', authenticated: true, response: 'ActiveAvatarResponse' },
-  { method: 'DELETE', path: '/api/users/me/avatar', summary: 'Désactiver l’avatar personnalisé actif.', authenticated: true, response: '204 No Content' },
-  { method: 'GET', path: '/api/users/me/avatars', summary: 'Lister les avatars personnalisés.', authenticated: true, response: 'UserAvatar[]' },
-  { method: 'POST', path: '/api/users/me/avatars', summary: 'Créer une copie d’avatar.', authenticated: true, body: '{ name, base_kind, texture_data }', response: 'UserAvatar' },
-  { method: 'PUT', path: '/api/users/me/avatars/:id', summary: 'Modifier un avatar personnalisé.', authenticated: true, body: '{ name?, texture_data }', response: 'UserAvatar' },
-  { method: 'DELETE', path: '/api/users/me/avatars/:id', summary: 'Supprimer un avatar personnalisé.', authenticated: true, response: '204 No Content' },
-  { method: 'PUT', path: '/api/users/me/avatars/:id/select', summary: 'Sélectionner un avatar personnalisé.', authenticated: true, response: '204 No Content' },
-  { method: 'GET', path: '/api/users/me/profile-pic.svg', summary: 'Récupérer la tête SVG de l’avatar connecté.', authenticated: true, response: 'image/svg+xml' },
-  { method: 'GET', path: '/api/users/:id/profile-pic.svg', summary: 'Récupérer la tête SVG d’un utilisateur.', authenticated: true, response: 'image/svg+xml' },
-  { method: 'GET', path: '/api/users/:id/matrix-color', summary: 'Récupérer la couleur Matrix d’un utilisateur.', authenticated: true, response: '{ color }' },
-  { method: 'POST', path: '/api/servers', summary: 'Créer un serveur de jeu.', authenticated: true, body: '{ name, game_domain, description? }', response: 'Server' },
-  { method: 'GET', path: '/api/servers', summary: 'Lister les serveurs du compte connecté.', authenticated: true, response: 'Server[]' },
-  { method: 'GET', path: '/api/servers/:id', summary: 'Récupérer un serveur public.', authenticated: false, response: 'Server' },
-  { method: 'PUT', path: '/api/servers/:id', summary: 'Modifier un serveur.', authenticated: true, body: 'Partial<CreateServerData>', response: 'Server' },
-  { method: 'DELETE', path: '/api/servers/:id', summary: 'Supprimer un serveur.', authenticated: true, response: '204 No Content' },
-]
+  swaggerUi = SwaggerUI({
+    domNode: swaggerContainer.value,
+    spec: openApiSpec,
+    deepLinking: true,
+    persistAuthorization: true,
+    displayRequestDuration: true,
+    tryItOutEnabled: true,
+  })
 
-const selectedEndpoint = ref(endpoints[0])
-const authorizationHeaderExample = computed(() => swaggerBearerToken.value ? `Authorization: ${swaggerBearerToken.value}` : 'Authorization: Bearer <token manquant>')
-const openApiSpec = computed(() => JSON.stringify({
-  openapi: '3.0.3',
-  info: { title: 'Voxicraft Auth API', version: '1.0.0' },
-  security: [{ bearerAuth: [] }],
-  'x-default-bearer-token': swaggerBearerToken.value,
-  paths: Object.fromEntries(endpoints.map((endpoint) => [endpoint.path, { [endpoint.method.toLowerCase()]: { summary: endpoint.summary, security: endpoint.authenticated ? [{ bearerAuth: [] }] : [] } }])),
-  components: { securitySchemes: { bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' } } },
-}, null, 2))
-
-async function copyBearerToken() {
-  if (!swaggerBearerToken.value) {
-    copyMessage.value = 'Aucun JWT disponible.'
-    return
+  const jwt = localStorage.getItem('auth_token')
+  if (jwt) {
+    swaggerUi.authActions.authorize({
+      bearerAuth: {
+        name: 'bearerAuth',
+        schema: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+        value: jwt,
+      },
+    })
   }
-  await navigator.clipboard.writeText(swaggerBearerToken.value)
-  copyMessage.value = 'Token copié.'
+})
+
+onBeforeUnmount(() => {
+  swaggerContainer.value?.replaceChildren()
+  swaggerUi = null
+})
+
+function description(description: string) {
+  return { description }
+}
+
+function jsonResponse(ref: string) {
+  return { description: 'OK', content: { 'application/json': { schema: { $ref: ref } } } }
+}
+
+function arrayResponse(ref: string) {
+  return { description: 'OK', content: { 'application/json': { schema: { type: 'array', items: { $ref: ref } } } } }
+}
+
+function inlineJsonResponse(properties: Record<string, unknown>) {
+  return { description: 'OK', content: { 'application/json': { schema: { type: 'object', properties } } } }
+}
+
+function jsonBody(ref: string) {
+  return { required: true, content: { 'application/json': { schema: { $ref: ref } } } }
+}
+
+function pathParams(name: string) {
+  return [{ name, in: 'path', required: true, schema: { type: 'string' } }]
+}
+
+function protectedOperation(summary: string, responses: Record<string | number, unknown>, requestBody?: unknown, parameters?: unknown[]) {
+  return {
+    summary,
+    security: [{ bearerAuth: [] }],
+    ...(parameters ? { parameters } : {}),
+    ...(requestBody ? { requestBody } : {}),
+    responses,
+  }
 }
 </script>
 
 <style scoped>
 .api-page { min-height: calc(100vh - 80px); padding: 2rem 1rem; }
-.api-panel { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+.api-panel { max-width: 1500px; margin: 0 auto; padding: 2rem; }
 .page-header { text-align: center; margin-bottom: 2rem; }
-.auth-panel { display: grid; gap: 1rem; margin-bottom: 1.5rem; background: rgba(0, 0, 0, .28); border: 1px solid rgba(100, 255, 218, .18); border-radius: 12px; padding: 1rem; }
-.auth-panel h2 { color: #64ffda; margin-bottom: .4rem; }
-.auth-field { display: flex; flex-direction: column; gap: .5rem; color: #ffd700; font-weight: 700; }
-.auth-field textarea { min-height: 78px; resize: vertical; border-radius: 10px; border: 1px solid rgba(100, 255, 218, .25); background: rgba(0,0,0,.55); color: #d8fff6; padding: .75rem; font-family: monospace; }
-.copy-button { width: fit-content; border: 2px solid #64ffda; background: rgba(100,255,218,.12); color: #64ffda; border-radius: 8px; padding: .55rem .9rem; cursor: pointer; font-weight: 800; }
-.copy-message { color: #7cfc9a; margin: 0; }
-.swagger-layout { display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 1.5rem; align-items: start; }
-.endpoint-list, .endpoint-detail, .openapi-block { background: rgba(0, 0, 0, .28); border: 1px solid rgba(100, 255, 218, .18); border-radius: 12px; padding: 1rem; }
-.endpoint-list { display: flex; flex-direction: column; gap: .5rem; max-height: 720px; overflow: auto; }
-.endpoint-list h2, .endpoint-detail h3, .openapi-block h2 { color: #64ffda; }
-.endpoint-button { display: grid; grid-template-columns: 72px 1fr; gap: .75rem; align-items: center; text-align: left; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.05); color: #fff; border-radius: 8px; padding: .55rem; cursor: pointer; }
-.endpoint-button.active { border-color: #64ffda; background: rgba(100,255,218,.12); }
-.method, .method-badge { font-weight: 800; text-align: center; border-radius: 6px; padding: .25rem .45rem; color: #101010; }
-.method-get { background: rgba(100,255,218,.75); }
-.method-post { background: rgba(76,175,80,.8); }
-.method-put { background: rgba(255,193,7,.85); }
-.method-delete { background: rgba(255,107,107,.85); }
-.path { font-family: monospace; overflow-wrap: anywhere; }
-.endpoint-heading { display: flex; align-items: center; gap: .75rem; margin-bottom: 1rem; color: #fff; }
-pre { overflow: auto; background: rgba(0,0,0,.55); color: #d8fff6; border-radius: 10px; padding: 1rem; font-size: .82rem; }
-.openapi-block { margin-top: 1.5rem; }
-@media (max-width: 980px) { .swagger-layout { grid-template-columns: 1fr; } }
+.swagger-container { background: #ffffff; border-radius: 12px; overflow: hidden; padding: 1rem; }
+:deep(.swagger-ui) { font-family: Arial, sans-serif; }
+:deep(.swagger-ui .topbar) { display: none; }
+:deep(.swagger-ui .scheme-container) { border-radius: 8px; }
+:deep(.swagger-ui .info) { margin: 1rem 0; }
 </style>
