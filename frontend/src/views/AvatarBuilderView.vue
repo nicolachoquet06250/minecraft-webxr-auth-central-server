@@ -61,6 +61,7 @@
         <div class="actions">
           <button class="action primary" type="button" :disabled="saving || !avatarName.trim()" @click="saveCopy">Enregistrer comme copie</button>
           <button class="action secondary" type="button" :disabled="saving || !overwriteAllowed || !avatarName.trim()" @click="overwrite">Écraser l'original</button>
+          <button class="action danger" type="button" :disabled="saving || !canDeleteAvatar" @click="deleteCurrentAvatar">Supprimer l'avatar</button>
         </div>
 
         <p v-if="successMessage" class="success">{{ successMessage }}</p>
@@ -110,7 +111,17 @@ const saving = ref(false)
 const successMessage = ref('')
 const errorMessage = ref('')
 
-const partLabels: Record<AvatarPartName, string> = { head: 'Tête', torso: 'Torse', rightArm: 'Bras droit', leftArm: 'Bras gauche', rightLeg: 'Jambe droite', leftLeg: 'Jambe gauche' }
+// Les noms techniques restent anatomiques côté modèle (`rightArm` = bras droit du personnage).
+// L'éditeur est affiché face au personnage : son bras droit apparaît donc à gauche de l'écran.
+// Les libellés ci-dessous sont volontairement exprimés du point de vue de l'utilisateur qui regarde l'avatar.
+const partLabels: Record<AvatarPartName, string> = {
+  head: 'Tête',
+  torso: 'Torse',
+  rightArm: 'Bras gauche',
+  leftArm: 'Bras droit',
+  rightLeg: 'Jambe gauche',
+  leftLeg: 'Jambe droite',
+}
 const faceLabels: Record<AvatarFaceName, string> = { front: 'Avant', back: 'Arrière', top: 'Dessus', bottom: 'Dessous', left: 'Gauche', right: 'Droite' }
 
 let engine: Engine | null = null
@@ -118,8 +129,8 @@ let scene: Scene | null = null
 let avatarRoot: Mesh | null = null
 
 const overwriteAllowed = computed(() => !!currentAvatar.value && !currentAvatar.value.overwriteLocked)
-const editableFace = computed(() => getEditableFace(selectedPart.value, selectedFace.value))
-const activeTexture = computed(() => currentAvatar.value!.textures[selectedPart.value][editableFace.value])
+const canDeleteAvatar = computed(() => !!currentAvatar.value && currentAvatar.value.source === 'custom' && !currentAvatar.value.overwriteLocked)
+const activeTexture = computed(() => currentAvatar.value!.textures[selectedPart.value][selectedFace.value])
 const selectedColor = computed(() => hexToRgba(selectedHex.value, selectedAlpha.value))
 const selectedColorCss = computed(() => colorToCss(selectedColor.value))
 const facePixels = computed(() => {
@@ -233,21 +244,13 @@ function syncColorFromPixel() {
 
 function paint(x: number, y: number) {
   if (!currentAvatar.value) return
-  currentAvatar.value = paintAvatarPixel(currentAvatar.value, selectedPart.value, editableFace.value, x, y, selectedColor.value)
+  currentAvatar.value = paintAvatarPixel(currentAvatar.value, selectedPart.value, selectedFace.value, x, y, selectedColor.value)
 }
 
 function pick(x: number, y: number) {
   const color = getTexturePixelColor(activeTexture.value, x, y)
   selectedHex.value = rgbaToHex(color)
   selectedAlpha.value = color[3]
-}
-
-function getEditableFace(part: AvatarPartName, face: AvatarFaceName): AvatarFaceName {
-  const isLimb = part === 'rightArm' || part === 'leftArm' || part === 'rightLeg' || part === 'leftLeg'
-  if (!isLimb) return face
-  if (face === 'left') return 'right'
-  if (face === 'right') return 'left'
-  return face
 }
 
 async function saveCopy() {
@@ -284,6 +287,56 @@ async function overwrite() {
     saving.value = false
   }
 }
+
+async function deleteCurrentAvatar() {
+  if (!currentAvatar.value || !canDeleteAvatar.value) return
+  const deletedId = currentAvatar.value.id
+  const deletedAvatar = customAvatars.value.find((avatar) => avatar.id === deletedId)
+  const deletedIndex = customAvatars.value.findIndex((avatar) => avatar.id === deletedId)
+  const nextAvatarId = findPreviousInactiveAvatarId(deletedIndex, deletedId)
+
+  saving.value = true
+  successMessage.value = ''
+  errorMessage.value = ''
+
+  try {
+    await avatarApi.delete(deletedId)
+    await refreshCustomAvatars(nextAvatarId)
+
+    const nextAvatar = nextAvatarId
+      ? customAvatars.value.find((avatar) => avatar.id === nextAvatarId)
+      : customAvatars.value.find((avatar) => !avatar.is_active) ?? customAvatars.value[0]
+
+    if (nextAvatar) {
+      if (deletedAvatar?.is_active) {
+        await avatarApi.select(nextAvatar.id)
+        await refreshCustomAvatars(nextAvatar.id)
+        setCurrentCustomAvatar({ ...nextAvatar, is_active: true })
+      } else {
+        setCurrentCustomAvatar(nextAvatar)
+      }
+    } else {
+      currentAvatar.value = createEditableAvatar(authStore.user?.avatar || 'alex')
+      selectedAvatarId.value = ''
+      avatarName.value = currentAvatar.value.name
+    }
+
+    successMessage.value = 'Avatar supprimé.'
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : 'Erreur lors de la suppression.'
+  } finally {
+    saving.value = false
+  }
+}
+
+function findPreviousInactiveAvatarId(deletedIndex: number, deletedId: string): string | undefined {
+  if (deletedIndex <= 0) return undefined
+  for (let index = deletedIndex - 1; index >= 0; index -= 1) {
+    const avatar = customAvatars.value[index]
+    if (avatar.id !== deletedId && !avatar.is_active) return avatar.id
+  }
+  return undefined
+}
 </script>
 
 <style scoped>
@@ -315,9 +368,10 @@ async function overwrite() {
 .action { padding: .9rem 1rem; border-radius: 8px; border: 3px solid transparent; font-weight: 700; cursor: pointer; }
 .action.primary { background: #4caf50; border-color: #2e7d32; color: #fff; }
 .action.secondary { background: #ff9800; border-color: #ef6c00; color: #1a1a1a; }
+.action.danger { grid-column: 1 / -1; background: #d32f2f; border-color: #8b1a1a; color: #fff; }
 .action:disabled { opacity: .5; cursor: not-allowed; }
 .success { color: #7cfc9a; font-weight: 700; }
 .error { color: #ff8a80; font-weight: 700; }
 @media (max-width: 1100px) { .builder-layout { grid-template-columns: 1fr; } .avatar-canvas { height: 520px; } }
-@media (max-width: 720px) { .avatar-builder { padding: 1rem; } .color-row, .actions { grid-template-columns: 1fr; } }
+@media (max-width: 720px) { .avatar-builder { padding: 1rem; } .color-row, .actions { grid-template-columns: 1fr; } .action.danger { grid-column: auto; } }
 </style>
