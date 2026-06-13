@@ -137,6 +137,10 @@ textarea.voxicraft-input {
   font-family: 'Courier New', monospace;
 }
 
+.player-avatar-fallback {
+  display: none !important;
+}
+
 @media (max-width: 768px) {
   .voxicraft-title {
     font-size: 1.2rem;
