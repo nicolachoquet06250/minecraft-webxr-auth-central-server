@@ -118,7 +118,8 @@ let scene: Scene | null = null
 let avatarRoot: Mesh | null = null
 
 const overwriteAllowed = computed(() => !!currentAvatar.value && !currentAvatar.value.overwriteLocked)
-const activeTexture = computed(() => currentAvatar.value!.textures[selectedPart.value][selectedFace.value])
+const editableFace = computed(() => getEditableFace(selectedPart.value, selectedFace.value))
+const activeTexture = computed(() => currentAvatar.value!.textures[selectedPart.value][editableFace.value])
 const selectedColor = computed(() => hexToRgba(selectedHex.value, selectedAlpha.value))
 const selectedColorCss = computed(() => colorToCss(selectedColor.value))
 const facePixels = computed(() => {
@@ -232,13 +233,21 @@ function syncColorFromPixel() {
 
 function paint(x: number, y: number) {
   if (!currentAvatar.value) return
-  currentAvatar.value = paintAvatarPixel(currentAvatar.value, selectedPart.value, selectedFace.value, x, y, selectedColor.value)
+  currentAvatar.value = paintAvatarPixel(currentAvatar.value, selectedPart.value, editableFace.value, x, y, selectedColor.value)
 }
 
 function pick(x: number, y: number) {
   const color = getTexturePixelColor(activeTexture.value, x, y)
   selectedHex.value = rgbaToHex(color)
   selectedAlpha.value = color[3]
+}
+
+function getEditableFace(part: AvatarPartName, face: AvatarFaceName): AvatarFaceName {
+  const isLimb = part === 'rightArm' || part === 'leftArm' || part === 'rightLeg' || part === 'leftLeg'
+  if (!isLimb) return face
+  if (face === 'left') return 'right'
+  if (face === 'right') return 'left'
+  return face
 }
 
 async function saveCopy() {
