@@ -6,6 +6,19 @@
         <p class="voxicraft-text">Vue OpenAPI protégée par authentification pour l'API Voxicraft Auth.</p>
       </div>
 
+      <section class="auth-panel">
+        <div>
+          <h2>Autorisation Swagger</h2>
+          <p>Le JWT de la session courante est injecté automatiquement dans l'autorisation Bearer.</p>
+        </div>
+        <label class="auth-field">
+          Token utilisé par défaut
+          <textarea v-model="swaggerBearerToken" readonly spellcheck="false" />
+        </label>
+        <button class="copy-button" type="button" @click="copyBearerToken">Copier le token Bearer</button>
+        <p v-if="copyMessage" class="copy-message">{{ copyMessage }}</p>
+      </section>
+
       <div class="swagger-layout">
         <aside class="endpoint-list">
           <h2>Endpoints</h2>
@@ -31,7 +44,8 @@
 
           <template v-if="selectedEndpoint.authenticated">
             <h3>Authentification</h3>
-            <p>Requiert un token Bearer dans l'en-tête <code>Authorization</code>.</p>
+            <p>Requiert l'en-tête <code>Authorization</code>, automatiquement prérempli avec le JWT courant :</p>
+            <pre>{{ authorizationHeaderExample }}</pre>
           </template>
 
           <template v-if="selectedEndpoint.body">
@@ -48,7 +62,7 @@
 
       <section class="openapi-block">
         <h2>Spécification OpenAPI</h2>
-        <p>Spécification synthétique embarquée côté front pour consultation.</p>
+        <p>La sécurité Bearer est déclarée dans la spécification. Le token local est également exposé dans <code>x-default-bearer-token</code> pour préremplissage côté interface.</p>
         <pre>{{ openApiSpec }}</pre>
       </section>
     </section>
@@ -66,6 +80,10 @@ type Endpoint = {
   body?: string
   response?: string
 }
+
+const storedJwt = localStorage.getItem('auth_token') || ''
+const swaggerBearerToken = ref(storedJwt ? `Bearer ${storedJwt}` : '')
+const copyMessage = ref('')
 
 const endpoints: Endpoint[] = [
   { method: 'POST', path: '/api/auth/register', summary: 'Créer un compte utilisateur.', authenticated: false, body: '{ username, email, password, avatar, birthdate, bio? }', response: '{ token, user }' },
@@ -93,19 +111,36 @@ const endpoints: Endpoint[] = [
 ]
 
 const selectedEndpoint = ref(endpoints[0])
+const authorizationHeaderExample = computed(() => swaggerBearerToken.value ? `Authorization: ${swaggerBearerToken.value}` : 'Authorization: Bearer <token manquant>')
 const openApiSpec = computed(() => JSON.stringify({
   openapi: '3.0.3',
   info: { title: 'Voxicraft Auth API', version: '1.0.0' },
   security: [{ bearerAuth: [] }],
+  'x-default-bearer-token': swaggerBearerToken.value,
   paths: Object.fromEntries(endpoints.map((endpoint) => [endpoint.path, { [endpoint.method.toLowerCase()]: { summary: endpoint.summary, security: endpoint.authenticated ? [{ bearerAuth: [] }] : [] } }])),
   components: { securitySchemes: { bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' } } },
 }, null, 2))
+
+async function copyBearerToken() {
+  if (!swaggerBearerToken.value) {
+    copyMessage.value = 'Aucun JWT disponible.'
+    return
+  }
+  await navigator.clipboard.writeText(swaggerBearerToken.value)
+  copyMessage.value = 'Token copié.'
+}
 </script>
 
 <style scoped>
 .api-page { min-height: calc(100vh - 80px); padding: 2rem 1rem; }
 .api-panel { max-width: 1400px; margin: 0 auto; padding: 2rem; }
 .page-header { text-align: center; margin-bottom: 2rem; }
+.auth-panel { display: grid; gap: 1rem; margin-bottom: 1.5rem; background: rgba(0, 0, 0, .28); border: 1px solid rgba(100, 255, 218, .18); border-radius: 12px; padding: 1rem; }
+.auth-panel h2 { color: #64ffda; margin-bottom: .4rem; }
+.auth-field { display: flex; flex-direction: column; gap: .5rem; color: #ffd700; font-weight: 700; }
+.auth-field textarea { min-height: 78px; resize: vertical; border-radius: 10px; border: 1px solid rgba(100, 255, 218, .25); background: rgba(0,0,0,.55); color: #d8fff6; padding: .75rem; font-family: monospace; }
+.copy-button { width: fit-content; border: 2px solid #64ffda; background: rgba(100,255,218,.12); color: #64ffda; border-radius: 8px; padding: .55rem .9rem; cursor: pointer; font-weight: 800; }
+.copy-message { color: #7cfc9a; margin: 0; }
 .swagger-layout { display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 1.5rem; align-items: start; }
 .endpoint-list, .endpoint-detail, .openapi-block { background: rgba(0, 0, 0, .28); border: 1px solid rgba(100, 255, 218, .18); border-radius: 12px; padding: 1rem; }
 .endpoint-list { display: flex; flex-direction: column; gap: .5rem; max-height: 720px; overflow: auto; }
