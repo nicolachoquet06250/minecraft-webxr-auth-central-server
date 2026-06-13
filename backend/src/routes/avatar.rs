@@ -54,33 +54,15 @@ pub async fn get_profile_pic_svg(
     Extension(claims): Extension<Claims>,
     State(state): State<Arc<AppState>>,
 ) -> Result<Response, StatusCode> {
-    let active_avatar = Avatar::find()
-        .filter(avatar::Column::UserId.eq(claims.sub.clone()))
-        .filter(avatar::Column::IsActive.eq(true))
-        .one(&state.db)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    profile_pic_response(&state, &claims.sub).await
+}
 
-    let svg = if let Some(active_avatar) = active_avatar {
-        svg_from_texture_data(&active_avatar.texture_data)?
-    } else {
-        let current_user = User::find_by_id(claims.sub)
-            .one(&state.db)
-            .await
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-            .ok_or(StatusCode::NOT_FOUND)?;
-
-        default_profile_pic_svg(&current_user.avatar)
-    };
-
-    Ok((
-        [
-            (header::CONTENT_TYPE, HeaderValue::from_static("image/svg+xml; charset=utf-8")),
-            (header::CACHE_CONTROL, HeaderValue::from_static("no-store")),
-        ],
-        svg,
-    )
-        .into_response())
+pub async fn get_user_profile_pic_svg(
+    Extension(_claims): Extension<Claims>,
+    State(state): State<Arc<AppState>>,
+    Path(user_id): Path<String>,
+) -> Result<Response, StatusCode> {
+    profile_pic_response(&state, &user_id).await
 }
 
 pub async fn create_avatar_copy(
@@ -191,6 +173,36 @@ pub async fn clear_active_avatar(
     }
 
     Ok(StatusCode::NO_CONTENT)
+}
+
+async fn profile_pic_response(state: &Arc<AppState>, user_id: &str) -> Result<Response, StatusCode> {
+    let active_avatar = Avatar::find()
+        .filter(avatar::Column::UserId.eq(user_id))
+        .filter(avatar::Column::IsActive.eq(true))
+        .one(&state.db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let svg = if let Some(active_avatar) = active_avatar {
+        svg_from_texture_data(&active_avatar.texture_data)?
+    } else {
+        let current_user = User::find_by_id(user_id.to_string())
+            .one(&state.db)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+            .ok_or(StatusCode::NOT_FOUND)?;
+
+        default_profile_pic_svg(&current_user.avatar)
+    };
+
+    Ok((
+        [
+            (header::CONTENT_TYPE, HeaderValue::from_static("image/svg+xml; charset=utf-8")),
+            (header::CACHE_CONTROL, HeaderValue::from_static("no-store")),
+        ],
+        svg,
+    )
+        .into_response())
 }
 
 fn normalize_base_kind(value: &str) -> String {
