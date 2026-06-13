@@ -198,7 +198,6 @@ onBeforeUnmount(() => {
 watch(() => currentAvatar.value, () => {
   if (!currentAvatar.value) return
   avatarName.value = currentAvatar.value.name
-  syncColorFromPixel()
   renderAvatar()
 }, { deep: true })
 
@@ -223,6 +222,7 @@ async function loadAvatar() {
   currentAvatar.value = createEditableAvatar(authStore.user?.avatar || 'alex')
   selectedAvatarId.value = ''
   avatarName.value = currentAvatar.value.name
+  syncColorFromPixel()
   resetHistory()
 }
 
@@ -235,6 +235,7 @@ function setCurrentCustomAvatar(avatar: UserAvatar) {
   currentAvatar.value = createEditableAvatarFromApi(avatar)
   selectedAvatarId.value = avatar.id
   avatarName.value = avatar.name
+  syncColorFromPixel()
   resetHistory()
 }
 
