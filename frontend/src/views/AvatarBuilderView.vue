@@ -110,7 +110,17 @@ const saving = ref(false)
 const successMessage = ref('')
 const errorMessage = ref('')
 
-const partLabels: Record<AvatarPartName, string> = { head: 'Tête', torso: 'Torse', rightArm: 'Bras droit', leftArm: 'Bras gauche', rightLeg: 'Jambe droite', leftLeg: 'Jambe gauche' }
+// Les noms techniques restent anatomiques côté modèle (`rightArm` = bras droit du personnage).
+// L'éditeur est affiché face au personnage : son bras droit apparaît donc à gauche de l'écran.
+// Les libellés ci-dessous sont volontairement exprimés du point de vue de l'utilisateur qui regarde l'avatar.
+const partLabels: Record<AvatarPartName, string> = {
+  head: 'Tête',
+  torso: 'Torse',
+  rightArm: 'Bras gauche',
+  leftArm: 'Bras droit',
+  rightLeg: 'Jambe gauche',
+  leftLeg: 'Jambe droite',
+}
 const faceLabels: Record<AvatarFaceName, string> = { front: 'Avant', back: 'Arrière', top: 'Dessus', bottom: 'Dessous', left: 'Gauche', right: 'Droite' }
 
 let engine: Engine | null = null
@@ -118,8 +128,7 @@ let scene: Scene | null = null
 let avatarRoot: Mesh | null = null
 
 const overwriteAllowed = computed(() => !!currentAvatar.value && !currentAvatar.value.overwriteLocked)
-const editableFace = computed(() => getEditableFace(selectedPart.value, selectedFace.value))
-const activeTexture = computed(() => currentAvatar.value!.textures[selectedPart.value][editableFace.value])
+const activeTexture = computed(() => currentAvatar.value!.textures[selectedPart.value][selectedFace.value])
 const selectedColor = computed(() => hexToRgba(selectedHex.value, selectedAlpha.value))
 const selectedColorCss = computed(() => colorToCss(selectedColor.value))
 const facePixels = computed(() => {
@@ -233,21 +242,13 @@ function syncColorFromPixel() {
 
 function paint(x: number, y: number) {
   if (!currentAvatar.value) return
-  currentAvatar.value = paintAvatarPixel(currentAvatar.value, selectedPart.value, editableFace.value, x, y, selectedColor.value)
+  currentAvatar.value = paintAvatarPixel(currentAvatar.value, selectedPart.value, selectedFace.value, x, y, selectedColor.value)
 }
 
 function pick(x: number, y: number) {
   const color = getTexturePixelColor(activeTexture.value, x, y)
   selectedHex.value = rgbaToHex(color)
   selectedAlpha.value = color[3]
-}
-
-function getEditableFace(part: AvatarPartName, face: AvatarFaceName): AvatarFaceName {
-  const isLimb = part === 'rightArm' || part === 'leftArm' || part === 'rightLeg' || part === 'leftLeg'
-  if (!isLimb) return face
-  if (face === 'left') return 'right'
-  if (face === 'right') return 'left'
-  return face
 }
 
 async function saveCopy() {
