@@ -102,7 +102,18 @@
 
           <div v-if="connectedPlayers.length > 0" class="players-list">
             <div v-for="player in connectedPlayers" :key="playerKey(player)" class="player-item">
-              <span>{{ playerLabel(player) }}</span>
+              <div class="player-avatar">
+                <img
+                  v-if="playerAvatarUrl(player)"
+                  :src="playerAvatarUrl(player)"
+                  :alt="`Photo de profil de ${playerLabel(player)}`"
+                  class="player-avatar-image"
+                >
+                <span v-else class="player-avatar-fallback">{{ playerInitial(player) }}</span>
+              </div>
+              <div class="player-main">
+                <span class="player-name">{{ playerLabel(player) }}</span>
+              </div>
             </div>
           </div>
           <div v-else class="no-data no-players">Aucun joueur connecté</div>
@@ -165,6 +176,8 @@ ChartJS.register(
   Legend,
   Filler
 )
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
 
 type CountByGender = {
   gender?: string
@@ -232,6 +245,7 @@ const stats = ref<ServerStats>({})
 const gameDomain = ref('')
 const serverName = ref('Mon Serveur')
 const liveConnectedPlayers = ref<unknown[]>([])
+const playerAvatarUrls = ref<Record<string, string>>({})
 const websocketStatus = ref<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected')
 const activeWebSocketEndpoint = ref('')
 
@@ -422,13 +436,13 @@ const loadStats = async () => {
 
     const data = await response.json()
     stats.value = data
-    liveConnectedPlayers.value = normalizePlayers(data.connected_players)
+    updateConnectedPlayers(normalizePlayers(data.connected_players))
     connectGameServerWebSocket()
   } catch (err: any) {
     console.error('Error loading stats:', err)
     error.value = err.message || 'Impossible de charger les statistiques'
     stats.value = {}
-    liveConnectedPlayers.value = []
+    updateConnectedPlayers([])
     closeGameServerWebSocket(false)
   } finally {
     loading.value = false
@@ -563,12 +577,14 @@ const mergeStats = (partialStats: Partial<ServerStats>) => {
 }
 
 const updateConnectedPlayers = (players: unknown[]) => {
-  liveConnectedPlayers.value = normalizePlayers(players)
+  const normalizedPlayers = normalizePlayers(players)
+  liveConnectedPlayers.value = normalizedPlayers
   stats.value = {
     ...stats.value,
-    current_connected_players: liveConnectedPlayers.value.length,
-    connected_players: liveConnectedPlayers.value
+    current_connected_players: normalizedPlayers.length,
+    connected_players: normalizedPlayers
   }
+  refreshPlayerAvatars(normalizedPlayers)
 }
 
 const addConnectedPlayer = (player: unknown) => {
@@ -584,6 +600,54 @@ const removeConnectedPlayer = (player: unknown) => {
 }
 
 const normalizePlayers = (players: unknown) => Array.isArray(players) ? players.filter((player) => player !== null && player !== undefined) : []
+
+const refreshPlayerAvatars = (players: unknown[]) => {
+  const nextKeys = new Set(players.map(playerKey))
+  for (const [key, url] of Object.entries(playerAvatarUrls.value)) {
+    if (!nextKeys.has(key)) {
+      URL.revokeObjectURL(url)
+      const nextUrls = { ...playerAvatarUrls.value }
+      delete nextUrls[key]
+      playerAvatarUrls.value = nextUrls
+    }
+  }
+
+  for (const player of players) {
+    const key = playerKey(player)
+    if (playerAvatarUrls.value[key]) continue
+    const source = playerProfilePictureSource(player)
+    if (source) void loadPlayerAvatar(key, source)
+  }
+}
+
+const loadPlayerAvatar = async (key: string, source: string) => {
+  const token = localStorage.getItem('auth_token')
+  const headers = new Headers()
+  if (token) headers.set('Authorization', `Bearer ${token}`)
+
+  try {
+    const response = await fetch(source, { headers, credentials: 'include' })
+    if (!response.ok) return
+    const blob = await response.blob()
+    const url = URL.createObjectURL(blob)
+    if (playerAvatarUrls.value[key]) URL.revokeObjectURL(playerAvatarUrls.value[key])
+    playerAvatarUrls.value = { ...playerAvatarUrls.value, [key]: url }
+  } catch (err) {
+    console.warn('Unable to load player profile picture:', err)
+  }
+}
+
+const playerProfilePictureSource = (player: unknown) => {
+  if (!player || typeof player !== 'object') return ''
+  const record = player as Record<string, unknown>
+  const explicitUrl = record.profile_pic_url ?? record.profilePictureUrl ?? record.avatar_url ?? record.avatarUrl
+  if (typeof explicitUrl === 'string' && explicitUrl.trim()) return explicitUrl.trim()
+
+  const centralUserId = record.user_id ?? record.userId ?? record.central_user_id ?? record.centralUserId
+  if (centralUserId === undefined || centralUserId === null || centralUserId === '') return ''
+
+  return `${API_BASE_URL}/users/${encodeURIComponent(String(centralUserId))}/profile-pic.svg`
+}
 
 const buildWebSocketCandidates = (domain: string) => {
   if (!domain) return []
@@ -624,7 +688,7 @@ const playerLabel = (player: unknown) => {
   if (typeof player === 'string') return player
   if (player && typeof player === 'object') {
     const record = player as Record<string, unknown>
-    return String(record.username ?? record.name ?? record.display_name ?? record.player_name ?? record.id ?? JSON.stringify(record))
+    return String(record.nickname ?? record.username ?? record.name ?? record.display_name ?? record.player_name ?? record.player_id ?? record.id ?? 'Joueur connecté')
   }
   return String(player)
 }
@@ -632,10 +696,13 @@ const playerLabel = (player: unknown) => {
 const playerKey = (player: unknown) => {
   if (player && typeof player === 'object') {
     const record = player as Record<string, unknown>
-    return String(record.id ?? record.uuid ?? record.username ?? record.name ?? record.display_name ?? record.player_name ?? JSON.stringify(record))
+    return String(record.user_id ?? record.userId ?? record.central_user_id ?? record.centralUserId ?? record.player_id ?? record.id ?? record.uuid ?? record.nickname ?? record.username ?? record.name ?? record.display_name ?? record.player_name ?? JSON.stringify(record))
   }
   return String(player)
 }
+
+const playerInitial = (player: unknown) => playerLabel(player).trim().charAt(0).toUpperCase() || '?'
+const playerAvatarUrl = (player: unknown) => playerAvatarUrls.value[playerKey(player)]
 
 const goBack = () => {
   router.push({ name: 'servers' })
@@ -648,6 +715,8 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   closeGameServerWebSocket(true)
+  for (const url of Object.values(playerAvatarUrls.value)) URL.revokeObjectURL(url)
+  playerAvatarUrls.value = {}
 })
 </script>
 
@@ -778,15 +847,64 @@ onBeforeUnmount(() => {
 }
 
 .players-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 0.75rem;
 }
 
 .player-item {
-  padding: 0.75rem;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  background: linear-gradient(135deg, rgba(100, 255, 218, 0.12), rgba(255, 255, 255, 0.06));
+  border: 1px solid rgba(100, 255, 218, 0.22);
+  border-radius: 10px;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18);
+}
+
+.player-avatar {
+  width: 54px;
+  height: 54px;
+  flex: 0 0 54px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid rgba(100, 255, 218, 0.55);
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.player-avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.player-avatar-fallback {
+  color: #64ffda;
+  font-size: 1.45rem;
+  font-weight: 800;
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45);
+}
+
+.player-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.player-name {
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .info-grid {
