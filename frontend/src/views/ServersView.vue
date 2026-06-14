@@ -87,7 +87,7 @@
             @click="goToDashboard(server.id)"
           >
             <h3>{{ server.name }}</h3>
-            <p><strong>Serveur de jeu:</strong> <a :href="server.game_domain" target="_blank" @click.stop>{{ server.game_domain }}</a></p>
+            <p><strong>Serveur de jeu:</strong> <a :href="server.game_domain" target="_blank" @click.stop="openGameServer(server)">{{ server.game_domain }}</a></p>
             <p v-if="server.description"><strong>Description:</strong> {{ server.description }}</p>
             <p><strong>Status:</strong> {{ server.is_active ? '✅ Actif' : '🔴 Inactif' }}</p>
 
@@ -121,8 +121,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { serverApi, type Server } from '@/api'
 import { useServerStore } from '@/stores/server'
-import type { Server } from '@/api'
 
 const router = useRouter()
 const serverStore = useServerStore()
@@ -168,6 +168,14 @@ const deleteServerConfirm = async (id: string) => {
 
 const goToDashboard = (serverId: string) => {
   router.push({ name: 'server-dashboard', params: { id: serverId } })
+}
+
+const openGameServer = async (server: Server) => {
+  try {
+    await serverApi.recordServerVisit(server.game_domain)
+  } catch (error) {
+    console.warn('Impossible d’enregistrer le serveur récemment visité.', error)
+  }
 }
 </script>
 
@@ -261,100 +269,82 @@ const goToDashboard = (serverId: string) => {
   margin-bottom: 1rem;
 }
 
-.empty-state h3 {
-  font-size: 1.5rem;
-  margin-bottom: 1rem;
-}
-
-.empty-state p {
-  margin-bottom: 2rem;
-  line-height: 1.6;
-}
-
 .server-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
   gap: 2rem;
 }
 
 .server-card {
   padding: 2rem;
   cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: left;
+}
+
+.server-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
 }
 
 .server-card h3 {
-  margin-bottom: 1rem;
-  font-size: 1.3rem;
   color: #64ffda;
+  margin-bottom: 1rem;
+  font-size: 1.4rem;
 }
 
 .server-card p {
-  margin: 0.75rem 0;
-  word-break: break-word;
-  line-height: 1.5;
-}
-
-.server-card strong {
-  color: #64ffda;
+  margin-bottom: 0.5rem;
+  color: #d7ccc8;
 }
 
 .server-card a {
-  color: #fff;
+  color: #64ffda;
   text-decoration: none;
+}
+
+.server-card a:hover {
+  text-decoration: underline;
 }
 
 .button-container {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.5rem;
   margin-top: 1.5rem;
   flex-wrap: wrap;
 }
 
 .voxicraft-button.small {
-  padding: 0.6rem 1rem;
-  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
 }
 
-.voxicraft-button.small.primary {
-  background-color: #64ffda;
-  color: #1a1a1a;
-  border-color: #4dd0ba;
-  font-weight: bold;
-}
-
-.voxicraft-button.small.primary:hover {
-  background-color: #7fffeb;
+.voxicraft-button.primary {
+  background-color: #2196f3;
+  border-color: #1565c0;
 }
 
 .voxicraft-button.danger {
-  background-color: #d32f2f;
-  border-color: #b71c1c;
-}
-
-.voxicraft-button.danger:hover {
   background-color: #f44336;
+  border-color: #c62828;
 }
 
 .error-message {
-  color: #ff4444;
+  color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.1);
+  border: 1px solid #ff6b6b;
+  padding: 0.5rem;
   margin-top: 1rem;
-  background-color: rgba(255, 68, 68, 0.1);
-  padding: 0.75rem;
   border-radius: 4px;
-  border: 2px solid #ff4444;
 }
 
 @media (max-width: 768px) {
-  .servers {
-    padding: 1rem;
-  }
-
   .server-grid {
     grid-template-columns: 1fr;
   }
 
-  .create-form {
-    padding: 1.5rem;
+  .button-container {
+    flex-direction: column;
   }
 }
 </style>
