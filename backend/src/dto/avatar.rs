@@ -26,6 +26,8 @@ pub struct SaveAvatarRequest {
     #[validate(length(min = 1, max = 20))]
     pub base_kind: String,
     pub texture_data: Value,
+    #[validate(length(max = 1_500_000))]
+    pub preview_image_data_url: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Validate)]
@@ -33,4 +35,6 @@ pub struct UpdateAvatarRequest {
     #[validate(length(min = 1, max = 80))]
     pub name: Option<String>,
     pub texture_data: Value,
+    #[validate(length(max = 1_500_000))]
+    pub preview_image_data_url: Option<String>,
 }
