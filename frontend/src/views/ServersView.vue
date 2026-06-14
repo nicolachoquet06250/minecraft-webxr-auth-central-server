@@ -89,7 +89,7 @@
             @click="goToDashboard(server.id)"
           >
             <h3>{{ server.name }}</h3>
-            <p><strong>Serveur de jeu:</strong> <a :href="server.game_domain" target="_blank" @click.stop="openGameServer(server)">{{ server.game_domain }}</a></p>
+            <p class="server-url-row"><strong>Serveur de jeu:</strong> <a :href="server.game_domain" target="_blank" class="server-url" :title="server.game_domain" @click.stop="openGameServer(server)">{{ server.game_domain }}</a></p>
             <p v-if="server.description"><strong>Description:</strong> {{ server.description }}</p>
             <p><strong>Status:</strong> {{ server.is_active ? '✅ Actif' : '🔴 Inactif' }}</p>
 
@@ -99,13 +99,6 @@
                 class="voxicraft-button small primary"
               >
                 📊 Dashboard
-              </button>
-              <button
-                @click.stop="toggleFavorite(server.id)"
-                class="voxicraft-button small favorite"
-                :class="{ active: isFavorite(server.id) }"
-              >
-                {{ isFavorite(server.id) ? '⭐ Favori' : '☆ Favori' }}
               </button>
               <button
                 @click.stop="toggleServerStatus(server)"
@@ -128,7 +121,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import type { Server } from '@/api'
 import { useServerStore } from '@/stores/server'
@@ -141,12 +134,9 @@ const createData = ref({
   game_domain: '',
   description: '',
 })
-const favoriteIds = computed(() => new Set(serverStore.favoriteServers.map((entry) => entry.server.id)))
 
 onMounted(async () => {
   await serverStore.fetchUserServers()
-  await serverStore.fetchFavoriteServers()
-  await serverStore.fetchRecentServers()
 })
 
 const handleCreate = async () => {
@@ -180,13 +170,6 @@ const deleteServerConfirm = async (id: string) => {
 
 const goToDashboard = (serverId: string) => {
   router.push({ name: 'server-dashboard', params: { id: serverId } })
-}
-
-const isFavorite = (serverId: string) => favoriteIds.value.has(serverId)
-
-const toggleFavorite = async (serverId: string) => {
-  if (isFavorite(serverId)) await serverStore.unfavoriteServer(serverId)
-  else await serverStore.favoriteServer(serverId)
 }
 
 const openGameServer = async (server: Server) => {
@@ -296,7 +279,7 @@ const openGameServer = async (server: Server) => {
 
 .server-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
   gap: 2rem;
 }
 
@@ -305,6 +288,7 @@ const openGameServer = async (server: Server) => {
   cursor: pointer;
   transition: all 0.3s ease;
   text-align: left;
+  min-width: 0;
 }
 
 .server-card:hover {
@@ -321,6 +305,28 @@ const openGameServer = async (server: Server) => {
 .server-card p {
   margin-bottom: 0.5rem;
   color: #d7ccc8;
+}
+
+.server-url-row {
+  display: flex;
+  align-items: baseline;
+  gap: .4rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.server-url-row strong {
+  flex: 0 0 auto;
+}
+
+.server-url {
+  display: inline-block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
 }
 
 .server-card a {
@@ -349,17 +355,6 @@ const openGameServer = async (server: Server) => {
   border-color: #1565c0;
 }
 
-.voxicraft-button.favorite {
-  background-color: #6d4c41;
-  border-color: #4e342e;
-}
-
-.voxicraft-button.favorite.active {
-  background-color: #ffb300;
-  border-color: #ff8f00;
-  color: #1a1a1a;
-}
-
 .voxicraft-button.danger {
   background-color: #f44336;
   border-color: #c62828;
@@ -377,6 +372,14 @@ const openGameServer = async (server: Server) => {
 @media (max-width: 768px) {
   .server-grid {
     grid-template-columns: 1fr;
+  }
+
+  .server-url-row {
+    display: block;
+  }
+
+  .server-url {
+    display: block;
   }
 
   .button-container,
