@@ -31,6 +31,13 @@ const router = createRouter({
 
 router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore()
+  const authToken = typeof to.query.auth_token === 'string' ? to.query.auth_token : null
+  if (authToken) {
+    authStore.setToken(authToken)
+    await authStore.fetchProfile()
+    next({ name: 'profile', replace: true })
+    return
+  }
   if (authStore.token && !authStore.user) await authStore.fetchProfile()
   if (to.meta.requiresAuth && !authStore.isAuthenticated) next({ name: 'login' })
   else if (to.meta.requiresGuest && authStore.isAuthenticated) next({ name: 'profile' })
