@@ -23,8 +23,8 @@
           <ul>
             <li><router-link to="/api/documentation">Documentation</router-link></li>
             <li><router-link to="/api/swagger">API</router-link></li>
-            <li><a href="#" @click.prevent>Support</a></li>
-            <li><a href="#" @click.prevent>Contact</a></li>
+            <li><router-link to="/support">Support</router-link></li>
+            <li><router-link to="/contact">Contact</router-link></li>
           </ul>
         </div>
       </div>
