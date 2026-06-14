@@ -23,7 +23,7 @@ export const generateProfileInfoAvatarMailPreview = (avatar: UserAvatar): string
       padding: 14,
       background: 'rgba(3, 4, 8, 0)',
     })
-    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
+    return `data:image/svg+xml;base64,${toBase64(svg)}`
   } catch {
     return undefined
   } finally {
@@ -32,6 +32,8 @@ export const generateProfileInfoAvatarMailPreview = (avatar: UserAvatar): string
     engine?.dispose()
   }
 }
+
+const toBase64 = (value: string) => btoa(unescape(encodeURIComponent(value)))
 
 const applyWalkingPose = (root: Mesh) => {
   const parts = root.getChildMeshes().filter((child): child is Mesh => child instanceof Mesh)
