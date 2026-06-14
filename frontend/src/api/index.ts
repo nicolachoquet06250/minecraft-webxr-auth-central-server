@@ -27,7 +27,7 @@ export interface ActiveAvatarResponse { kind: 'default' | 'custom'; avatar: User
 export interface SaveAvatarData { name: string; base_kind: string; texture_data: AvatarTextureData; preview_image_data_url?: string }
 export interface UpdateAvatarData { name?: string; texture_data: AvatarTextureData; preview_image_data_url?: string }
 export interface ContactMailData { name: string; email: string; subject: string; message: string }
-export interface SupportMailData { name?: string; email?: string; category: string; subject: string; message: string; server_id?: string }
+export interface SupportMailData { name?: string; email?: string; category: string; subject: string; message: string; server_url?: string }
 export interface MailStatus { enabled: boolean }
 export interface MailSentResponse { sent: boolean }
 export interface PasswordChangeCodeRequest { next_secret: string; next_secret_confirmation: string }

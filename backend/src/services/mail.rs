@@ -37,6 +37,7 @@ pub struct MailPayload {
     pub message: String,
     pub kind: MailKind,
     pub metadata: Vec<(String, String)>,
+    pub cc: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -69,7 +70,7 @@ impl MailService {
         let config = self.config.as_ref().ok_or_else(|| anyhow!("Mail service is not configured"))?;
         let recipient = match payload.kind { MailKind::Contact => &config.contact_to, MailKind::Support => &config.support_to };
         let subject_prefix = match payload.kind { MailKind::Contact => "[Voxicraft Contact]", MailKind::Support => "[Voxicraft Support]" };
-        self.send_html(recipient, &format!("{} {}", subject_prefix, payload.subject), &format_request_mail_html(&payload)).await
+        self.send_html_with_cc(recipient, payload.cc.as_deref(), &format!("{} {}", subject_prefix, payload.subject), &format_request_mail_html(&payload)).await
     }
 
     pub async fn send_welcome_email(&self, email: &str, username: &str) -> Result<()> {
@@ -100,14 +101,20 @@ impl MailService {
     }
 
     async fn send_html(&self, recipient: &str, subject: &str, body: &str) -> Result<()> {
+        self.send_html_with_cc(recipient, None, subject, body).await
+    }
+
+    async fn send_html_with_cc(&self, recipient: &str, cc: Option<&str>, subject: &str, body: &str) -> Result<()> {
         let config = self.config.as_ref().ok_or_else(|| anyhow!("Mail service is not configured"))?;
-        let email = Message::builder()
+        let mut builder = Message::builder()
             .from(config.smtp_from.parse::<Mailbox>().context("Invalid SMTP_FROM")?)
             .to(recipient.parse::<Mailbox>().context("Invalid recipient email")?)
             .subject(subject)
-            .header(ContentType::TEXT_HTML)
-            .body(body.to_string())
-            .context("Failed to build email")?;
+            .header(ContentType::TEXT_HTML);
+        if let Some(cc) = cc {
+            builder = builder.cc(cc.parse::<Mailbox>().context("Invalid CC email")?);
+        }
+        let email = builder.body(body.to_string()).context("Failed to build email")?;
         self.send_message(email).await
     }
 

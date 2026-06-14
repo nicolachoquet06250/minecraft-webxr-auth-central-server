@@ -16,8 +16,9 @@
           <option value="other">Autre</option>
         </select>
 
-        <label class="form-label">ID serveur concerné, optionnel</label>
-        <input v-model="form.server_id" class="form-input" maxlength="120" />
+        <label class="form-label">URL du serveur concerné{{ isServerCategory ? '' : ', optionnel' }}</label>
+        <input v-model="form.server_url" class="form-input" type="url" maxlength="240" placeholder="https://mon-serveur.example.com" :required="isServerCategory" />
+        <p class="field-hint">Obligatoire pour une demande serveur. Pour un bug, si l’URL est renseignée, le propriétaire du serveur sera mis en copie.</p>
 
         <label class="form-label">Email de réponse, optionnel</label>
         <input v-model="form.email" type="email" class="form-input" maxlength="180" />
@@ -38,13 +39,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { mailApi } from '@/api'
 
-const form = ref({ category: 'bug', server_id: '', email: '', subject: '', message: '' })
+const form = ref({ category: 'bug', server_url: '', email: '', subject: '', message: '' })
 const sending = ref(false)
 const successMessage = ref('')
 const errorMessage = ref('')
+const isServerCategory = computed(() => form.value.category === 'server')
 
 async function submitSupport() {
   sending.value = true
@@ -53,13 +55,13 @@ async function submitSupport() {
   try {
     await mailApi.support({
       category: form.value.category,
-      server_id: form.value.server_id || undefined,
+      server_url: form.value.server_url || undefined,
       email: form.value.email || undefined,
       subject: form.value.subject,
       message: form.value.message,
     })
     successMessage.value = 'Demande envoyée au support.'
-    form.value = { category: 'bug', server_id: '', email: '', subject: '', message: '' }
+    form.value = { category: 'bug', server_url: '', email: '', subject: '', message: '' }
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : 'Erreur lors de l’envoi au support.'
   } finally {
@@ -75,6 +77,7 @@ async function submitSupport() {
 .mail-form { display: flex; flex-direction: column; gap: .85rem; }
 .form-label { color: #ffd700; font-weight: 700; }
 .form-input { width: 100%; border: 2px solid #424242; border-radius: 8px; background: rgba(0,0,0,.55); color: #fff; padding: .85rem; }
+.field-hint { margin: -.45rem 0 .25rem; color: #d7ccc8; font-size: .86rem; line-height: 1.5; }
 .form-textarea { min-height: 180px; resize: vertical; }
 .submit-button { margin-top: .5rem; border: 3px solid #2e7d32; border-radius: 8px; background: #4caf50; color: #fff; padding: .95rem 1rem; font-weight: 800; cursor: pointer; }
 .submit-button:disabled { opacity: .6; cursor: not-allowed; }
