@@ -1,3 +1,7 @@
+import { ArcRotateCamera, Color4, Engine, HemisphericLight, Mesh, Scene, Vector3 } from '@babylonjs/core'
+import { buildCharacter } from '@/character-builder/character-builder'
+import { createCharacterModelFromAvatar, createEditableAvatarFromApi } from '@/character-builder/avatar-editor'
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
 
 type ApiResponse<T> = Promise<{ data: T }>
@@ -71,6 +75,12 @@ export interface PasswordChangeConfirmRequest { code: string }
 export interface PasswordChangeCodeResponse { sent: boolean; expires_in_minutes: number }
 export interface PasswordChangedResponse { changed: boolean }
 
+type AvatarPreviewPayload = {
+  name?: string
+  base_kind?: string
+  texture_data?: AvatarTextureData
+}
+
 const request = async <T>(path: string, options: RequestInit = {}): ApiResponse<T> => {
   const token = localStorage.getItem('auth_token')
   const headers = new Headers(options.headers)
@@ -94,7 +104,12 @@ const parseResponseBody = async (response: Response) => {
 
 const jsonBody = (data: unknown) => JSON.stringify(data)
 
-const captureAvatarPreviewImage = (): string | undefined => {
+const captureAvatarPreviewImage = (payload?: AvatarPreviewPayload): string | undefined => {
+  if (payload?.texture_data) {
+    const renderedPreview = renderAvatarPreviewImage(payload)
+    if (renderedPreview) return renderedPreview
+  }
+
   const canvas = document.querySelector<HTMLCanvasElement>('.avatar-canvas')
   if (!canvas) return undefined
   try {
@@ -104,8 +119,76 @@ const captureAvatarPreviewImage = (): string | undefined => {
   }
 }
 
-const withAvatarPreview = <T extends { preview_image_data_url?: string }>(data: T): T => {
-  const previewImageDataUrl = captureAvatarPreviewImage()
+const renderAvatarPreviewImage = (payload: AvatarPreviewPayload): string | undefined => {
+  if (!payload.texture_data) return undefined
+
+  const canvas = document.createElement('canvas')
+  canvas.width = 512
+  canvas.height = 512
+
+  let engine: Engine | null = null
+  let scene: Scene | null = null
+  let root: Mesh | null = null
+
+  try {
+    engine = new Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true, antialias: true })
+    scene = new Scene(engine)
+    scene.clearColor = new Color4(0, 0, 0, 0)
+
+    const camera = new ArcRotateCamera('avatar-mail-preview-camera', Math.PI * 0.76, Math.PI / 2.45, 4.3, new Vector3(0, 1, 0), scene)
+    camera.fov = 0.48
+
+    const light = new HemisphericLight('avatar-mail-preview-light', new Vector3(0.25, 1, -0.35), scene)
+    light.intensity = 1.15
+
+    const avatar: UserAvatar = {
+      id: 'mail-preview',
+      name: payload.name || 'Avatar',
+      base_kind: normalizePreviewBaseKind(payload.base_kind),
+      is_active: false,
+      texture_data: payload.texture_data,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+
+    root = buildCharacter(scene, createCharacterModelFromAvatar(createEditableAvatarFromApi(avatar)), new Vector3(0, 0, 0), { physics: false })
+    applyWalkingPreviewPose(root)
+    scene.render()
+
+    return canvas.toDataURL('image/png')
+  } catch {
+    return undefined
+  } finally {
+    root?.dispose()
+    scene?.dispose()
+    engine?.dispose()
+  }
+}
+
+const normalizePreviewBaseKind = (value?: string): 'steve' | 'alex' | 'custom' => {
+  if (value === 'steve' || value === 'alex') return value
+  return 'custom'
+}
+
+const applyWalkingPreviewPose = (root: Mesh) => {
+  root.rotation.y = -0.12
+  rotateAvatarPart(root, 'head', 0.04, -0.06, 0)
+  rotateAvatarPart(root, 'rightArm', 0.62, 0, -0.08)
+  rotateAvatarPart(root, 'leftArm', -0.62, 0, 0.08)
+  rotateAvatarPart(root, 'rightLeg', -0.48, 0, 0.04)
+  rotateAvatarPart(root, 'leftLeg', 0.48, 0, -0.04)
+}
+
+const rotateAvatarPart = (root: Mesh, partName: string, x: number, y: number, z: number) => {
+  const part = root.getChildMeshes().find((mesh) => mesh.name.endsWith(`_${partName}`))
+  if (!part) return
+  part.rotation.x = x
+  part.rotation.y = y
+  part.rotation.z = z
+}
+
+const withAvatarPreview = <T extends AvatarPreviewPayload & { preview_image_data_url?: string }>(data: T): T => {
+  const previewImageDataUrl = captureAvatarPreviewImage(data)
   return previewImageDataUrl ? { ...data, preview_image_data_url: previewImageDataUrl } : data
 }
 
