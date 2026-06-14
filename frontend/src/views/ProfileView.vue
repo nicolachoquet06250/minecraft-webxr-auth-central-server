@@ -43,13 +43,20 @@
               <div class="info-item"><span>✅ Âge vérifié</span><strong>{{ authStore.user.age_verified ? 'Oui' : 'Non' }}</strong></div>
               <div class="info-item discord-info-item">
                 <span>💬 Discord</span>
-                <div v-if="authStore.user.discord_username" class="discord-linked-row">
-                  <div class="discord-linked-card">
+                <div v-if="authStore.user.discord_username" class="discord-linked-card">
+                  <div class="discord-linked-content">
                     <strong>Discord lié</strong>
                     <small>{{ authStore.user.discord_username }}</small>
                   </div>
-                  <button type="button" class="discord-unlink-button" :disabled="unlinkingDiscord" @click="unlinkDiscord">
-                    {{ unlinkingDiscord ? 'Suppression...' : 'Supprimer' }}
+                  <button
+                    type="button"
+                    class="discord-unlink-button"
+                    :disabled="unlinkingDiscord"
+                    title="Supprimer le lien Discord"
+                    aria-label="Supprimer le lien Discord"
+                    @click="unlinkDiscord"
+                  >
+                    <span class="sr-only">{{ unlinkingDiscord ? 'Suppression...' : 'Supprimer' }}</span>
                   </button>
                 </div>
                 <button v-else type="button" class="discord-link-button" :disabled="linkingDiscord" @click="linkDiscord">
@@ -272,14 +279,16 @@ const handleUpdate = async () => {
 .profile-avatar-card strong { width: 100%; text-align: center; font-size: .66rem; overflow-wrap: anywhere; color: #fff; }
 .info-item span, .info-item strong { min-width: 0; overflow-wrap: anywhere; }
 .discord-info-item { align-items: center; }
-.discord-linked-row { display: flex; align-items: center; justify-content: flex-end; gap: .45rem; flex-wrap: wrap; min-width: 0; }
-.discord-linked-card { display: flex; flex-direction: column; align-items: flex-end; gap: .18rem; padding: .45rem .55rem; border: 2px solid rgba(100, 255, 218, .45); border-radius: 8px; background: rgba(88, 101, 242, .22); box-shadow: 3px 3px 0 rgba(0, 0, 0, .28); }
-.discord-linked-card strong { color: #64ffda; font-size: .66rem; }
-.discord-linked-card small { color: rgba(255, 255, 255, .75); font-size: .58rem; max-width: 180px; overflow-wrap: anywhere; text-align: right; }
-.discord-link-button, .discord-unlink-button { padding: .52rem .65rem; border-radius: 7px; color: #fff; font-family: 'Press Start 2P', cursive; font-size: .52rem; line-height: 1.35; cursor: pointer; box-shadow: 3px 3px 0 rgba(0, 0, 0, .35); }
-.discord-link-button { border: 2px solid #5865f2; background: linear-gradient(135deg, #5865f2, #7289da); }
-.discord-unlink-button { border: 2px solid #c62828; background: linear-gradient(135deg, #c62828, #ef5350); }
-.discord-link-button:disabled, .discord-unlink-button:disabled { opacity: .65; cursor: not-allowed; }
+.discord-linked-card { display: grid; grid-template-columns: minmax(0, 1fr) 74px; align-items: stretch; width: min(100%, 330px); min-height: 92px; padding: 10px; border: 4px solid rgba(135, 178, 171, .95); border-radius: 16px; background: #5a414d; box-shadow: 6px 6px 0 rgba(0, 0, 0, .45); overflow: hidden; }
+.discord-linked-content { display: flex; flex-direction: column; justify-content: center; min-width: 0; padding: 0 12px 0 4px; }
+.discord-linked-card strong { color: #9dffce; font-family: 'Press Start 2P', cursive; font-size: 1rem; line-height: 1.35; text-shadow: 2px 2px 0 rgba(0, 0, 0, .38); overflow-wrap: anywhere; }
+.discord-linked-card small { margin-top: .55rem; color: #f4e6ff; font-family: 'Press Start 2P', cursive; font-size: .72rem; line-height: 1.35; text-align: right; overflow-wrap: anywhere; }
+.discord-unlink-button { width: 100%; min-height: 100%; border: 0; border-radius: 0; background: #b9332f; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .08); }
+.discord-unlink-button:hover { background: #d0443f; }
+.discord-unlink-button:disabled { opacity: .65; cursor: not-allowed; }
+.discord-link-button { padding: .52rem .65rem; border-radius: 7px; border: 2px solid #5865f2; background: linear-gradient(135deg, #5865f2, #7289da); color: #fff; font-family: 'Press Start 2P', cursive; font-size: .52rem; line-height: 1.35; cursor: pointer; box-shadow: 3px 3px 0 rgba(0, 0, 0, .35); }
+.discord-link-button:disabled { opacity: .65; cursor: not-allowed; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .actions-grid, .stats-grid, .avatar-selector { display: grid; grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); gap: .65rem; min-width: 0; }
 .actions-grid { display: flex; flex-wrap: wrap; }
 .bio-content { width: 100%; overflow: hidden; overflow-wrap: anywhere; line-height: 1.45; }
