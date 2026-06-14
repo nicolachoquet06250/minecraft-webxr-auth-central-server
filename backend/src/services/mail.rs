@@ -95,15 +95,41 @@ impl MailService {
             MailKind::Support => "[Voxicraft Support]",
         };
 
-        let body = format_mail_body(&payload);
+        let body = format_request_mail_html(&payload);
         let email = Message::builder()
             .from(config.smtp_from.parse::<Mailbox>().context("Invalid SMTP_FROM")?)
             .reply_to(payload.sender_email.parse::<Mailbox>().context("Invalid sender email")?)
             .to(recipient.parse::<Mailbox>().context("Invalid recipient email")?)
             .subject(format!("{} {}", subject_prefix, payload.subject))
-            .header(ContentType::TEXT_PLAIN)
+            .header(ContentType::TEXT_HTML)
             .body(body)
             .context("Failed to build email")?;
+
+        self.send_message(email).await
+    }
+
+    pub async fn send_welcome_email(&self, email: &str, username: &str) -> Result<()> {
+        let config = self
+            .config
+            .as_ref()
+            .ok_or_else(|| anyhow!("Mail service is not configured"))?;
+
+        let email = Message::builder()
+            .from(config.smtp_from.parse::<Mailbox>().context("Invalid SMTP_FROM")?)
+            .to(email.parse::<Mailbox>().context("Invalid welcome recipient email")?)
+            .subject("Bienvenue sur Voxicraft")
+            .header(ContentType::TEXT_HTML)
+            .body(format_welcome_mail_html(username))
+            .context("Failed to build welcome email")?;
+
+        self.send_message(email).await
+    }
+
+    async fn send_message(&self, email: Message) -> Result<()> {
+        let config = self
+            .config
+            .as_ref()
+            .ok_or_else(|| anyhow!("Mail service is not configured"))?;
 
         let credentials = Credentials::new(config.smtp_username.clone(), config.smtp_password.clone());
         let mailer = if config.starttls {
@@ -121,20 +147,109 @@ impl MailService {
     }
 }
 
-fn format_mail_body(payload: &MailPayload) -> String {
+fn format_welcome_mail_html(username: &str) -> String {
+    let username = escape_html(username);
+    format!(
+        r#"<!doctype html>
+<html lang="fr">
+  <body style="margin:0;background:#101820;font-family:Arial,sans-serif;color:#ffffff;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#101820;padding:32px 12px;">
+      <tr><td align="center">
+        <table role="presentation" width="640" cellspacing="0" cellpadding="0" style="max-width:640px;background:#1b2b34;border:4px solid #64ffda;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.35);">
+          <tr><td style="padding:30px;background:linear-gradient(135deg,#243b4a,#1b2b34);text-align:center;">
+            <div style="font-size:34px;line-height:1;margin-bottom:10px;">⛏️</div>
+            <h1 style="margin:0;color:#64ffda;font-size:28px;">Bienvenue sur Voxicraft</h1>
+            <p style="margin:12px 0 0;color:#d7fff7;font-size:15px;">Votre compte a bien été créé.</p>
+          </td></tr>
+          <tr><td style="padding:28px 30px;">
+            <p style="font-size:16px;line-height:1.7;margin:0 0 18px;">Bonjour <strong style="color:#ffd700;">{username}</strong>,</p>
+            <p style="font-size:16px;line-height:1.7;margin:0 0 18px;">Votre espace Voxicraft est prêt. Vous pouvez maintenant gérer votre profil, créer votre avatar personnalisé et enregistrer vos serveurs de jeu.</p>
+            <div style="background:#0d171d;border:1px solid rgba(100,255,218,.35);border-radius:12px;padding:18px;margin:24px 0;">
+              <p style="margin:0 0 10px;color:#64ffda;font-weight:bold;">Prochaines étapes</p>
+              <ul style="margin:0;padding-left:20px;color:#ffffff;line-height:1.8;">
+                <li>Personnaliser votre avatar</li>
+                <li>Créer ou enregistrer un serveur</li>
+                <li>Consulter la documentation API si vous développez une intégration</li>
+              </ul>
+            </div>
+            <p style="font-size:14px;line-height:1.6;color:#a7bbc5;margin:0;">Si vous n’êtes pas à l’origine de cette inscription, vous pouvez ignorer ce message.</p>
+          </td></tr>
+          <tr><td style="padding:18px 30px;background:#0d171d;color:#7ea7b5;font-size:12px;text-align:center;">Voxicraft Auth Platform · Rust 🦀 + Vue.js 💚</td></tr>
+        </table>
+      </td></tr>
+    </table>
+  </body>
+</html>"#,
+    )
+}
+
+fn format_request_mail_html(payload: &MailPayload) -> String {
+    let is_support = matches!(payload.kind, MailKind::Support);
+    let title = if is_support { "Demande support" } else { "Message contact" };
+    let accent = if is_support { "#ffb300" } else { "#64ffda" };
+    let badge = if is_support { "SUPPORT" } else { "CONTACT" };
+    let subtitle = if is_support {
+        "Une demande d'assistance a été envoyée depuis l'espace utilisateur."
+    } else {
+        "Un message a été envoyé depuis le formulaire de contact public."
+    };
     let metadata = payload
         .metadata
         .iter()
-        .map(|(label, value)| format!("{}: {}", label, value))
+        .map(|(label, value)| format!(
+            "<tr><td style=\"padding:8px 0;color:#90a4ae;\">{}</td><td style=\"padding:8px 0;color:#ffffff;font-weight:bold;text-align:right;\">{}</td></tr>",
+            escape_html(label),
+            escape_html(value),
+        ))
         .collect::<Vec<_>>()
-        .join("\n");
+        .join("");
 
     format!(
-        "Nom: {}\nEmail: {}\nSujet: {}\n{}\n\nMessage:\n{}",
-        payload.sender_name,
-        payload.sender_email,
-        payload.subject,
-        metadata,
-        payload.message
+        r#"<!doctype html>
+<html lang="fr">
+  <body style="margin:0;background:#121212;font-family:Arial,sans-serif;color:#ffffff;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#121212;padding:28px 12px;">
+      <tr><td align="center">
+        <table role="presentation" width="680" cellspacing="0" cellpadding="0" style="max-width:680px;background:#1f1f1f;border-left:8px solid {accent};border-radius:14px;overflow:hidden;">
+          <tr><td style="padding:24px 28px;background:#2b2b2b;">
+            <span style="display:inline-block;background:{accent};color:#111;padding:6px 10px;border-radius:999px;font-weight:bold;font-size:12px;letter-spacing:.08em;">{badge}</span>
+            <h1 style="margin:16px 0 6px;color:{accent};font-size:24px;">{title}</h1>
+            <p style="margin:0;color:#cfd8dc;font-size:14px;">{subtitle}</p>
+          </td></tr>
+          <tr><td style="padding:24px 28px;">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin-bottom:20px;">
+              <tr><td style="padding:8px 0;color:#90a4ae;">Nom</td><td style="padding:8px 0;color:#ffffff;font-weight:bold;text-align:right;">{sender_name}</td></tr>
+              <tr><td style="padding:8px 0;color:#90a4ae;">Email</td><td style="padding:8px 0;color:#ffffff;font-weight:bold;text-align:right;">{sender_email}</td></tr>
+              <tr><td style="padding:8px 0;color:#90a4ae;">Sujet</td><td style="padding:8px 0;color:#ffffff;font-weight:bold;text-align:right;">{subject}</td></tr>
+              {metadata}
+            </table>
+            <div style="background:#111;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:18px;">
+              <p style="margin:0 0 8px;color:{accent};font-weight:bold;">Message</p>
+              <div style="white-space:pre-wrap;color:#ffffff;line-height:1.7;font-size:15px;">{message}</div>
+            </div>
+          </td></tr>
+        </table>
+      </td></tr>
+    </table>
+  </body>
+</html>"#,
+        accent = accent,
+        badge = badge,
+        title = title,
+        subtitle = subtitle,
+        sender_name = escape_html(&payload.sender_name),
+        sender_email = escape_html(&payload.sender_email),
+        subject = escape_html(&payload.subject),
+        metadata = metadata,
+        message = escape_html(&payload.message),
     )
+}
+
+fn escape_html(value: &str) -> String {
+    value
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&#39;")
 }
