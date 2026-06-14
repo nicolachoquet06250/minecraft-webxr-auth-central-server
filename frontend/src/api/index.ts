@@ -77,7 +77,7 @@ const request = async <T>(path: string, options: RequestInit = {}): ApiResponse<
   if (!headers.has('Content-Type') && options.body !== undefined) headers.set('Content-Type', 'application/json')
   if (token) headers.set('Authorization', `Bearer ${token}`)
 
-  const response = await globalThis.fetch(`${API_BASE_URL}${path}`, { ...options, headers, credentials: 'include' })
+  const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers, credentials: 'include' })
   const data = await parseResponseBody(response)
   if (!response.ok) throw new ApiError(response.status, data)
   return { data: data as T }
@@ -127,7 +127,7 @@ export const serverApi = {
   updateServer: (id: string, data: Partial<CreateServerData>): ApiResponse<Server> => request<Server>(`/servers/${id}`, { method: 'PUT', body: jsonBody(data) }),
   deleteServer: (id: string): ApiResponse<null> => request<null>(`/servers/${id}`, { method: 'DELETE' }),
   getServerStats: async (gameDomain: string) => {
-    const response = await globalThis.fetch(joinStatsPath(gameDomain))
+    const response = await fetch(joinStatsPath(gameDomain))
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
     return response.json()
   },
