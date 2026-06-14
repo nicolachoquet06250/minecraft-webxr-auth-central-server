@@ -1,1 +1,59 @@
-dXNlIGNocm9ubzo6e0RhdGVUaW1lLCBEdXJhdGlvbiwgVXRjfTsKdXNlIHJhbmQ6OntkaXN0cmlidXRpb25zOjpVbmlmb3JtLCBSbmd9Owp1c2Ugc3RkOjp7Y29sbGVjdGlvbnM6Okhhc2hNYXAsIHN5bmM6OkFyY307CnVzZSB0b2tpbzo6c3luYzo6TXV0ZXg7CgojW2Rlcml2ZShDbG9uZSldCnB1YiBzdHJ1Y3QgT25ib2FyZGluZ1N0b3JlIHsKICAgIGVudHJpZXM6IEFyYzxNdXRleDxIYXNoTWFwPFN0cmluZywgT25ib2FyZGluZ0VudHJ5Pj4+LAp9CgojW2Rlcml2ZShDbG9uZSldCnB1YiBzdHJ1Y3QgT25ib2FyZGluZ0VudHJ5IHsKICAgIHB1YiB1c2VybmFtZTogU3RyaW5nLAogICAgcHViIGVtYWlsOiBTdHJpbmcsCiAgICBwdWIgaGFzaDogU3RyaW5nLAogICAgcHViIGF2YXRhcjogU3RyaW5nLAogICAgcHViIGJpcnRoZGF0ZTogU3RyaW5nLAogICAgcHViIGJpbzogT3B0aW9uPFN0cmluZz4sCiAgICB0b2tlbjogU3RyaW5nLAogICAgZXhwaXJlc19hdDogRGF0ZVRpbWU8VXRjPiwKfQoKaW1wbCBPbmJvYXJkaW5nU3RvcmUgewogICAgcHViIGZuIG5ldygpIC0+IFNlbGYgewogICAgICAgIFNlbGYgeyBlbnRyaWVzOiBBcmM6Om5ldyhNdXRleDo6bmV3KEhhc2hNYXA6Om5ldygpKSkgfQogICAgfQoKICAgIHB1YiBhc3luYyBmbiBwdXQoJnNlbGYsIHVzZXJuYW1lOiBTdHJpbmcsIGVtYWlsOiBTdHJpbmcsIGhhc2g6IFN0cmluZywgYXZhdGFyOiBTdHJpbmcsIGJpcnRoZGF0ZTogU3RyaW5nLCBiaW86IE9wdGlvbjxTdHJpbmc+KSAtPiBTdHJpbmcgewogICAgICAgIGxldCB0b2tlbiA9IHJhbmRvbV90b2tlbigpOwogICAgICAgIGxldCBlbnRyeSA9IE9uYm9hcmRpbmdFbnRyeSB7CiAgICAgICAgICAgIHVzZXJuYW1lLAogICAgICAgICAgICBlbWFpbDogZW1haWwuY2xvbmUoKSwKICAgICAgICAgICAgaGFzaCwKICAgICAgICAgICAgYXZhdGFyLAogICAgICAgICAgICBiaXJ0aGRhdGUsCiAgICAgICAgICAgIGJpbywKICAgICAgICAgICAgdG9rZW46IHRva2VuLmNsb25lKCksCiAgICAgICAgICAgIGV4cGlyZXNfYXQ6IFV0Yzo6bm93KCkgKyBEdXJhdGlvbjo6bWludXRlcygxNSksCiAgICAgICAgfTsKICAgICAgICBzZWxmLmVudHJpZXMubG9jaygpLmF3YWl0Lmluc2VydChlbWFpbC50b19sb3dlcmNhc2UoKSwgZW50cnkpOwogICAgICAgIHRva2VuCiAgICB9CgogICAgcHViIGFzeW5jIGZuIHRha2UoJnNlbGYsIGVtYWlsOiAmc3RyLCB0b2tlbjogJnN0cikgLT4gT3B0aW9uPE9uYm9hcmRpbmdFbnRyeT4gewogICAgICAgIGxldCBtdXQgZW50cmllcyA9IHNlbGYuZW50cmllcy5sb2NrKCkuYXdhaXQ7CiAgICAgICAgbGV0IGtleSA9IGVtYWlsLnRvX2xvd2VyY2FzZSgpOwogICAgICAgIGxldCBlbnRyeSA9IGVudHJpZXMuZ2V0KCZrZXkpPzsKICAgICAgICBpZiBlbnRyeS5leHBpcmVzX2F0IDwgVXRjOjpub3coKSB8fCBlbnRyeS50b2tlbiAhPSB0b2tlbi50cmltKCkgewogICAgICAgICAgICByZXR1cm4gTm9uZTsKICAgICAgICB9CiAgICAgICAgZW50cmllcy5yZW1vdmUoJmtleSkKICAgIH0KfQoKZm4gcmFuZG9tX3Rva2VuKCkgLT4gU3RyaW5nIHsKICAgIGxldCByYW5nZSA9IFVuaWZvcm06OmZyb20oMC4uMTApOwogICAgbGV0IG11dCBybmcgPSByYW5kOjp0aHJlYWRfcm5nKCk7CiAgICAoMC4uNikubWFwKHxffCBybmcuc2FtcGxlKHJhbmdlKS50b19zdHJpbmcoKSkuY29sbGVjdCgpCn0K
+use chrono::{DateTime, Duration, Utc};
+use rand::{distributions::Uniform, Rng};
+use std::{collections::HashMap, sync::Arc};
+use tokio::sync::Mutex;
+
+#[derive(Clone)]
+pub struct OnboardingStore {
+    entries: Arc<Mutex<HashMap<String, OnboardingEntry>>>,
+}
+
+#[derive(Clone)]
+pub struct OnboardingEntry {
+    pub username: String,
+    pub email: String,
+    pub hash: String,
+    pub avatar: String,
+    pub birthdate: String,
+    pub bio: Option<String>,
+    token: String,
+    expires_at: DateTime<Utc>,
+}
+
+impl OnboardingStore {
+    pub fn new() -> Self {
+        Self { entries: Arc::new(Mutex::new(HashMap::new())) }
+    }
+
+    pub async fn put(&self, username: String, email: String, hash: String, avatar: String, birthdate: String, bio: Option<String>) -> String {
+        let token = random_token();
+        let entry = OnboardingEntry {
+            username,
+            email: email.clone(),
+            hash,
+            avatar,
+            birthdate,
+            bio,
+            token: token.clone(),
+            expires_at: Utc::now() + Duration::minutes(15),
+        };
+        self.entries.lock().await.insert(email.to_lowercase(), entry);
+        token
+    }
+
+    pub async fn take(&self, email: &str, token: &str) -> Option<OnboardingEntry> {
+        let mut entries = self.entries.lock().await;
+        let key = email.to_lowercase();
+        let entry = entries.get(&key)?;
+        if entry.expires_at < Utc::now() || entry.token != token.trim() {
+            return None;
+        }
+        entries.remove(&key)
+    }
+}
+
+fn random_token() -> String {
+    let range = Uniform::from(0..10);
+    let mut rng = rand::thread_rng();
+    (0..6).map(|_| rng.sample(range).to_string()).collect()
+}
