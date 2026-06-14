@@ -1,7 +1,3 @@
-import { ArcRotateCamera, Color4, Engine, HemisphericLight, Mesh, Scene, Vector3 } from '@babylonjs/core'
-import { buildCharacter } from '@/character-builder/character-builder'
-import { createCharacterModelFromAvatar, createEditableAvatarFromApi } from '@/character-builder/avatar-editor'
-
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
 
 type ApiResponse<T> = Promise<{ data: T }>
@@ -64,8 +60,8 @@ export interface UserAvatar {
 }
 
 export interface ActiveAvatarResponse { kind: 'default' | 'custom'; avatar: UserAvatar | null }
-export interface SaveAvatarData { name: string; base_kind: string; texture_data: AvatarTextureData; preview_image_data_url?: string }
-export interface UpdateAvatarData { name?: string; texture_data: AvatarTextureData; preview_image_data_url?: string }
+export interface SaveAvatarData { name: string; base_kind: string; texture_data: AvatarTextureData }
+export interface UpdateAvatarData { name?: string; texture_data: AvatarTextureData }
 export interface ContactMailData { name: string; email: string; subject: string; message: string }
 export interface SupportMailData { name?: string; email?: string; category: string; subject: string; message: string; server_id?: string }
 export interface MailStatus { enabled: boolean }
@@ -74,12 +70,6 @@ export interface PasswordChangeCodeRequest { next_secret: string; next_secret_co
 export interface PasswordChangeConfirmRequest { code: string }
 export interface PasswordChangeCodeResponse { sent: boolean; expires_in_minutes: number }
 export interface PasswordChangedResponse { changed: boolean }
-
-type AvatarPreviewPayload = {
-  name?: string
-  base_kind?: string
-  texture_data?: AvatarTextureData
-}
 
 const request = async <T>(path: string, options: RequestInit = {}): ApiResponse<T> => {
   const token = localStorage.getItem('auth_token')
@@ -103,108 +93,7 @@ const parseResponseBody = async (response: Response) => {
 }
 
 const jsonBody = (data: unknown) => JSON.stringify(data)
-
-const captureAvatarPreviewImage = (payload?: AvatarPreviewPayload): string | undefined => {
-  if (payload?.texture_data) {
-    const renderedPreview = renderAvatarPreviewImage(payload)
-    if (renderedPreview) return renderedPreview
-  }
-
-  const canvas = document.querySelector<HTMLCanvasElement>('.avatar-canvas')
-  if (!canvas) return undefined
-  try {
-    return canvas.toDataURL('image/png')
-  } catch {
-    return undefined
-  }
-}
-
-const renderAvatarPreviewImage = (payload: AvatarPreviewPayload): string | undefined => {
-  if (!payload.texture_data) return undefined
-
-  const canvas = document.createElement('canvas')
-  canvas.width = 512
-  canvas.height = 512
-
-  let engine: Engine | null = null
-  let scene: Scene | null = null
-  let root: Mesh | null = null
-
-  try {
-    engine = new Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true, antialias: false })
-    scene = new Scene(engine)
-    scene.clearColor = new Color4(0, 0, 0, 0)
-
-    const camera = new ArcRotateCamera('avatar-mail-preview-camera', Math.PI * 0.76, Math.PI / 2.45, 4.3, new Vector3(0, 1, 0), scene)
-    camera.fov = 0.48
-
-    const light = new HemisphericLight('avatar-mail-preview-light', new Vector3(0.25, 1, -0.35), scene)
-    light.intensity = 1.15
-
-    const avatar: UserAvatar = {
-      id: 'mail-preview',
-      name: payload.name || 'Avatar',
-      base_kind: normalizePreviewBaseKind(payload.base_kind),
-      is_active: false,
-      texture_data: makeAvatarPreviewTextureOpaque(payload.texture_data),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }
-
-    root = buildCharacter(scene, createCharacterModelFromAvatar(createEditableAvatarFromApi(avatar)), new Vector3(0, 0, 0), { physics: false })
-    applyWalkingPreviewPose(root)
-    scene.render()
-
-    return canvas.toDataURL('image/png')
-  } catch {
-    return undefined
-  } finally {
-    root?.dispose()
-    scene?.dispose()
-    engine?.dispose()
-  }
-}
-
-const makeAvatarPreviewTextureOpaque = (textureData: AvatarTextureData): AvatarTextureData => {
-  const palette = Object.fromEntries(
-    Object.entries(textureData.palette).map(([key, color]) => [
-      key,
-      [color[0], color[1], color[2], color[3] <= 0 ? 0 : 1] as const,
-    ]),
-  )
-
-  return {
-    ...textureData,
-    palette,
-  }
-}
-
-const normalizePreviewBaseKind = (value?: string): 'steve' | 'alex' | 'custom' => {
-  if (value === 'steve' || value === 'alex') return value
-  return 'custom'
-}
-
-const applyWalkingPreviewPose = (root: Mesh) => {
-  root.rotation.y = -0.12
-  rotateAvatarPart(root, 'head', 0.04, -0.06, 0)
-  rotateAvatarPart(root, 'rightArm', 0.62, 0, -0.08)
-  rotateAvatarPart(root, 'leftArm', -0.62, 0, 0.08)
-  rotateAvatarPart(root, 'rightLeg', -0.48, 0, 0.04)
-  rotateAvatarPart(root, 'leftLeg', 0.48, 0, -0.04)
-}
-
-const rotateAvatarPart = (root: Mesh, partName: string, x: number, y: number, z: number) => {
-  const part = root.getChildMeshes().find((mesh) => mesh.name.endsWith(`_${partName}`))
-  if (!part) return
-  part.rotation.x = x
-  part.rotation.y = y
-  part.rotation.z = z
-}
-
-const withAvatarPreview = <T extends AvatarPreviewPayload & { preview_image_data_url?: string }>(data: T): T => {
-  const previewImageDataUrl = captureAvatarPreviewImage(data)
-  return previewImageDataUrl ? { ...data, preview_image_data_url: previewImageDataUrl } : data
-}
+const joinStatsPath = (domain: string) => new URL('/stats', domain.endsWith('/') ? domain : `${domain}/`).toString()
 
 export const authApi = {
   register: (data: RegisterData): ApiResponse<AuthResponse> => request<AuthResponse>('/auth/register', { method: 'POST', body: jsonBody(data) }),
@@ -225,8 +114,8 @@ export const avatarApi = {
   getActive: (): ApiResponse<ActiveAvatarResponse> => request<ActiveAvatarResponse>('/users/me/avatar'),
   clearActive: (): ApiResponse<null> => request<null>('/users/me/avatar', { method: 'DELETE' }),
   list: (): ApiResponse<UserAvatar[]> => request<UserAvatar[]>('/users/me/avatars'),
-  createCopy: (data: SaveAvatarData): ApiResponse<UserAvatar> => request<UserAvatar>('/users/me/avatars', { method: 'POST', body: jsonBody(withAvatarPreview(data)) }),
-  update: (id: string, data: UpdateAvatarData): ApiResponse<UserAvatar> => request<UserAvatar>(`/users/me/avatars/${id}`, { method: 'PUT', body: jsonBody(withAvatarPreview(data)) }),
+  createCopy: (data: SaveAvatarData): ApiResponse<UserAvatar> => request<UserAvatar>('/users/me/avatars', { method: 'POST', body: jsonBody(data) }),
+  update: (id: string, data: UpdateAvatarData): ApiResponse<UserAvatar> => request<UserAvatar>(`/users/me/avatars/${id}`, { method: 'PUT', body: jsonBody(data) }),
   delete: (id: string): ApiResponse<null> => request<null>(`/users/me/avatars/${id}`, { method: 'DELETE' }),
   select: (id: string): ApiResponse<null> => request<null>(`/users/me/avatars/${id}/select`, { method: 'PUT' }),
 }
@@ -238,8 +127,7 @@ export const serverApi = {
   updateServer: (id: string, data: Partial<CreateServerData>): ApiResponse<Server> => request<Server>(`/servers/${id}`, { method: 'PUT', body: jsonBody(data) }),
   deleteServer: (id: string): ApiResponse<null> => request<null>(`/servers/${id}`, { method: 'DELETE' }),
   getServerStats: async (gameDomain: string) => {
-    const statsUrl = `${gameDomain.replace(/\/+$/, '')}/stats`
-    const response = await fetch(statsUrl)
+    const response = await fetch(joinStatsPath(gameDomain))
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
     return response.json()
   },
