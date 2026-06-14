@@ -1,10 +1,13 @@
 use anyhow::{anyhow, Context, Result};
+use base64::{engine::general_purpose::STANDARD as BASE64_STANDARD, Engine as _};
 use lettre::{
-    message::{header::ContentType, Mailbox},
+    message::{header::ContentType, Attachment, Mailbox, MultiPart, SinglePart},
     transport::smtp::authentication::Credentials,
     AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor,
 };
 use std::env;
+
+const AVATAR_PREVIEW_CONTENT_ID: &str = "voxicraft-avatar-preview";
 
 #[derive(Clone)]
 pub struct MailService {
@@ -37,6 +40,12 @@ pub struct MailPayload {
 pub enum MailKind {
     Contact,
     Support,
+}
+
+struct InlineImage {
+    content_id: String,
+    content_type: ContentType,
+    bytes: Vec<u8>,
 }
 
 impl MailService {
@@ -85,11 +94,19 @@ impl MailService {
     }
 
     pub async fn send_avatar_created_email(&self, email: &str, username: &str, avatar_name: &str, preview_image_data_url: &str) -> Result<()> {
-        self.send_html(email, "Nouvel avatar Voxicraft enregistré", &avatar_mail_html("Nouvel avatar enregistré", "Une copie de votre avatar a été enregistrée.", "COPIE CRÉÉE", "#64ffda", username, avatar_name, preview_image_data_url)).await
+        self.send_avatar_email(email, "Nouvel avatar Voxicraft enregistré", "Nouvel avatar enregistré", "Une copie de votre avatar a été enregistrée.", "COPIE CRÉÉE", "#64ffda", username, avatar_name, preview_image_data_url).await
     }
 
     pub async fn send_avatar_updated_email(&self, email: &str, username: &str, avatar_name: &str, preview_image_data_url: &str) -> Result<()> {
-        self.send_html(email, "Avatar Voxicraft modifié", &avatar_mail_html("Avatar modifié", "Votre avatar original a été écrasé avec vos modifications.", "ORIGINAL ÉCRASÉ", "#ffb300", username, avatar_name, preview_image_data_url)).await
+        self.send_avatar_email(email, "Avatar Voxicraft modifié", "Avatar modifié", "Votre avatar original a été écrasé avec vos modifications.", "ORIGINAL ÉCRASÉ", "#ffb300", username, avatar_name, preview_image_data_url).await
+    }
+
+    async fn send_avatar_email(&self, recipient: &str, subject: &str, title: &str, description: &str, badge: &str, accent: &str, username: &str, avatar_name: &str, preview_image_data_url: &str) -> Result<()> {
+        let inline_image = inline_image_from_data_url(preview_image_data_url, AVATAR_PREVIEW_CONTENT_ID)
+            .context("Invalid avatar preview image data URL")?;
+        let image_src = format!("cid:{}", inline_image.content_id);
+        let body = avatar_mail_html(title, description, badge, accent, username, avatar_name, &image_src);
+        self.send_html_with_inline_image(recipient, subject, &body, inline_image).await
     }
 
     async fn send_html(&self, recipient: &str, subject: &str, body: &str) -> Result<()> {
@@ -101,6 +118,18 @@ impl MailService {
             .header(ContentType::TEXT_HTML)
             .body(body.to_string())
             .context("Failed to build email")?;
+        self.send_message(email).await
+    }
+
+    async fn send_html_with_inline_image(&self, recipient: &str, subject: &str, body: &str, inline_image: InlineImage) -> Result<()> {
+        let config = self.config.as_ref().ok_or_else(|| anyhow!("Mail service is not configured"))?;
+        let image_part = Attachment::new_inline(inline_image.content_id).body(inline_image.bytes, inline_image.content_type);
+        let email = Message::builder()
+            .from(config.smtp_from.parse::<Mailbox>().context("Invalid SMTP_FROM")?)
+            .to(recipient.parse::<Mailbox>().context("Invalid recipient email")?)
+            .subject(subject)
+            .multipart(MultiPart::related().singlepart(SinglePart::html(body.to_string())).singlepart(image_part))
+            .context("Failed to build email with inline avatar preview")?;
         self.send_message(email).await
     }
 
@@ -120,17 +149,35 @@ impl MailService {
     }
 }
 
-fn avatar_mail_html(title: &str, description: &str, badge: &str, accent: &str, username: &str, avatar_name: &str, preview_image_data_url: &str) -> String {
+fn avatar_mail_html(title: &str, description: &str, badge: &str, accent: &str, username: &str, avatar_name: &str, image_src: &str) -> String {
     format!(
-        r#"<!doctype html><html lang="fr"><body style="margin:0;background:#101820;font-family:Arial,sans-serif;color:#ffffff;"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#101820;padding:32px 12px;"><tr><td align="center"><table role="presentation" width="640" cellspacing="0" cellpadding="0" style="max-width:640px;background:#1b2b34;border:4px solid {accent};border-radius:16px;overflow:hidden;"><tr><td style="padding:28px;text-align:center;background:#0d171d;"><span style="display:inline-block;background:{accent};color:#101820;padding:7px 12px;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.08em;">{badge}</span><h1 style="margin:18px 0 8px;color:{accent};font-size:26px;">{title}</h1><p style="margin:0;color:#d7fff7;font-size:15px;">{description}</p></td></tr><tr><td style="padding:28px 30px;"><p>Bonjour <strong style="color:#ffd700;">{username}</strong>,</p><p>Avatar concerné : <strong style="color:{accent};">{avatar_name}</strong></p><div style="background:#0b1419;border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:22px;text-align:center;"><img src="{preview_image_data_url}" alt="Aperçu de l'avatar {avatar_name}" width="280" style="display:block;margin:0 auto;max-width:100%;height:auto;border:0;outline:none;text-decoration:none;" /></div></td></tr></table></td></tr></table></body></html>"#,
+        r#"<!doctype html><html lang="fr"><body style="margin:0;background:#101820;font-family:Arial,sans-serif;color:#ffffff;"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#101820;padding:32px 12px;"><tr><td align="center"><table role="presentation" width="640" cellspacing="0" cellpadding="0" style="max-width:640px;background:#1b2b34;border:4px solid {accent};border-radius:16px;overflow:hidden;"><tr><td style="padding:28px;text-align:center;background:#0d171d;"><span style="display:inline-block;background:{accent};color:#101820;padding:7px 12px;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.08em;">{badge}</span><h1 style="margin:18px 0 8px;color:{accent};font-size:26px;">{title}</h1><p style="margin:0;color:#d7fff7;font-size:15px;">{description}</p></td></tr><tr><td style="padding:28px 30px;"><p>Bonjour <strong style="color:#ffd700;">{username}</strong>,</p><p>Avatar concerné : <strong style="color:{accent};">{avatar_name}</strong></p><div style="background:#0b1419;border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:22px;text-align:center;"><img src="{image_src}" alt="Aperçu de l'avatar {avatar_name}" width="280" style="display:block;margin:0 auto;max-width:100%;height:auto;border:0;outline:none;text-decoration:none;" /></div></td></tr></table></td></tr></table></body></html>"#,
         accent = accent,
         badge = escape_html(badge),
         title = escape_html(title),
         description = escape_html(description),
         username = escape_html(username),
         avatar_name = escape_html(avatar_name),
-        preview_image_data_url = escape_html(preview_image_data_url),
+        image_src = escape_html(image_src),
     )
+}
+
+fn inline_image_from_data_url(data_url: &str, content_id: &str) -> Result<InlineImage> {
+    let Some(rest) = data_url.strip_prefix("data:") else {
+        return Err(anyhow!("Avatar preview is not a data URL"));
+    };
+    let Some((metadata, encoded)) = rest.split_once(',') else {
+        return Err(anyhow!("Avatar preview data URL has no payload"));
+    };
+    let Some(mime_type) = metadata.strip_suffix(";base64") else {
+        return Err(anyhow!("Avatar preview data URL is not base64 encoded"));
+    };
+    if !matches!(mime_type, "image/png" | "image/jpeg" | "image/webp" | "image/svg+xml") {
+        return Err(anyhow!("Unsupported avatar preview MIME type"));
+    }
+    let bytes = BASE64_STANDARD.decode(encoded).context("Failed to decode avatar preview image")?;
+    let content_type = ContentType::parse(mime_type).map_err(|_| anyhow!("Invalid avatar preview MIME type"))?;
+    Ok(InlineImage { content_id: content_id.to_string(), content_type, bytes })
 }
 
 fn simple_mail_html(title: &str, message: &str, accent: &str) -> String {
