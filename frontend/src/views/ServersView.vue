@@ -12,6 +12,8 @@
         <button @click="showCreateForm = !showCreateForm" class="voxicraft-button create-btn">
           {{ showCreateForm ? '❌ Annuler' : '➕ Créer un serveur' }}
         </button>
+        <router-link to="/servers/favorites" class="voxicraft-button nav-btn">⭐ Serveurs favoris</router-link>
+        <router-link to="/servers/recent" class="voxicraft-button nav-btn">🕘 Récemment visités</router-link>
       </div>
 
       <div v-if="showCreateForm" class="create-form voxicraft-panel">
@@ -218,6 +220,9 @@ const openGameServer = async (server: Server) => {
   margin: 2rem 0;
   display: flex;
   justify-content: center;
+  align-items: center;
+  gap: .75rem;
+  flex-wrap: wrap;
 }
 
 .create-btn {
@@ -229,6 +234,13 @@ const openGameServer = async (server: Server) => {
 
 .create-btn:hover {
   background-color: #66bb6a;
+}
+
+.nav-btn {
+  background-color: #6d4c41;
+  border-color: #4e342e;
+  font-size: .95rem;
+  padding: .75rem 1.1rem;
 }
 
 .create-form {
@@ -367,7 +379,8 @@ const openGameServer = async (server: Server) => {
     grid-template-columns: 1fr;
   }
 
-  .button-container {
+  .button-container,
+  .servers-header {
     flex-direction: column;
   }
 }
