@@ -27,7 +27,7 @@ pub struct UpdateServerRequest {
 #[derive(Debug, Deserialize, Validate)]
 pub struct RecordServerVisitRequest {
     #[validate(url)]
-    pub server_url: String,
+    pub server_url: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
