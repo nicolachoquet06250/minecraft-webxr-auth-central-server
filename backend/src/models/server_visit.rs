@@ -8,7 +8,6 @@ pub struct Model {
     pub id: String,
     pub user_id: String,
     pub server_id: String,
-    pub server_url: String,
     pub visited_at: DateTime,
 }
 
