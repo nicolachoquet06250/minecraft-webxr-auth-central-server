@@ -30,42 +30,38 @@ pub async fn get_user_profile_pic_svg(Extension(_claims): Extension<Claims>, Sta
 
 pub async fn create_avatar_copy(Extension(claims): Extension<Claims>, State(state): State<Arc<AppState>>, Json(payload): Json<SaveAvatarRequest>) -> Result<Json<AvatarResponse>, StatusCode> {
     payload.validate().map_err(|_| StatusCode::BAD_REQUEST)?;
-    validate_preview_image_data_url(payload.preview_image_data_url.as_deref())?;
     let now = chrono::Utc::now().naive_utc();
     let id = Uuid::new_v4().to_string();
     let texture_data = serde_json::to_string(&payload.texture_data).map_err(|_| StatusCode::BAD_REQUEST)?;
     let user_id = claims.sub.clone();
-    let preview_image_data_url = payload.preview_image_data_url.clone();
     let created = avatar::ActiveModel { id: Set(id), user_id: Set(user_id.clone()), name: Set(payload.name), base_kind: Set(normalize_base_kind(&payload.base_kind)), is_active: Set(false), texture_data: Set(texture_data), created_at: Set(now), updated_at: Set(now) }.insert(&state.db).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    notify_avatar_created(&state, &user_id, &created, preview_image_data_url.as_deref()).await;
+    notify_avatar_created(&state, &user_id, &created).await;
     Ok(Json(to_response(created)))
 }
 
 pub async fn update_avatar(Extension(claims): Extension<Claims>, State(state): State<Arc<AppState>>, Path(avatar_id): Path<String>, Json(payload): Json<UpdateAvatarRequest>) -> Result<Json<AvatarResponse>, StatusCode> {
     payload.validate().map_err(|_| StatusCode::BAD_REQUEST)?;
-    validate_preview_image_data_url(payload.preview_image_data_url.as_deref())?;
     if avatar_id == "steve" || avatar_id == "alex" { return Err(StatusCode::FORBIDDEN); }
     let user_id = claims.sub.clone();
-    let preview_image_data_url = payload.preview_image_data_url.clone();
     let avatar = Avatar::find_by_id(avatar_id).filter(avatar::Column::UserId.eq(user_id.clone())).one(&state.db).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?.ok_or(StatusCode::NOT_FOUND)?;
     let mut active: avatar::ActiveModel = avatar.into();
     if let Some(name) = payload.name { active.name = Set(name); }
     active.texture_data = Set(serde_json::to_string(&payload.texture_data).map_err(|_| StatusCode::BAD_REQUEST)?);
     active.updated_at = Set(chrono::Utc::now().naive_utc());
     let updated = active.update(&state.db).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    notify_avatar_updated(&state, &user_id, &updated, preview_image_data_url.as_deref()).await;
+    notify_avatar_updated(&state, &user_id, &updated).await;
     Ok(Json(to_response(updated)))
 }
 
-async fn notify_avatar_created(state: &Arc<AppState>, user_id: &str, saved_avatar: &avatar::Model, preview_image_data_url: Option<&str>) {
+async fn notify_avatar_created(state: &Arc<AppState>, user_id: &str, saved_avatar: &avatar::Model) {
     let Ok(Some(current_user)) = User::find_by_id(user_id.to_string()).one(&state.db).await else { tracing::warn!(user_id, "avatar created mail skipped: user not found"); return; };
-    let preview_image_data_url = avatar_mail_preview_image_data_url(preview_image_data_url, &saved_avatar.texture_data);
+    let preview_image_data_url = avatar_mail_preview_image_data_url(&saved_avatar.texture_data);
     if let Err(error) = state.mail_service.send_avatar_created_email(&current_user.email, &current_user.username, &saved_avatar.name, &preview_image_data_url).await { tracing::warn!(?error, avatar_id = %saved_avatar.id, "avatar created mail could not be sent"); }
 }
 
-async fn notify_avatar_updated(state: &Arc<AppState>, user_id: &str, saved_avatar: &avatar::Model, preview_image_data_url: Option<&str>) {
+async fn notify_avatar_updated(state: &Arc<AppState>, user_id: &str, saved_avatar: &avatar::Model) {
     let Ok(Some(current_user)) = User::find_by_id(user_id.to_string()).one(&state.db).await else { tracing::warn!(user_id, "avatar updated mail skipped: user not found"); return; };
-    let preview_image_data_url = avatar_mail_preview_image_data_url(preview_image_data_url, &saved_avatar.texture_data);
+    let preview_image_data_url = avatar_mail_preview_image_data_url(&saved_avatar.texture_data);
     if let Err(error) = state.mail_service.send_avatar_updated_email(&current_user.email, &current_user.username, &saved_avatar.name, &preview_image_data_url).await { tracing::warn!(?error, avatar_id = %saved_avatar.id, "avatar updated mail could not be sent"); }
 }
 
@@ -102,12 +98,7 @@ async fn profile_pic_response(state: &Arc<AppState>, user_id: &str) -> Result<Re
     Ok(([(header::CONTENT_TYPE, HeaderValue::from_static("image/svg+xml; charset=utf-8")), (header::CACHE_CONTROL, HeaderValue::from_static("no-store"))], svg).into_response())
 }
 
-fn validate_preview_image_data_url(value: Option<&str>) -> Result<(), StatusCode> {
-    let Some(value) = value else { return Ok(()); };
-    if value.starts_with("data:image/png;base64,") || value.starts_with("data:image/jpeg;base64,") || value.starts_with("data:image/webp;base64,") || value.starts_with("data:image/svg+xml") { Ok(()) } else { Err(StatusCode::BAD_REQUEST) }
-}
-
-fn avatar_mail_preview_image_data_url(_preview_image_data_url: Option<&str>, texture_data: &str) -> String {
+fn avatar_mail_preview_image_data_url(texture_data: &str) -> String {
     let svg = svg_from_texture_data(texture_data).unwrap_or_else(|_| empty_svg());
     format!("data:image/svg+xml;base64,{}", BASE64_STANDARD.encode(svg.as_bytes()))
 }
