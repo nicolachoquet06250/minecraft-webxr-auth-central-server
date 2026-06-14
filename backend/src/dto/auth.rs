@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, Clone)]
 pub struct RegisterRequest {
     #[validate(length(min = 3, max = 20))]
     pub username: String,
@@ -17,6 +17,21 @@ pub struct RegisterRequest {
     pub birthdate: String, // YYYY-MM-DD format
     
     pub bio: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Validate)]
+pub struct ConfirmRegisterRequest {
+    #[validate(email)]
+    pub email: String,
+
+    #[validate(length(min = 6, max = 6))]
+    pub code: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct RegisterCodeResponse {
+    pub sent: bool,
+    pub expires_in_minutes: u8,
 }
 
 #[derive(Debug, Deserialize, Validate)]
