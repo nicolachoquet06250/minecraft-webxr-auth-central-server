@@ -3,10 +3,12 @@ use axum::{
     http::StatusCode,
     response::Json,
 };
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 use crate::{
+    models::{server, Server, User},
     services::{Claims, MailKind, MailPayload},
     AppState,
 };
@@ -60,6 +62,7 @@ pub async fn send_contact_mail(
             message: payload.message,
             kind: MailKind::Contact,
             metadata: vec![],
+            cc: None,
         })
         .await
         .map_err(|error| {
@@ -79,13 +82,27 @@ pub async fn send_support_mail(
     let email = payload.email.unwrap_or_else(|| format!("{}@local.voxicraft", claims.sub));
     validate_common(&name, &email, &payload.subject, &payload.message)?;
 
+    let category = payload.category;
+    let server_url = payload.server_url.map(|value| value.trim().to_string()).filter(|value| !value.is_empty());
+    if category == "server" && server_url.is_none() {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
     let mut metadata = vec![
-        ("Catégorie".to_string(), payload.category),
+        ("Catégorie".to_string(), category.clone()),
         ("Utilisateur".to_string(), claims.username),
         ("ID utilisateur".to_string(), claims.sub),
     ];
-    if let Some(server_url) = payload.server_url {
-        metadata.push(("URL du serveur".to_string(), server_url));
+
+    let mut cc = None;
+    if let Some(server_url) = server_url {
+        metadata.push(("URL du serveur".to_string(), server_url.clone()));
+        if category == "bug" {
+            cc = find_server_owner_email(&state, &server_url).await?;
+            if cc.is_some() {
+                metadata.push(("Copie propriétaire serveur".to_string(), "Oui".to_string()));
+            }
+        }
     }
 
     state
@@ -97,6 +114,7 @@ pub async fn send_support_mail(
             message: payload.message,
             kind: MailKind::Support,
             metadata,
+            cc,
         })
         .await
         .map_err(|error| {
@@ -105,6 +123,29 @@ pub async fn send_support_mail(
         })?;
 
     Ok(Json(MailSentResponse { sent: true }))
+}
+
+async fn find_server_owner_email(state: &Arc<AppState>, server_url: &str) -> Result<Option<String>, StatusCode> {
+    let normalized_server_url = normalize_server_url(server_url);
+    let Some(server) = Server::find()
+        .filter(server::Column::GameDomain.eq(normalized_server_url))
+        .one(&state.db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+    else {
+        return Ok(None);
+    };
+
+    let owner = User::find_by_id(server.owner_id)
+        .one(&state.db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(owner.map(|owner| owner.email))
+}
+
+fn normalize_server_url(server_url: &str) -> String {
+    server_url.trim().trim_end_matches('/').to_string()
 }
 
 fn validate_common(name: &str, email: &str, subject: &str, message: &str) -> Result<(), StatusCode> {
