@@ -4,3 +4,5 @@ pub mod server;
 pub mod avatar;
 pub mod avatar_delete;
 pub mod matrix_color;
+pub mod mail;
+pub mod account_security;

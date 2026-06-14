@@ -62,6 +62,14 @@ export interface UserAvatar {
 export interface ActiveAvatarResponse { kind: 'default' | 'custom'; avatar: UserAvatar | null }
 export interface SaveAvatarData { name: string; base_kind: string; texture_data: AvatarTextureData }
 export interface UpdateAvatarData { name?: string; texture_data: AvatarTextureData }
+export interface ContactMailData { name: string; email: string; subject: string; message: string }
+export interface SupportMailData { name?: string; email?: string; category: string; subject: string; message: string; server_id?: string }
+export interface MailStatus { enabled: boolean }
+export interface MailSentResponse { sent: boolean }
+export interface PasswordChangeCodeRequest { next_secret: string; next_secret_confirmation: string }
+export interface PasswordChangeConfirmRequest { code: string }
+export interface PasswordChangeCodeResponse { sent: boolean; expires_in_minutes: number }
+export interface PasswordChangedResponse { changed: boolean }
 
 const request = async <T>(path: string, options: RequestInit = {}): ApiResponse<T> => {
   const token = localStorage.getItem('auth_token')
@@ -97,6 +105,8 @@ export const userApi = {
   getUserById: (id: string): ApiResponse<User> => request<User>(`/users/${id}`),
   updateProfile: (data: Partial<User>): ApiResponse<User> => request<User>('/users/me', { method: 'PUT', body: jsonBody(data) }),
   deleteAccount: (): ApiResponse<null> => request<null>('/users/me', { method: 'DELETE' }),
+  requestPasswordChangeCode: (data: PasswordChangeCodeRequest): ApiResponse<PasswordChangeCodeResponse> => request<PasswordChangeCodeResponse>('/users/me/password/change-code', { method: 'POST', body: jsonBody(data) }),
+  confirmPasswordChange: (data: PasswordChangeConfirmRequest): ApiResponse<PasswordChangedResponse> => request<PasswordChangedResponse>('/users/me/password', { method: 'PUT', body: jsonBody(data) }),
 }
 
 export const avatarApi = {
@@ -121,6 +131,12 @@ export const serverApi = {
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
     return response.json()
   },
+}
+
+export const mailApi = {
+  status: (): ApiResponse<MailStatus> => request<MailStatus>('/mail/status'),
+  contact: (data: ContactMailData): ApiResponse<MailSentResponse> => request<MailSentResponse>('/contact', { method: 'POST', body: jsonBody(data) }),
+  support: (data: SupportMailData): ApiResponse<MailSentResponse> => request<MailSentResponse>('/support', { method: 'POST', body: jsonBody(data) }),
 }
 
 export default request

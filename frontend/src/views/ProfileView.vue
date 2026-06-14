@@ -32,7 +32,13 @@
           <div class="voxicraft-panel">
             <h2 class="card-title">👤 Informations personnelles</h2>
             <div class="info-list">
-              <div class="info-item"><span>🎭 Avatar</span><strong>{{ activeProfileAvatar?.name || authStore.user.avatar }}</strong></div>
+              <div class="info-item avatar-info-item">
+                <span>🎭 Avatar</span>
+                <div class="profile-avatar-card">
+                  <AvatarSvgPreview :avatar="authStore.user.avatar" :custom-avatar="activeProfileAvatar || undefined" pose="walking" class="profile-avatar-preview" />
+                  <strong>{{ activeProfileAvatar?.name || authStore.user.avatar }}</strong>
+                </div>
+              </div>
               <div class="info-item"><span>🎂 Date de naissance</span><strong>{{ formatDate(authStore.user.birthdate) }}</strong></div>
               <div class="info-item"><span>✅ Âge vérifié</span><strong>{{ authStore.user.age_verified ? 'Oui' : 'Non' }}</strong></div>
               <div class="info-item" v-if="authStore.user.discord_username"><span>💬 Discord</span><strong>{{ authStore.user.discord_username }}</strong></div>
@@ -123,6 +129,7 @@
               <div class="info-item bio-content security-value">JWT Token actif</div>
               <div class="info-item bio-content security-value">Email : <span class="security-email">{{ authStore.user.email }}</span></div>
             </div>
+            <AccountSecretForm />
           </div>
         </div>
       </div>
@@ -132,6 +139,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import AccountSecretForm from '@/components/AccountSecretForm.vue'
 import AvatarHeadImage from '@/components/AvatarHeadImage.vue'
 import AvatarSvgPreview from '@/components/AvatarSvgPreview.vue'
 import { avatarApi, type UserAvatar } from '@/api'
@@ -221,6 +229,12 @@ const handleUpdate = async () => {
 .card-title { color: #64ffda; margin-bottom: .8rem; max-width: 100%; overflow-wrap: anywhere; font-size: .92rem; line-height: 1.3; }
 .info-item, .bio-content, .stat-item { padding: .65rem; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(100, 255, 218, 0.22); border-radius: 7px; min-width: 0; max-width: 100%; }
 .info-item { display: flex; justify-content: space-between; gap: .75rem; color: #fff; font-size: .72rem; }
+.avatar-info-item { align-items: flex-start; }
+.profile-avatar-card { display: flex; flex-direction: column; align-items: center; gap: .35rem; min-width: 110px; max-width: 135px; }
+.profile-avatar-preview { width: 100%; }
+.profile-avatar-preview :deep(.svg-preview-box) { min-height: 145px; border-width: 2px; border-radius: 8px; }
+.profile-avatar-preview :deep(.svg-image) { width: 95px; }
+.profile-avatar-card strong { width: 100%; text-align: center; font-size: .66rem; overflow-wrap: anywhere; color: #fff; }
 .info-item span, .info-item strong { min-width: 0; overflow-wrap: anywhere; }
 .actions-grid, .stats-grid, .avatar-selector { display: grid; grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); gap: .65rem; min-width: 0; }
 .actions-grid { display: flex; flex-wrap: wrap; }
