@@ -1,3 +1,5 @@
+import { generateProfileInfoAvatarMailPreview } from '../character-builder/avatar-mail-preview'
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
 
 type ApiResponse<T> = Promise<{ data: T }>
@@ -60,8 +62,8 @@ export interface UserAvatar {
 }
 
 export interface ActiveAvatarResponse { kind: 'default' | 'custom'; avatar: UserAvatar | null }
-export interface SaveAvatarData { name: string; base_kind: string; texture_data: AvatarTextureData }
-export interface UpdateAvatarData { name?: string; texture_data: AvatarTextureData }
+export interface SaveAvatarData { name: string; base_kind: string; texture_data: AvatarTextureData; preview_image_data_url?: string }
+export interface UpdateAvatarData { name?: string; texture_data: AvatarTextureData; preview_image_data_url?: string }
 export interface ContactMailData { name: string; email: string; subject: string; message: string }
 export interface SupportMailData { name?: string; email?: string; category: string; subject: string; message: string; server_id?: string }
 export interface MailStatus { enabled: boolean }
@@ -95,6 +97,21 @@ const parseResponseBody = async (response: Response) => {
 const jsonBody = (data: unknown) => JSON.stringify(data)
 const joinStatsPath = (domain: string) => new URL('/stats', domain.endsWith('/') ? domain : `${domain}/`).toString()
 
+const withProfileInformationPreview = <T extends SaveAvatarData | UpdateAvatarData>(data: T): T => {
+  const baseKind = 'base_kind' in data ? data.base_kind : 'custom'
+  const avatar: UserAvatar = {
+    id: 'mail-preview',
+    name: 'name' in data && data.name ? data.name : 'Avatar',
+    base_kind: baseKind === 'steve' || baseKind === 'alex' ? baseKind : 'custom',
+    is_active: false,
+    texture_data: data.texture_data,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }
+  const preview = generateProfileInfoAvatarMailPreview(avatar)
+  return preview ? { ...data, preview_image_data_url: preview } : data
+}
+
 export const authApi = {
   register: (data: RegisterData): ApiResponse<AuthResponse> => request<AuthResponse>('/auth/register', { method: 'POST', body: jsonBody(data) }),
   login: (data: LoginData): ApiResponse<AuthResponse> => request<AuthResponse>('/auth/login', { method: 'POST', body: jsonBody(data) }),
@@ -114,8 +131,8 @@ export const avatarApi = {
   getActive: (): ApiResponse<ActiveAvatarResponse> => request<ActiveAvatarResponse>('/users/me/avatar'),
   clearActive: (): ApiResponse<null> => request<null>('/users/me/avatar', { method: 'DELETE' }),
   list: (): ApiResponse<UserAvatar[]> => request<UserAvatar[]>('/users/me/avatars'),
-  createCopy: (data: SaveAvatarData): ApiResponse<UserAvatar> => request<UserAvatar>('/users/me/avatars', { method: 'POST', body: jsonBody(data) }),
-  update: (id: string, data: UpdateAvatarData): ApiResponse<UserAvatar> => request<UserAvatar>(`/users/me/avatars/${id}`, { method: 'PUT', body: jsonBody(data) }),
+  createCopy: (data: SaveAvatarData): ApiResponse<UserAvatar> => request<UserAvatar>('/users/me/avatars', { method: 'POST', body: jsonBody(withProfileInformationPreview(data)) }),
+  update: (id: string, data: UpdateAvatarData): ApiResponse<UserAvatar> => request<UserAvatar>(`/users/me/avatars/${id}`, { method: 'PUT', body: jsonBody(withProfileInformationPreview(data)) }),
   delete: (id: string): ApiResponse<null> => request<null>(`/users/me/avatars/${id}`, { method: 'DELETE' }),
   select: (id: string): ApiResponse<null> => request<null>(`/users/me/avatars/${id}/select`, { method: 'PUT' }),
 }
@@ -136,7 +153,7 @@ export const serverApi = {
 export const mailApi = {
   status: (): ApiResponse<MailStatus> => request<MailStatus>('/mail/status'),
   contact: (data: ContactMailData): ApiResponse<MailSentResponse> => request<MailSentResponse>('/contact', { method: 'POST', body: jsonBody(data) }),
-  support: (data: SupportMailData): ApiResponse<MailSentResponse> => request<MailSentResponse>('/support', { method: 'POST', body: jsonBody(data) }),
+  support: (data: SupportMailData): ApiResponse<MailSentResponse>('/support', { method: 'POST', body: jsonBody(data) }),
 }
 
 export default request
