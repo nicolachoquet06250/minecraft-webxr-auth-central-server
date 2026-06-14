@@ -3,17 +3,19 @@ use axum::{
     http::StatusCode,
     response::Json,
 };
-use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect, Set};
 use std::sync::Arc;
 use uuid::Uuid;
 use validator::Validate;
 
 use crate::{
-    dto::{CreateServerRequest, ServerResponse, UpdateServerRequest},
-    models::{server, Server},
+    dto::{CreateServerRequest, FavoriteServerResponse, RecordServerVisitRequest, ServerHistoryResponse, ServerResponse, UpdateServerRequest},
+    models::{server, server_favorite, server_visit, Server, ServerFavorite, ServerVisit},
     services::Claims,
     AppState,
 };
+
+const MAX_RECENT_SERVERS: u64 = 10;
 
 pub async fn create_server(
     Extension(claims): Extension<Claims>,
@@ -25,13 +27,12 @@ pub async fn create_server(
     }
 
     let owner_id = claims.sub.clone();
+    let game_domain = normalize_server_url(&payload.game_domain);
 
-    // Check game server health before registering it.
-    check_game_server_health(&payload.game_domain).await?;
+    check_game_server_health(&game_domain).await?;
 
-    // Check if game_domain is already registered.
     let existing_game = Server::find()
-        .filter(server::Column::GameDomain.eq(&payload.game_domain))
+        .filter(server::Column::GameDomain.eq(&game_domain))
         .one(&state.db)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
@@ -47,7 +48,7 @@ pub async fn create_server(
         id: Set(server_id),
         owner_id: Set(owner_id),
         name: Set(payload.name.clone()),
-        game_domain: Set(payload.game_domain.clone()),
+        game_domain: Set(game_domain),
         description: Set(payload.description.clone()),
         is_active: Set(true),
         created_at: Set(now),
@@ -144,6 +145,175 @@ pub async fn get_user_servers(
     Ok(Json(response))
 }
 
+pub async fn get_recent_servers(
+    Extension(claims): Extension<Claims>,
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<Vec<ServerHistoryResponse>>, StatusCode> {
+    let user_id = claims.sub.clone();
+    let visits = ServerVisit::find()
+        .filter(server_visit::Column::UserId.eq(&user_id))
+        .order_by_desc(server_visit::Column::VisitedAt)
+        .limit(MAX_RECENT_SERVERS)
+        .all(&state.db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let mut response = Vec::new();
+    for visit in visits {
+        if let Some(server) = Server::find_by_id(visit.server_id.clone())
+            .one(&state.db)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        {
+            let favorite = find_favorite(&state, &user_id, &server.id).await?;
+            response.push(ServerHistoryResponse {
+                server: server_to_response(server),
+                is_favorite: favorite.is_some(),
+                visited_at: Some(visit.visited_at.to_string()),
+                favorited_at: favorite.map(|favorite| favorite.created_at.to_string()),
+            });
+        }
+    }
+
+    Ok(Json(response))
+}
+
+pub async fn get_favorite_servers(
+    Extension(claims): Extension<Claims>,
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<Vec<FavoriteServerResponse>>, StatusCode> {
+    let user_id = claims.sub.clone();
+    let favorites = ServerFavorite::find()
+        .filter(server_favorite::Column::UserId.eq(&user_id))
+        .order_by_desc(server_favorite::Column::CreatedAt)
+        .all(&state.db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let mut response = Vec::new();
+    for favorite in favorites {
+        if let Some(server) = Server::find_by_id(favorite.server_id.clone())
+            .one(&state.db)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        {
+            response.push(FavoriteServerResponse {
+                server: server_to_response(server),
+                is_favorite: true,
+                favorited_at: favorite.created_at.to_string(),
+            });
+        }
+    }
+
+    Ok(Json(response))
+}
+
+pub async fn record_server_visit(
+    Extension(claims): Extension<Claims>,
+    State(state): State<Arc<AppState>>,
+    Json(payload): Json<RecordServerVisitRequest>,
+) -> Result<Json<ServerHistoryResponse>, StatusCode> {
+    if payload.validate().is_err() {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
+    let user_id = claims.sub.clone();
+    let server_url = normalize_server_url(&payload.server_url);
+    let server = Server::find()
+        .filter(server::Column::GameDomain.eq(&server_url))
+        .one(&state.db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::NOT_FOUND)?;
+
+    let now = chrono::Utc::now().naive_utc();
+    if let Some(existing_visit) = ServerVisit::find()
+        .filter(server_visit::Column::UserId.eq(&user_id))
+        .filter(server_visit::Column::ServerId.eq(&server.id))
+        .one(&state.db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+    {
+        let mut active_visit: server_visit::ActiveModel = existing_visit.into();
+        active_visit.server_url = Set(server_url.clone());
+        active_visit.visited_at = Set(now);
+        active_visit
+            .update(&state.db)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    } else {
+        server_visit::ActiveModel {
+            id: Set(Uuid::new_v4().to_string()),
+            user_id: Set(user_id.clone()),
+            server_id: Set(server.id.clone()),
+            server_url: Set(server_url.clone()),
+            visited_at: Set(now),
+        }
+        .insert(&state.db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    }
+
+    prune_recent_servers(&state, &user_id).await?;
+    let favorite = find_favorite(&state, &user_id, &server.id).await?;
+
+    Ok(Json(ServerHistoryResponse {
+        server: server_to_response(server),
+        is_favorite: favorite.is_some(),
+        visited_at: Some(now.to_string()),
+        favorited_at: favorite.map(|favorite| favorite.created_at.to_string()),
+    }))
+}
+
+pub async fn favorite_server(
+    Extension(claims): Extension<Claims>,
+    Path(server_id): Path<String>,
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<FavoriteServerResponse>, StatusCode> {
+    let user_id = claims.sub.clone();
+    let server = Server::find_by_id(server_id.clone())
+        .one(&state.db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::NOT_FOUND)?;
+
+    let favorite = if let Some(favorite) = find_favorite(&state, &user_id, &server_id).await? {
+        favorite
+    } else {
+        server_favorite::ActiveModel {
+            id: Set(Uuid::new_v4().to_string()),
+            user_id: Set(user_id),
+            server_id: Set(server_id),
+            created_at: Set(chrono::Utc::now().naive_utc()),
+        }
+        .insert(&state.db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+    };
+
+    Ok(Json(FavoriteServerResponse {
+        server: server_to_response(server),
+        is_favorite: true,
+        favorited_at: favorite.created_at.to_string(),
+    }))
+}
+
+pub async fn unfavorite_server(
+    Extension(claims): Extension<Claims>,
+    Path(server_id): Path<String>,
+    State(state): State<Arc<AppState>>,
+) -> Result<StatusCode, StatusCode> {
+    let user_id = claims.sub.clone();
+    ServerFavorite::delete_many()
+        .filter(server_favorite::Column::UserId.eq(user_id))
+        .filter(server_favorite::Column::ServerId.eq(server_id))
+        .exec(&state.db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
 pub async fn get_server(
     Path(server_id): Path<String>,
     State(state): State<Arc<AppState>>,
@@ -225,6 +395,42 @@ pub async fn delete_server(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     Ok(StatusCode::NO_CONTENT)
+}
+
+async fn find_favorite(
+    state: &Arc<AppState>,
+    user_id: &str,
+    server_id: &str,
+) -> Result<Option<server_favorite::Model>, StatusCode> {
+    ServerFavorite::find()
+        .filter(server_favorite::Column::UserId.eq(user_id))
+        .filter(server_favorite::Column::ServerId.eq(server_id))
+        .one(&state.db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+}
+
+async fn prune_recent_servers(state: &Arc<AppState>, user_id: &str) -> Result<(), StatusCode> {
+    let visits_to_delete = ServerVisit::find()
+        .filter(server_visit::Column::UserId.eq(user_id))
+        .order_by_desc(server_visit::Column::VisitedAt)
+        .offset(MAX_RECENT_SERVERS)
+        .all(&state.db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    for visit in visits_to_delete {
+        ServerVisit::delete_by_id(visit.id)
+            .exec(&state.db)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    }
+
+    Ok(())
+}
+
+fn normalize_server_url(server_url: &str) -> String {
+    server_url.trim().trim_end_matches('/').to_string()
 }
 
 fn server_to_response(server: server::Model) -> ServerResponse {
