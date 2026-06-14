@@ -84,12 +84,12 @@ impl MailService {
         self.send_html(email, "Mot de passe Voxicraft modifié", &simple_mail_html("Mot de passe modifié", &format!("Bonjour {}, votre mot de passe a bien été modifié.", escape_html(username)), "#7cfc9a")).await
     }
 
-    pub async fn send_avatar_created_email(&self, email: &str, username: &str, avatar_name: &str, svg: &str) -> Result<()> {
-        self.send_html(email, "Nouvel avatar Voxicraft enregistré", &avatar_mail_html("Nouvel avatar enregistré", "Une copie de votre avatar a été enregistrée.", "COPIE CRÉÉE", "#64ffda", username, avatar_name, svg)).await
+    pub async fn send_avatar_created_email(&self, email: &str, username: &str, avatar_name: &str, preview_image_data_url: &str) -> Result<()> {
+        self.send_html(email, "Nouvel avatar Voxicraft enregistré", &avatar_mail_html("Nouvel avatar enregistré", "Une copie de votre avatar a été enregistrée.", "COPIE CRÉÉE", "#64ffda", username, avatar_name, preview_image_data_url)).await
     }
 
-    pub async fn send_avatar_updated_email(&self, email: &str, username: &str, avatar_name: &str, svg: &str) -> Result<()> {
-        self.send_html(email, "Avatar Voxicraft modifié", &avatar_mail_html("Avatar modifié", "Votre avatar original a été écrasé avec vos modifications.", "ORIGINAL ÉCRASÉ", "#ffb300", username, avatar_name, svg)).await
+    pub async fn send_avatar_updated_email(&self, email: &str, username: &str, avatar_name: &str, preview_image_data_url: &str) -> Result<()> {
+        self.send_html(email, "Avatar Voxicraft modifié", &avatar_mail_html("Avatar modifié", "Votre avatar original a été écrasé avec vos modifications.", "ORIGINAL ÉCRASÉ", "#ffb300", username, avatar_name, preview_image_data_url)).await
     }
 
     async fn send_html(&self, recipient: &str, subject: &str, body: &str) -> Result<()> {
@@ -120,16 +120,16 @@ impl MailService {
     }
 }
 
-fn avatar_mail_html(title: &str, description: &str, badge: &str, accent: &str, username: &str, avatar_name: &str, svg: &str) -> String {
+fn avatar_mail_html(title: &str, description: &str, badge: &str, accent: &str, username: &str, avatar_name: &str, preview_image_data_url: &str) -> String {
     format!(
-        r#"<!doctype html><html lang="fr"><body style="margin:0;background:#101820;font-family:Arial,sans-serif;color:#ffffff;"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#101820;padding:32px 12px;"><tr><td align="center"><table role="presentation" width="640" cellspacing="0" cellpadding="0" style="max-width:640px;background:#1b2b34;border:4px solid {accent};border-radius:16px;overflow:hidden;"><tr><td style="padding:28px;text-align:center;background:#0d171d;"><span style="display:inline-block;background:{accent};color:#101820;padding:7px 12px;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.08em;">{badge}</span><h1 style="margin:18px 0 8px;color:{accent};font-size:26px;">{title}</h1><p style="margin:0;color:#d7fff7;font-size:15px;">{description}</p></td></tr><tr><td style="padding:28px 30px;"><p>Bonjour <strong style="color:#ffd700;">{username}</strong>,</p><p>Avatar concerné : <strong style="color:{accent};">{avatar_name}</strong></p><div style="background:#0b1419;border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:22px;text-align:center;">{svg}</div></td></tr></table></td></tr></table></body></html>"#,
+        r#"<!doctype html><html lang="fr"><body style="margin:0;background:#101820;font-family:Arial,sans-serif;color:#ffffff;"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#101820;padding:32px 12px;"><tr><td align="center"><table role="presentation" width="640" cellspacing="0" cellpadding="0" style="max-width:640px;background:#1b2b34;border:4px solid {accent};border-radius:16px;overflow:hidden;"><tr><td style="padding:28px;text-align:center;background:#0d171d;"><span style="display:inline-block;background:{accent};color:#101820;padding:7px 12px;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.08em;">{badge}</span><h1 style="margin:18px 0 8px;color:{accent};font-size:26px;">{title}</h1><p style="margin:0;color:#d7fff7;font-size:15px;">{description}</p></td></tr><tr><td style="padding:28px 30px;"><p>Bonjour <strong style="color:#ffd700;">{username}</strong>,</p><p>Avatar concerné : <strong style="color:{accent};">{avatar_name}</strong></p><div style="background:#0b1419;border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:22px;text-align:center;"><img src="{preview_image_data_url}" alt="Aperçu de l'avatar {avatar_name}" width="280" style="display:block;margin:0 auto;max-width:100%;height:auto;border:0;outline:none;text-decoration:none;" /></div></td></tr></table></td></tr></table></body></html>"#,
         accent = accent,
         badge = escape_html(badge),
         title = escape_html(title),
         description = escape_html(description),
         username = escape_html(username),
         avatar_name = escape_html(avatar_name),
-        svg = svg,
+        preview_image_data_url = escape_html(preview_image_data_url),
     )
 }
 
