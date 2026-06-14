@@ -20,8 +20,13 @@
         <input v-model="form.server_url" class="form-input" type="url" maxlength="240" placeholder="https://mon-serveur.example.com" :required="isServerCategory" />
         <p class="field-hint">Obligatoire pour une demande serveur. Pour un bug, si l’URL est renseignée, le propriétaire du serveur sera mis en copie.</p>
 
-        <label class="form-label">Email de réponse, optionnel</label>
-        <input v-model="form.email" type="email" class="form-input" maxlength="180" />
+        <template v-if="authStore.isAuthenticated">
+          <input type="hidden" :value="supportEmail" name="email" />
+        </template>
+        <template v-else>
+          <label class="form-label">Email de réponse</label>
+          <input v-model="form.email" type="email" class="form-input" maxlength="180" required />
+        </template>
 
         <label class="form-label">Sujet</label>
         <input v-model="form.subject" class="form-input" maxlength="180" required />
@@ -41,12 +46,15 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { mailApi } from '@/api'
+import { useAuthStore } from '@/stores/auth'
 
+const authStore = useAuthStore()
 const form = ref({ category: 'bug', server_url: '', email: '', subject: '', message: '' })
 const sending = ref(false)
 const successMessage = ref('')
 const errorMessage = ref('')
 const isServerCategory = computed(() => form.value.category === 'server')
+const supportEmail = computed(() => authStore.isAuthenticated ? authStore.user?.email || '' : form.value.email)
 
 async function submitSupport() {
   sending.value = true
@@ -56,7 +64,7 @@ async function submitSupport() {
     await mailApi.support({
       category: form.value.category,
       server_url: form.value.server_url || undefined,
-      email: form.value.email || undefined,
+      email: supportEmail.value,
       subject: form.value.subject,
       message: form.value.message,
     })
