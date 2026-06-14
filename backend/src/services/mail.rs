@@ -142,6 +142,23 @@ impl MailService {
         self.send_message(email).await
     }
 
+    pub async fn send_password_changed_email(&self, email: &str, username: &str) -> Result<()> {
+        let config = self
+            .config
+            .as_ref()
+            .ok_or_else(|| anyhow!("Mail service is not configured"))?;
+
+        let email = Message::builder()
+            .from(config.smtp_from.parse::<Mailbox>().context("Invalid SMTP_FROM")?)
+            .to(email.parse::<Mailbox>().context("Invalid password changed recipient email")?)
+            .subject("Mot de passe Voxicraft modifié")
+            .header(ContentType::TEXT_HTML)
+            .body(format_password_changed_mail_html(username))
+            .context("Failed to build password changed email")?;
+
+        self.send_message(email).await
+    }
+
     async fn send_message(&self, email: Message) -> Result<()> {
         let config = self
             .config
@@ -220,6 +237,36 @@ fn format_password_change_code_mail_html(username: &str, code: &str) -> String {
             <p style="font-size:16px;line-height:1.7;margin:0 0 18px;">Voici le code à saisir pour confirmer le changement de votre mot de passe :</p>
             <div style="font-size:34px;letter-spacing:10px;text-align:center;color:#111827;background:#ffb300;border-radius:12px;padding:18px 12px;font-weight:bold;margin:24px 0;">{code}</div>
             <p style="font-size:14px;line-height:1.6;color:#cbd5e1;margin:0;">Ce code expire dans 10 minutes. Si vous n’êtes pas à l’origine de cette demande, ne le partagez pas et ignorez ce message.</p>
+          </td></tr>
+        </table>
+      </td></tr>
+    </table>
+  </body>
+</html>"#,
+    )
+}
+
+fn format_password_changed_mail_html(username: &str) -> String {
+    let username = escape_html(username);
+    format!(
+        r#"<!doctype html>
+<html lang="fr">
+  <body style="margin:0;background:#0f1b14;font-family:Arial,sans-serif;color:#ffffff;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#0f1b14;padding:32px 12px;">
+      <tr><td align="center">
+        <table role="presentation" width="620" cellspacing="0" cellpadding="0" style="max-width:620px;background:#163321;border:4px solid #7cfc9a;border-radius:16px;overflow:hidden;">
+          <tr><td style="padding:28px;text-align:center;background:#102618;">
+            <div style="font-size:34px;margin-bottom:10px;">✅</div>
+            <h1 style="margin:0;color:#7cfc9a;font-size:25px;">Mot de passe modifié</h1>
+            <p style="margin:10px 0 0;color:#d7ffe0;">La modification de votre mot de passe Voxicraft a bien été confirmée.</p>
+          </td></tr>
+          <tr><td style="padding:28px;">
+            <p style="font-size:16px;line-height:1.7;margin:0 0 18px;">Bonjour <strong style="color:#ffd700;">{username}</strong>,</p>
+            <p style="font-size:16px;line-height:1.7;margin:0 0 18px;">Votre mot de passe vient d’être changé avec succès.</p>
+            <div style="background:#0b1710;border:1px solid rgba(124,252,154,.35);border-radius:12px;padding:18px;margin:24px 0;">
+              <p style="margin:0;color:#ffffff;line-height:1.6;">Si vous êtes à l’origine de cette action, aucune intervention n’est nécessaire.</p>
+              <p style="margin:12px 0 0;color:#ffb300;line-height:1.6;font-weight:bold;">Si vous n’avez pas demandé ce changement, contactez immédiatement le support Voxicraft.</p>
+            </div>
           </td></tr>
         </table>
       </td></tr>

@@ -72,20 +72,31 @@ pub async fn confirm_credential_change(
     Extension(claims): Extension<Claims>,
     Json(payload): Json<ConfirmCredentialChangeRequest>,
 ) -> Result<Json<CredentialChangedResponse>, StatusCode> {
-    let new_hash = state
+    let next_hash = state
         .password_change_codes
         .verify_and_consume(&claims.sub, &payload.code)
         .await
         .ok_or(StatusCode::UNAUTHORIZED)?;
 
     let user = load_user(&state, &claims.sub).await?;
+    let notify_email = user.email.clone();
+    let notify_username = user.username.clone();
+
     let mut active_user: user::ActiveModel = user.into();
-    active_user.password_hash = Set(Some(new_hash));
+    active_user.password_hash = Set(Some(next_hash));
     active_user.updated_at = Set(Utc::now().naive_utc());
     active_user.update(&state.db).await.map_err(|error| {
         tracing::error!(?error, "failed to update account credential");
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
+
+    if let Err(error) = state
+        .mail_service
+        .send_password_changed_email(&notify_email, &notify_username)
+        .await
+    {
+        tracing::warn!(?error, "credential changed confirmation email could not be sent");
+    }
 
     Ok(Json(CredentialChangedResponse { changed: true }))
 }
