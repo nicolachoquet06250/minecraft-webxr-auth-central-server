@@ -56,6 +56,7 @@
                     aria-label="Supprimer le lien Discord"
                     @click="unlinkDiscord"
                   >
+                    <span class="discord-unlink-icon" aria-hidden="true">🗑️</span>
                     <span class="sr-only">{{ unlinkingDiscord ? 'Suppression...' : 'Supprimer' }}</span>
                   </button>
                 </div>
@@ -283,7 +284,8 @@ const handleUpdate = async () => {
 .discord-linked-content { display: flex; flex-direction: column; align-items: flex-end; gap: .18rem; min-width: 0; padding: .45rem .55rem; }
 .discord-linked-card strong { color: #64ffda; font-size: .66rem; }
 .discord-linked-card small { color: rgba(255, 255, 255, .75); font-size: .58rem; max-width: 180px; overflow-wrap: anywhere; text-align: right; }
-.discord-unlink-button { width: 100%; min-height: 100%; border: 0; border-left: 2px solid rgba(0, 0, 0, .18); border-radius: 0; background: linear-gradient(135deg, #c62828, #ef5350); cursor: pointer; }
+.discord-unlink-button { width: 100%; min-height: 100%; display: flex; align-items: center; justify-content: center; border: 0; border-left: 2px solid rgba(0, 0, 0, .18); border-radius: 0; background: linear-gradient(135deg, #c62828, #ef5350); cursor: pointer; }
+.discord-unlink-icon { display: block; font-size: 1rem; line-height: 1; filter: drop-shadow(1px 1px 0 rgba(0, 0, 0, .45)); }
 .discord-unlink-button:hover { filter: brightness(1.08); }
 .discord-unlink-button:disabled { opacity: .65; cursor: not-allowed; }
 .discord-link-button { padding: .52rem .65rem; border-radius: 7px; border: 2px solid #5865f2; background: linear-gradient(135deg, #5865f2, #7289da); color: #fff; font-family: 'Press Start 2P', cursive; font-size: .52rem; line-height: 1.35; cursor: pointer; box-shadow: 3px 3px 0 rgba(0, 0, 0, .35); }
