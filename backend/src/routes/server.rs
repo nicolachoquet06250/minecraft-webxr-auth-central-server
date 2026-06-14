@@ -235,7 +235,6 @@ pub async fn record_server_visit(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
     {
         let mut active_visit: server_visit::ActiveModel = existing_visit.into();
-        active_visit.server_url = Set(server_url.clone());
         active_visit.visited_at = Set(now);
         active_visit
             .update(&state.db)
@@ -246,7 +245,6 @@ pub async fn record_server_visit(
             id: Set(Uuid::new_v4().to_string()),
             user_id: Set(user_id.clone()),
             server_id: Set(server.id.clone()),
-            server_url: Set(server_url.clone()),
             visited_at: Set(now),
         }
         .insert(&state.db)
