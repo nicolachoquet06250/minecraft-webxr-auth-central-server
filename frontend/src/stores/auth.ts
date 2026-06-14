@@ -16,6 +16,11 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('auth_token', authToken)
   }
 
+  const setToken = (authToken: string) => {
+    token.value = authToken
+    localStorage.setItem('auth_token', authToken)
+  }
+
   const clearAuth = () => {
     token.value = null
     user.value = null
@@ -58,7 +63,6 @@ export const useAuthStore = defineStore('auth', () => {
 
   const fetchProfile = async () => {
     if (!token.value) return false
-    
     loading.value = true
     error.value = null
     try {
@@ -89,6 +93,21 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const unlinkDiscord = async () => {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await userApi.unlinkDiscord()
+      user.value = response.data
+      return true
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'Failed to unlink Discord'
+      return false
+    } finally {
+      loading.value = false
+    }
+  }
+
   const getDiscordAuthUrl = async () => {
     try {
       const response = await authApi.getDiscordUrl()
@@ -110,6 +129,8 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     fetchProfile,
     updateProfile,
+    unlinkDiscord,
     getDiscordAuthUrl,
+    setToken,
   }
 })

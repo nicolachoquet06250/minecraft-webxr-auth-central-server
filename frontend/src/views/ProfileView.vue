@@ -43,9 +43,14 @@
               <div class="info-item"><span>✅ Âge vérifié</span><strong>{{ authStore.user.age_verified ? 'Oui' : 'Non' }}</strong></div>
               <div class="info-item discord-info-item">
                 <span>💬 Discord</span>
-                <div v-if="authStore.user.discord_username" class="discord-linked-card">
-                  <strong>Discord lié</strong>
-                  <small>{{ authStore.user.discord_username }}</small>
+                <div v-if="authStore.user.discord_username" class="discord-linked-row">
+                  <div class="discord-linked-card">
+                    <strong>Discord lié</strong>
+                    <small>{{ authStore.user.discord_username }}</small>
+                  </div>
+                  <button type="button" class="discord-unlink-button" :disabled="unlinkingDiscord" @click="unlinkDiscord">
+                    {{ unlinkingDiscord ? 'Suppression...' : 'Supprimer' }}
+                  </button>
                 </div>
                 <button v-else type="button" class="discord-link-button" :disabled="linkingDiscord" @click="linkDiscord">
                   {{ linkingDiscord ? 'Redirection...' : 'Lier mon Discord' }}
@@ -164,6 +169,7 @@ const activeProfileAvatar = ref<UserAvatar | null>(null)
 const selectedCustomAvatarId = ref('')
 const savingAvatarSelection = ref(false)
 const linkingDiscord = ref(false)
+const unlinkingDiscord = ref(false)
 
 const serverCount = computed(() => serverStore.servers.length)
 const daysSinceJoined = computed(() => {
@@ -196,6 +202,15 @@ const linkDiscord = async () => {
     if (url) window.location.href = url
   } finally {
     linkingDiscord.value = false
+  }
+}
+
+const unlinkDiscord = async () => {
+  unlinkingDiscord.value = true
+  try {
+    await authStore.unlinkDiscord()
+  } finally {
+    unlinkingDiscord.value = false
   }
 }
 
@@ -257,11 +272,14 @@ const handleUpdate = async () => {
 .profile-avatar-card strong { width: 100%; text-align: center; font-size: .66rem; overflow-wrap: anywhere; color: #fff; }
 .info-item span, .info-item strong { min-width: 0; overflow-wrap: anywhere; }
 .discord-info-item { align-items: center; }
+.discord-linked-row { display: flex; align-items: center; justify-content: flex-end; gap: .45rem; flex-wrap: wrap; min-width: 0; }
 .discord-linked-card { display: flex; flex-direction: column; align-items: flex-end; gap: .18rem; padding: .45rem .55rem; border: 2px solid rgba(100, 255, 218, .45); border-radius: 8px; background: rgba(88, 101, 242, .22); box-shadow: 3px 3px 0 rgba(0, 0, 0, .28); }
 .discord-linked-card strong { color: #64ffda; font-size: .66rem; }
 .discord-linked-card small { color: rgba(255, 255, 255, .75); font-size: .58rem; max-width: 180px; overflow-wrap: anywhere; text-align: right; }
-.discord-link-button { padding: .52rem .65rem; border-radius: 7px; border: 2px solid #5865f2; background: linear-gradient(135deg, #5865f2, #7289da); color: #fff; font-family: 'Press Start 2P', cursive; font-size: .52rem; line-height: 1.35; cursor: pointer; box-shadow: 3px 3px 0 rgba(0, 0, 0, .35); }
-.discord-link-button:disabled { opacity: .65; cursor: not-allowed; }
+.discord-link-button, .discord-unlink-button { padding: .52rem .65rem; border-radius: 7px; color: #fff; font-family: 'Press Start 2P', cursive; font-size: .52rem; line-height: 1.35; cursor: pointer; box-shadow: 3px 3px 0 rgba(0, 0, 0, .35); }
+.discord-link-button { border: 2px solid #5865f2; background: linear-gradient(135deg, #5865f2, #7289da); }
+.discord-unlink-button { border: 2px solid #c62828; background: linear-gradient(135deg, #c62828, #ef5350); }
+.discord-link-button:disabled, .discord-unlink-button:disabled { opacity: .65; cursor: not-allowed; }
 .actions-grid, .stats-grid, .avatar-selector { display: grid; grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); gap: .65rem; min-width: 0; }
 .actions-grid { display: flex; flex-wrap: wrap; }
 .bio-content { width: 100%; overflow: hidden; overflow-wrap: anywhere; line-height: 1.45; }
