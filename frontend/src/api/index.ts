@@ -131,7 +131,7 @@ const renderAvatarPreviewImage = (payload: AvatarPreviewPayload): string | undef
   let root: Mesh | null = null
 
   try {
-    engine = new Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true, antialias: true })
+    engine = new Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true, antialias: false })
     scene = new Scene(engine)
     scene.clearColor = new Color4(0, 0, 0, 0)
 
@@ -146,7 +146,7 @@ const renderAvatarPreviewImage = (payload: AvatarPreviewPayload): string | undef
       name: payload.name || 'Avatar',
       base_kind: normalizePreviewBaseKind(payload.base_kind),
       is_active: false,
-      texture_data: payload.texture_data,
+      texture_data: makeAvatarPreviewTextureOpaque(payload.texture_data),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
@@ -162,6 +162,20 @@ const renderAvatarPreviewImage = (payload: AvatarPreviewPayload): string | undef
     root?.dispose()
     scene?.dispose()
     engine?.dispose()
+  }
+}
+
+const makeAvatarPreviewTextureOpaque = (textureData: AvatarTextureData): AvatarTextureData => {
+  const palette = Object.fromEntries(
+    Object.entries(textureData.palette).map(([key, color]) => [
+      key,
+      [color[0], color[1], color[2], color[3] <= 0 ? 0 : 1] as const,
+    ]),
+  )
+
+  return {
+    ...textureData,
+    palette,
   }
 }
 
