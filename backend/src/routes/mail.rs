@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Extension, State},
+    extract::State,
     http::StatusCode,
     response::Json,
 };
@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 use crate::{
     models::{server, Server, User},
-    services::{Claims, MailKind, MailPayload},
+    services::{MailKind, MailPayload},
     AppState,
 };
 
@@ -75,11 +75,10 @@ pub async fn send_contact_mail(
 
 pub async fn send_support_mail(
     State(state): State<Arc<AppState>>,
-    Extension(claims): Extension<Claims>,
     Json(payload): Json<SupportMailRequest>,
 ) -> Result<Json<MailSentResponse>, StatusCode> {
-    let name = payload.name.unwrap_or_else(|| claims.username.clone());
-    let email = payload.email.unwrap_or_else(|| format!("{}@local.voxicraft", claims.sub));
+    let email = payload.email.clone().ok_or(StatusCode::BAD_REQUEST)?;
+    let name = payload.name.unwrap_or_else(|| fallback_name_from_email(&email));
     validate_common(&name, &email, &payload.subject, &payload.message)?;
 
     let category = payload.category;
@@ -88,11 +87,7 @@ pub async fn send_support_mail(
         return Err(StatusCode::BAD_REQUEST);
     }
 
-    let mut metadata = vec![
-        ("Catégorie".to_string(), category.clone()),
-        ("Utilisateur".to_string(), claims.username),
-        ("ID utilisateur".to_string(), claims.sub),
-    ];
+    let mut metadata = vec![("Catégorie".to_string(), category.clone())];
 
     let mut cc = None;
     if let Some(server_url) = server_url {
@@ -146,6 +141,10 @@ async fn find_server_owner_email(state: &Arc<AppState>, server_url: &str) -> Res
 
 fn normalize_server_url(server_url: &str) -> String {
     server_url.trim().trim_end_matches('/').to_string()
+}
+
+fn fallback_name_from_email(email: &str) -> String {
+    email.split('@').next().filter(|value| value.trim().len() >= 2).unwrap_or("Visiteur").to_string()
 }
 
 fn validate_common(name: &str, email: &str, subject: &str, message: &str) -> Result<(), StatusCode> {
