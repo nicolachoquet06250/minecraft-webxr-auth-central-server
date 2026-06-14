@@ -15,12 +15,13 @@ use sea_orm::{Database, DatabaseConnection};
 use std::{env, net::SocketAddr, sync::Arc};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use crate::services::{DiscordService, JwtService};
+use crate::services::{DiscordService, JwtService, MailService};
 
 pub struct AppState {
     pub db: DatabaseConnection,
     pub jwt_service: JwtService,
     pub discord_service: DiscordService,
+    pub mail_service: MailService,
 }
 
 #[tokio::main]
@@ -53,11 +54,13 @@ async fn main() -> anyhow::Result<()> {
         discord_client_secret,
         discord_redirect_uri,
     );
+    let mail_service = MailService::from_env();
 
     let state = Arc::new(AppState {
         db,
         jwt_service,
         discord_service,
+        mail_service,
     });
 
     let public_routes = Router::new()
@@ -65,6 +68,8 @@ async fn main() -> anyhow::Result<()> {
         .route("/auth/login", post(routes::auth::login))
         .route("/auth/discord/url", get(routes::auth::discord_oauth_url))
         .route("/auth/discord/callback", get(routes::auth::discord_callback))
+        .route("/mail/status", get(routes::mail::mail_status))
+        .route("/contact", post(routes::mail::send_contact_mail))
         .route("/users/:id", get(routes::user::get_user_by_id))
         .route("/servers/:id", get(routes::server::get_server));
 
@@ -89,6 +94,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/servers", get(routes::server::get_user_servers))
         .route("/servers/:id", put(routes::server::update_server))
         .route("/servers/:id", delete(routes::server::delete_server))
+        .route("/support", post(routes::mail::send_support_mail))
         .layer(axum_middleware::from_fn_with_state(state.clone(), middleware::auth_middleware));
 
     let app = Router::new()
