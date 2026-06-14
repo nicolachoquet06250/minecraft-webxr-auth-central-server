@@ -280,12 +280,12 @@ const handleUpdate = async () => {
 .profile-avatar-card strong { width: 100%; text-align: center; font-size: .66rem; overflow-wrap: anywhere; color: #fff; }
 .info-item span, .info-item strong { min-width: 0; overflow-wrap: anywhere; }
 .discord-info-item { align-items: center; }
-.discord-linked-card { display: grid; grid-template-columns: minmax(0, 1fr) 52px; align-items: stretch; width: min(100%, 280px); padding: 0; border: 2px solid rgba(100, 255, 218, .45); border-radius: 8px; background: rgba(88, 101, 242, .22); box-shadow: 3px 3px 0 rgba(0, 0, 0, .28); overflow: hidden; }
-.discord-linked-content { display: flex; flex-direction: column; align-items: flex-end; gap: .18rem; min-width: 0; padding: .45rem .55rem; }
+.discord-linked-card { display: inline-grid; grid-template-columns: max-content 38px; align-items: stretch; width: auto; max-width: 100%; padding: 0; border: 2px solid rgba(100, 255, 218, .45); border-radius: 8px; background: rgba(88, 101, 242, .22); box-shadow: 3px 3px 0 rgba(0, 0, 0, .28); overflow: hidden; }
+.discord-linked-content { display: flex; flex-direction: column; align-items: flex-end; gap: .18rem; min-width: 0; padding: .4rem .5rem .4rem .35rem; }
 .discord-linked-card strong { color: #64ffda; font-size: .66rem; }
-.discord-linked-card small { color: rgba(255, 255, 255, .75); font-size: .58rem; max-width: 180px; overflow-wrap: anywhere; text-align: right; }
+.discord-linked-card small { color: rgba(255, 255, 255, .75); font-size: .58rem; max-width: 145px; overflow-wrap: anywhere; text-align: right; }
 .discord-unlink-button { width: 100%; min-height: 100%; display: flex; align-items: center; justify-content: center; border: 0; border-left: 2px solid rgba(0, 0, 0, .18); border-radius: 0; background: linear-gradient(135deg, #c62828, #ef5350); cursor: pointer; }
-.discord-unlink-icon { display: block; font-size: 1rem; line-height: 1; filter: drop-shadow(1px 1px 0 rgba(0, 0, 0, .45)); }
+.discord-unlink-icon { display: block; font-size: .9rem; line-height: 1; filter: drop-shadow(1px 1px 0 rgba(0, 0, 0, .45)); }
 .discord-unlink-button:hover { filter: brightness(1.08); }
 .discord-unlink-button:disabled { opacity: .65; cursor: not-allowed; }
 .discord-link-button { padding: .52rem .65rem; border-radius: 7px; border: 2px solid #5865f2; background: linear-gradient(135deg, #5865f2, #7289da); color: #fff; font-family: 'Press Start 2P', cursive; font-size: .52rem; line-height: 1.35; cursor: pointer; box-shadow: 3px 3px 0 rgba(0, 0, 0, .35); }
@@ -293,6 +293,10 @@ const handleUpdate = async () => {
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .actions-grid, .stats-grid, .avatar-selector { display: grid; grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); gap: .65rem; min-width: 0; }
 .actions-grid { display: flex; flex-wrap: wrap; }
+.stats-grid { grid-template-columns: repeat(2, minmax(100px, 1fr)); }
+.stat-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .35rem; text-align: center; min-height: 88px; }
+.stat-item strong { color: #64ffda; font-size: 1.15rem; line-height: 1.2; text-shadow: 2px 2px 0 rgba(0, 0, 0, .45); }
+.stat-item span { font-size: .78rem; line-height: 1.25; }
 .bio-content { width: 100%; overflow: hidden; overflow-wrap: anywhere; line-height: 1.45; }
 .security-panel { width: 100%; min-width: 0; overflow: hidden; }
 .security-value { display: block; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
