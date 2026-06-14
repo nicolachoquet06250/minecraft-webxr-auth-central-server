@@ -4,6 +4,8 @@ mod models;
 mod routes;
 mod services;
 mod static_files;
+#[path = "services/onboarding.rs"]
+mod onboarding;
 
 use axum::{
     middleware as axum_middleware,
@@ -15,6 +17,7 @@ use sea_orm::{Database, DatabaseConnection};
 use std::{env, net::SocketAddr, sync::Arc};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+use crate::onboarding::OnboardingStore;
 use crate::services::{DiscordService, JwtService, MailService, PasswordChangeCodeStore};
 
 pub struct AppState {
@@ -23,6 +26,7 @@ pub struct AppState {
     pub discord_service: DiscordService,
     pub mail_service: MailService,
     pub password_change_codes: PasswordChangeCodeStore,
+    pub onboarding_store: OnboardingStore,
 }
 
 #[tokio::main]
@@ -57,6 +61,7 @@ async fn main() -> anyhow::Result<()> {
     );
     let mail_service = MailService::from_env();
     let password_change_codes = PasswordChangeCodeStore::new();
+    let onboarding_store = OnboardingStore::new();
 
     let state = Arc::new(AppState {
         db,
@@ -64,10 +69,12 @@ async fn main() -> anyhow::Result<()> {
         discord_service,
         mail_service,
         password_change_codes,
+        onboarding_store,
     });
 
     let public_routes = Router::new()
         .route("/auth/register", post(routes::auth::register))
+        .route("/auth/register/confirm", post(routes::auth::confirm_register))
         .route("/auth/login", post(routes::auth::login))
         .route("/auth/discord/url", get(routes::auth::discord_oauth_url))
         .route("/auth/discord/callback", get(routes::auth::discord_callback))
