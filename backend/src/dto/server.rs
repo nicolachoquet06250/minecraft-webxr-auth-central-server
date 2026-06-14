@@ -24,6 +24,12 @@ pub struct UpdateServerRequest {
     pub is_active: Option<bool>,
 }
 
+#[derive(Debug, Deserialize, Validate)]
+pub struct RecordServerVisitRequest {
+    #[validate(url)]
+    pub server_url: String,
+}
+
 #[derive(Debug, Serialize)]
 pub struct ServerResponse {
     pub id: String,
@@ -34,4 +40,19 @@ pub struct ServerResponse {
     pub is_active: bool,
     pub created_at: String,
     pub updated_at: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ServerHistoryResponse {
+    pub server: ServerResponse,
+    pub is_favorite: bool,
+    pub visited_at: Option<String>,
+    pub favorited_at: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct FavoriteServerResponse {
+    pub server: ServerResponse,
+    pub is_favorite: bool,
+    pub favorited_at: String,
 }
