@@ -179,56 +179,67 @@ pub async fn discord_callback(
         .discord_service
         .exchange_code(&params.code)
         .await
-        .map_err(|_| StatusCode::BAD_REQUEST)?;
+        .map_err(|error| {
+            tracing::warn!(?error, "discord token exchange failed");
+            StatusCode::BAD_REQUEST
+        })?;
 
     // Get Discord user info
     let discord_user = state
         .discord_service
         .get_user(&token_response.access_token)
         .await
-        .map_err(|_| StatusCode::BAD_REQUEST)?;
+        .map_err(|error| {
+            tracing::warn!(?error, "discord user fetch failed");
+            StatusCode::BAD_REQUEST
+        })?;
 
     // Check if user exists with this Discord ID
     let existing_user = User::find()
         .filter(user::Column::DiscordId.eq(&discord_user.id))
         .one(&state.db)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|error| {
+            tracing::error!(?error, "database error checking discord user");
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
 
     let user = if let Some(user) = existing_user {
         user
-    } else {
-        // Create new user
-        let user_id = Uuid::new_v4().to_string();
-        let now = chrono::Utc::now().naive_utc();
-        let default_birthdate = NaiveDate::from_ymd_opt(2000, 1, 1).unwrap();
-
-        let new_user = user::ActiveModel {
-            id: Set(user_id),
-            username: Set(discord_user.username.clone()),
-            email: Set(discord_user.email.clone().unwrap_or_default()),
-            password_hash: Set(None),
-            avatar: Set("steve".to_string()),
-            bio: Set(None),
-            birthdate: Set(default_birthdate),
-            age_verified: Set(discord_user.verified.unwrap_or(false)),
-            discord_id: Set(Some(discord_user.id.clone())),
-            discord_username: Set(Some(discord_user.username.clone())),
-            created_at: Set(now),
-            updated_at: Set(now),
-        };
-
-        new_user
-            .insert(&state.db)
+    } else if let Some(discord_email) = discord_user.email.as_deref().filter(|email| !email.trim().is_empty()) {
+        let existing_email_user = User::find()
+            .filter(user::Column::Email.eq(discord_email))
+            .one(&state.db)
             .await
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+            .map_err(|error| {
+                tracing::error!(?error, "database error checking discord email user");
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?;
+
+        if let Some(existing_email_user) = existing_email_user {
+            let mut active_user: user::ActiveModel = existing_email_user.into();
+            active_user.discord_id = Set(Some(discord_user.id.clone()));
+            active_user.discord_username = Set(Some(discord_user.username.clone()));
+            active_user.updated_at = Set(chrono::Utc::now().naive_utc());
+            active_user.update(&state.db).await.map_err(|error| {
+                tracing::error!(?error, "database error linking discord to existing email user");
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?
+        } else {
+            create_discord_user(&state, &discord_user).await?
+        }
+    } else {
+        create_discord_user(&state, &discord_user).await?
     };
 
     // Generate JWT
     let token = state
         .jwt_service
         .generate_token(&user.id, &user.username)
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|error| {
+            tracing::error!(?error, "JWT generation error after discord callback");
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
 
     Ok(Json(AuthResponse {
         token,
@@ -244,4 +255,38 @@ pub async fn discord_callback(
             created_at: user.created_at.to_string(),
         },
     }))
+}
+
+async fn create_discord_user(
+    state: &Arc<AppState>,
+    discord_user: &crate::services::DiscordUser,
+) -> Result<user::Model, StatusCode> {
+    let user_id = Uuid::new_v4().to_string();
+    let now = chrono::Utc::now().naive_utc();
+    let default_birthdate = NaiveDate::from_ymd_opt(2000, 1, 1).unwrap();
+    let email = discord_user
+        .email
+        .clone()
+        .filter(|email| !email.trim().is_empty())
+        .unwrap_or_else(|| format!("{}@discord.local", discord_user.id));
+
+    let new_user = user::ActiveModel {
+        id: Set(user_id),
+        username: Set(discord_user.username.clone()),
+        email: Set(email),
+        password_hash: Set(None),
+        avatar: Set("steve".to_string()),
+        bio: Set(None),
+        birthdate: Set(default_birthdate),
+        age_verified: Set(discord_user.verified.unwrap_or(false)),
+        discord_id: Set(Some(discord_user.id.clone())),
+        discord_username: Set(Some(discord_user.username.clone())),
+        created_at: Set(now),
+        updated_at: Set(now),
+    };
+
+    new_user.insert(&state.db).await.map_err(|error| {
+        tracing::error!(?error, "database error inserting discord user");
+        StatusCode::INTERNAL_SERVER_ERROR
+    })
 }
