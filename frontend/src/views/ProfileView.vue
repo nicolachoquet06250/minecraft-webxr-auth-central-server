@@ -293,6 +293,10 @@ const handleUpdate = async () => {
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .actions-grid, .stats-grid, .avatar-selector { display: grid; grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); gap: .65rem; min-width: 0; }
 .actions-grid { display: flex; flex-wrap: wrap; }
+.stats-grid { grid-template-columns: repeat(2, minmax(100px, 1fr)); }
+.stat-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .35rem; text-align: center; min-height: 88px; }
+.stat-item strong { color: #64ffda; font-size: 1.15rem; line-height: 1.2; text-shadow: 2px 2px 0 rgba(0, 0, 0, .45); }
+.stat-item span { font-size: .78rem; line-height: 1.25; }
 .bio-content { width: 100%; overflow: hidden; overflow-wrap: anywhere; line-height: 1.45; }
 .security-panel { width: 100%; min-width: 0; overflow: hidden; }
 .security-value { display: block; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
