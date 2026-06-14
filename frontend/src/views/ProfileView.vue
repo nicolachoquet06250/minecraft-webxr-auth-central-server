@@ -129,6 +129,7 @@
               <div class="info-item bio-content security-value">JWT Token actif</div>
               <div class="info-item bio-content security-value">Email : <span class="security-email">{{ authStore.user.email }}</span></div>
             </div>
+            <AccountSecretForm />
           </div>
         </div>
       </div>
@@ -138,6 +139,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import AccountSecretForm from '@/components/AccountSecretForm.vue'
 import AvatarHeadImage from '@/components/AvatarHeadImage.vue'
 import AvatarSvgPreview from '@/components/AvatarSvgPreview.vue'
 import { avatarApi, type UserAvatar } from '@/api'
