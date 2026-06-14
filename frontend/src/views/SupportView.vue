@@ -16,8 +16,8 @@
           <option value="other">Autre</option>
         </select>
 
-        <label class="form-label">ID serveur concerné, optionnel</label>
-        <input v-model="form.server_id" class="form-input" maxlength="120" />
+        <label class="form-label">URL du serveur concerné, optionnel</label>
+        <input v-model="form.server_url" class="form-input" type="url" maxlength="240" placeholder="https://mon-serveur.example.com" />
 
         <label class="form-label">Email de réponse, optionnel</label>
         <input v-model="form.email" type="email" class="form-input" maxlength="180" />
@@ -41,7 +41,7 @@
 import { ref } from 'vue'
 import { mailApi } from '@/api'
 
-const form = ref({ category: 'bug', server_id: '', email: '', subject: '', message: '' })
+const form = ref({ category: 'bug', server_url: '', email: '', subject: '', message: '' })
 const sending = ref(false)
 const successMessage = ref('')
 const errorMessage = ref('')
@@ -53,13 +53,13 @@ async function submitSupport() {
   try {
     await mailApi.support({
       category: form.value.category,
-      server_id: form.value.server_id || undefined,
+      server_url: form.value.server_url || undefined,
       email: form.value.email || undefined,
       subject: form.value.subject,
       message: form.value.message,
     })
     successMessage.value = 'Demande envoyée au support.'
-    form.value = { category: 'bug', server_id: '', email: '', subject: '', message: '' }
+    form.value = { category: 'bug', server_url: '', email: '', subject: '', message: '' }
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : 'Erreur lors de l’envoi au support.'
   } finally {
