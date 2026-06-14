@@ -18,7 +18,7 @@
 
         <label class="form-label">URL du serveur concerné{{ isServerCategory ? '' : ', optionnel' }}</label>
         <input v-model="form.server_url" class="form-input" type="url" maxlength="240" placeholder="https://mon-serveur.example.com" :required="isServerCategory" />
-        <p class="field-hint">Obligatoire pour une demande serveur. Pour un bug, si l’URL est renseignée, le propriétaire du serveur sera mis en copie.</p>
+        <p v-if="isBugCategory" class="field-hint">Si l’URL est renseignée, le propriétaire du serveur sera notifié.</p>
 
         <template v-if="authStore.isAuthenticated">
           <input type="hidden" :value="supportEmail" name="email" />
@@ -54,6 +54,7 @@ const sending = ref(false)
 const successMessage = ref('')
 const errorMessage = ref('')
 const isServerCategory = computed(() => form.value.category === 'server')
+const isBugCategory = computed(() => form.value.category === 'bug')
 const supportEmail = computed(() => authStore.isAuthenticated ? authStore.user?.email || '' : form.value.email)
 
 async function submitSupport() {
