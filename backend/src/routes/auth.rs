@@ -86,6 +86,10 @@ pub async fn register(
 
     tracing::info!("User registered successfully: {}", user.username);
 
+    if let Err(error) = state.mail_service.send_welcome_email(&user.email, &user.username).await {
+        tracing::warn!(?error, "welcome email could not be sent");
+    }
+
     // Generate JWT
     let token = state
         .jwt_service
