@@ -99,6 +99,13 @@
                 📊 Dashboard
               </button>
               <button
+                @click.stop="toggleFavorite(server.id)"
+                class="voxicraft-button small favorite"
+                :class="{ active: isFavorite(server.id) }"
+              >
+                {{ isFavorite(server.id) ? '⭐ Favori' : '☆ Favori' }}
+              </button>
+              <button
                 @click.stop="toggleServerStatus(server)"
                 class="voxicraft-button small"
               >
@@ -119,9 +126,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { serverApi, type Server } from '@/api'
+import type { Server } from '@/api'
 import { useServerStore } from '@/stores/server'
 
 const router = useRouter()
@@ -132,9 +139,12 @@ const createData = ref({
   game_domain: '',
   description: '',
 })
+const favoriteIds = computed(() => new Set(serverStore.favoriteServers.map((entry) => entry.server.id)))
 
-onMounted(() => {
-  serverStore.fetchUserServers()
+onMounted(async () => {
+  await serverStore.fetchUserServers()
+  await serverStore.fetchFavoriteServers()
+  await serverStore.fetchRecentServers()
 })
 
 const handleCreate = async () => {
@@ -170,12 +180,15 @@ const goToDashboard = (serverId: string) => {
   router.push({ name: 'server-dashboard', params: { id: serverId } })
 }
 
+const isFavorite = (serverId: string) => favoriteIds.value.has(serverId)
+
+const toggleFavorite = async (serverId: string) => {
+  if (isFavorite(serverId)) await serverStore.unfavoriteServer(serverId)
+  else await serverStore.favoriteServer(serverId)
+}
+
 const openGameServer = async (server: Server) => {
-  try {
-    await serverApi.recordServerVisit(server.game_domain)
-  } catch (error) {
-    console.warn('Impossible d’enregistrer le serveur récemment visité.', error)
-  }
+  await serverStore.recordServerVisit(server.game_domain)
 }
 </script>
 
@@ -322,6 +335,17 @@ const openGameServer = async (server: Server) => {
 .voxicraft-button.primary {
   background-color: #2196f3;
   border-color: #1565c0;
+}
+
+.voxicraft-button.favorite {
+  background-color: #6d4c41;
+  border-color: #4e342e;
+}
+
+.voxicraft-button.favorite.active {
+  background-color: #ffb300;
+  border-color: #ff8f00;
+  color: #1a1a1a;
 }
 
 .voxicraft-button.danger {
