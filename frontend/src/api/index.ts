@@ -66,8 +66,8 @@ export interface ContactMailData { name: string; email: string; subject: string;
 export interface SupportMailData { name?: string; email?: string; category: string; subject: string; message: string; server_id?: string }
 export interface MailStatus { enabled: boolean }
 export interface MailSentResponse { sent: boolean }
-export interface PasswordChangeCodeRequest { current_secret: string }
-export interface PasswordChangeConfirmRequest { current_secret: string; next_secret: string; code: string }
+export interface PasswordChangeCodeRequest { next_secret: string; next_secret_confirmation: string }
+export interface PasswordChangeConfirmRequest { code: string }
 export interface PasswordChangeCodeResponse { sent: boolean; expires_in_minutes: number }
 export interface PasswordChangedResponse { changed: boolean }
 
