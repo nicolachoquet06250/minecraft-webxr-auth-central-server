@@ -41,7 +41,16 @@
               </div>
               <div class="info-item"><span>🎂 Date de naissance</span><strong>{{ formatDate(authStore.user.birthdate) }}</strong></div>
               <div class="info-item"><span>✅ Âge vérifié</span><strong>{{ authStore.user.age_verified ? 'Oui' : 'Non' }}</strong></div>
-              <div class="info-item" v-if="authStore.user.discord_username"><span>💬 Discord</span><strong>{{ authStore.user.discord_username }}</strong></div>
+              <div class="info-item discord-info-item">
+                <span>💬 Discord</span>
+                <div v-if="authStore.user.discord_username" class="discord-linked-card">
+                  <strong>Discord lié</strong>
+                  <small>{{ authStore.user.discord_username }}</small>
+                </div>
+                <button v-else type="button" class="discord-link-button" :disabled="linkingDiscord" @click="linkDiscord">
+                  {{ linkingDiscord ? 'Redirection...' : 'Lier mon Discord' }}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -154,6 +163,7 @@ const customAvatars = ref<UserAvatar[]>([])
 const activeProfileAvatar = ref<UserAvatar | null>(null)
 const selectedCustomAvatarId = ref('')
 const savingAvatarSelection = ref(false)
+const linkingDiscord = ref(false)
 
 const serverCount = computed(() => serverStore.servers.length)
 const daysSinceJoined = computed(() => {
@@ -177,6 +187,16 @@ const loadCustomAvatars = async () => {
   customAvatars.value = await avatarApi.list().then((response) => response.data).catch(() => [])
   activeProfileAvatar.value = customAvatars.value.find((avatar) => avatar.is_active) || null
   selectedCustomAvatarId.value = activeProfileAvatar.value?.id || ''
+}
+
+const linkDiscord = async () => {
+  linkingDiscord.value = true
+  try {
+    const url = await authStore.getDiscordAuthUrl()
+    if (url) window.location.href = url
+  } finally {
+    linkingDiscord.value = false
+  }
 }
 
 const selectPendingCustomAvatar = (avatarId: string) => {
@@ -236,6 +256,12 @@ const handleUpdate = async () => {
 .profile-avatar-preview :deep(.svg-image) { width: 95px; }
 .profile-avatar-card strong { width: 100%; text-align: center; font-size: .66rem; overflow-wrap: anywhere; color: #fff; }
 .info-item span, .info-item strong { min-width: 0; overflow-wrap: anywhere; }
+.discord-info-item { align-items: center; }
+.discord-linked-card { display: flex; flex-direction: column; align-items: flex-end; gap: .18rem; padding: .45rem .55rem; border: 2px solid rgba(100, 255, 218, .45); border-radius: 8px; background: rgba(88, 101, 242, .22); box-shadow: 3px 3px 0 rgba(0, 0, 0, .28); }
+.discord-linked-card strong { color: #64ffda; font-size: .66rem; }
+.discord-linked-card small { color: rgba(255, 255, 255, .75); font-size: .58rem; max-width: 180px; overflow-wrap: anywhere; text-align: right; }
+.discord-link-button { padding: .52rem .65rem; border-radius: 7px; border: 2px solid #5865f2; background: linear-gradient(135deg, #5865f2, #7289da); color: #fff; font-family: 'Press Start 2P', cursive; font-size: .52rem; line-height: 1.35; cursor: pointer; box-shadow: 3px 3px 0 rgba(0, 0, 0, .35); }
+.discord-link-button:disabled { opacity: .65; cursor: not-allowed; }
 .actions-grid, .stats-grid, .avatar-selector { display: grid; grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); gap: .65rem; min-width: 0; }
 .actions-grid { display: flex; flex-wrap: wrap; }
 .bio-content { width: 100%; overflow: hidden; overflow-wrap: anywhere; line-height: 1.45; }
@@ -260,18 +286,3 @@ const handleUpdate = async () => {
 .form-label { color: #ffd700; font-size: .62rem; }
 .form-input { background: rgba(0, 0, 0, 0.6); border: 2px solid #424242; color: white; padding: .55rem; font-family: 'Courier New', monospace; font-size: .78rem; width: 100%; outline: none; border-radius: 5px; }
 .form-textarea { resize: vertical; min-height: 80px; }
-.avatar-option { cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: .35rem; padding: .65rem; background: rgba(0, 0, 0, 0.4); border: 2px solid rgba(100, 255, 218, 0.2); border-radius: 8px; color: #fff; min-width: 0; font-size: .65rem; }
-.avatar-option input { display: none; }
-.avatar-option.selected { border-color: #64ffda; background: rgba(100, 255, 218, 0.2); }
-.avatar-preview-img { width: 56px; height: 56px; border-radius: 7px; }
-.inline-avatar-builder-link { color: #64ffda; font-size: .64rem; text-decoration: underline; overflow-wrap: anywhere; }
-.form-actions { display: flex; gap: .65rem; min-width: 0; }
-.btn-submit { background: linear-gradient(135deg, #4caf50, #66bb6a); border-color: #2e7d32; flex: 1; }
-.btn-cancel { background: rgba(255, 107, 107, 0.2); border-color: #ff6b6b; flex: 1; }
-.stat-item { display: flex; flex-direction: column; gap: .3rem; text-align: center; }
-.stat-item strong { color: #64ffda; font-size: 1.05rem; }
-@media (max-width: 900px) { .profile { padding: .85rem .45rem; } .profile-header, .profile-content { grid-template-columns: 1fr; } .profile-header { gap: .85rem; } .voxicraft-panel { padding: .9rem; box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.45); } .actions-grid { display: grid; grid-template-columns: minmax(0, 1fr); } .action-btn { width: 100%; max-width: 100%; } }
-@media (max-width: 720px) and (orientation: portrait) { .profile { padding-left: .25rem; padding-right: .25rem; } .voxicraft-panel { padding-left: .75rem; padding-right: .75rem; box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.45); } }
-@media (max-width: 520px) { .profile { padding: .55rem .15rem; } .voxicraft-panel { padding: .7rem; } .username { font-size: 1.05rem; } .card-title { font-size: .82rem; } .info-item { flex-direction: column; align-items: flex-start; } .custom-avatar-heading, .form-actions { flex-direction: column; align-items: stretch; } }
-@media (max-width: 420px) and (orientation: portrait) { .profile { padding-left: .1rem; padding-right: .1rem; } .voxicraft-panel { padding-left: .6rem; padding-right: .6rem; box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45); } }
-</style>
