@@ -3,6 +3,7 @@ use axum::{
     http::{header, HeaderValue, StatusCode},
     response::{IntoResponse, Json, Response},
 };
+use base64::{engine::general_purpose::STANDARD as BASE64_STANDARD, Engine as _};
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 use serde_json::Value;
 use std::{collections::HashMap, sync::Arc};
@@ -257,7 +258,7 @@ fn avatar_mail_preview_image_data_url(preview_image_data_url: Option<&str>, text
     }
     let svg = full_avatar_svg_from_texture_data(texture_data)
         .unwrap_or_else(|_| svg_from_texture_data(texture_data).unwrap_or_else(|_| empty_svg()));
-    format!("data:image/svg+xml;utf8,{}", urlencoding::encode(&svg))
+    format!("data:image/svg+xml;base64,{}", BASE64_STANDARD.encode(svg.as_bytes()))
 }
 
 fn full_avatar_svg_from_texture_data(texture_data: &str) -> Result<String, StatusCode> {
