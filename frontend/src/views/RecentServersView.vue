@@ -23,7 +23,16 @@
         <div v-for="entry in serverStore.recentServers" :key="entry.server.id" class="server-card voxicraft-panel" @click="goToDashboard(entry.server.id)">
           <div class="card-title-row">
             <h3>{{ entry.server.name }}</h3>
-            <span v-if="entry.is_favorite" class="favorite-badge">⭐ Favori</span>
+            <button
+              type="button"
+              class="favorite-star-button"
+              :class="{ active: entry.is_favorite }"
+              :title="entry.is_favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'"
+              :aria-label="entry.is_favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'"
+              @click.stop="toggleFavorite(entry.server.id)"
+            >
+              {{ entry.is_favorite ? '★' : '☆' }}
+            </button>
           </div>
           <p><strong>Serveur de jeu:</strong> <a :href="entry.server.game_domain" target="_blank" @click.stop="openGameServer(entry.server)">{{ entry.server.game_domain }}</a></p>
           <p v-if="entry.server.description"><strong>Description:</strong> {{ entry.server.description }}</p>
@@ -32,9 +41,6 @@
 
           <div class="button-container">
             <button @click.stop="goToDashboard(entry.server.id)" class="voxicraft-button small primary">📊 Dashboard</button>
-            <button @click.stop="toggleFavorite(entry.server.id)" class="voxicraft-button small favorite" :class="{ active: entry.is_favorite }">
-              {{ entry.is_favorite ? '⭐ Favori' : '☆ Favori' }}
-            </button>
           </div>
         </div>
       </div>
@@ -93,7 +99,9 @@ const formatDate = (value?: string) => value ? new Date(value).toLocaleDateStrin
 .server-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0, 0, 0, .3); }
 .card-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
 .server-card h3 { color: #64ffda; margin: 0; font-size: 1.4rem; overflow-wrap: anywhere; }
-.favorite-badge { background: #ffb300; color: #1a1a1a; border: 2px solid #ff8f00; border-radius: 6px; padding: .3rem .45rem; font-size: .7rem; font-family: 'Press Start 2P', cursive; white-space: nowrap; }
+.favorite-star-button { flex: 0 0 auto; width: 2.35rem; height: 2.35rem; display: inline-flex; align-items: center; justify-content: center; border: 2px solid #ffb300; border-radius: 8px; background: rgba(0, 0, 0, .32); color: #ffca28; font-size: 1.35rem; line-height: 1; cursor: pointer; box-shadow: 3px 3px 0 rgba(0, 0, 0, .32); transition: transform .15s ease, background-color .15s ease, color .15s ease; }
+.favorite-star-button:hover { transform: translateY(-2px); background: rgba(255, 179, 0, .18); }
+.favorite-star-button.active { background: #ffb300; color: #1a1a1a; border-color: #ff8f00; }
 .server-card p { margin-bottom: .5rem; color: #d7ccc8; overflow-wrap: anywhere; }
 .server-card a { color: #64ffda; text-decoration: none; }
 .server-card a:hover { text-decoration: underline; }
@@ -101,8 +109,6 @@ const formatDate = (value?: string) => value ? new Date(value).toLocaleDateStrin
 .voxicraft-button.small { padding: .5rem 1rem; font-size: .8rem; }
 .voxicraft-button.primary { background-color: #2196f3; border-color: #1565c0; }
 .voxicraft-button.secondary { background-color: #6d4c41; border-color: #4e342e; }
-.voxicraft-button.favorite { background-color: #6d4c41; border-color: #4e342e; }
-.voxicraft-button.favorite.active { background-color: #ffb300; border-color: #ff8f00; color: #1a1a1a; }
 @media (max-width: 768px) {
   .server-grid { grid-template-columns: 1fr; }
   .button-container, .header-actions { flex-direction: column; }
