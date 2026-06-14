@@ -125,6 +125,23 @@ impl MailService {
         self.send_message(email).await
     }
 
+    pub async fn send_password_change_code_email(&self, email: &str, username: &str, code: &str) -> Result<()> {
+        let config = self
+            .config
+            .as_ref()
+            .ok_or_else(|| anyhow!("Mail service is not configured"))?;
+
+        let email = Message::builder()
+            .from(config.smtp_from.parse::<Mailbox>().context("Invalid SMTP_FROM")?)
+            .to(email.parse::<Mailbox>().context("Invalid password code recipient email")?)
+            .subject("Code de confirmation Voxicraft")
+            .header(ContentType::TEXT_HTML)
+            .body(format_password_change_code_mail_html(username, code))
+            .context("Failed to build password code email")?;
+
+        self.send_message(email).await
+    }
+
     async fn send_message(&self, email: Message) -> Result<()> {
         let config = self
             .config
@@ -175,6 +192,35 @@ fn format_welcome_mail_html(username: &str) -> String {
             <p style="font-size:14px;line-height:1.6;color:#a7bbc5;margin:0;">Si vous n’êtes pas à l’origine de cette inscription, vous pouvez ignorer ce message.</p>
           </td></tr>
           <tr><td style="padding:18px 30px;background:#0d171d;color:#7ea7b5;font-size:12px;text-align:center;">Voxicraft Auth Platform · Rust 🦀 + Vue.js 💚</td></tr>
+        </table>
+      </td></tr>
+    </table>
+  </body>
+</html>"#,
+    )
+}
+
+fn format_password_change_code_mail_html(username: &str, code: &str) -> String {
+    let username = escape_html(username);
+    let code = escape_html(code);
+    format!(
+        r#"<!doctype html>
+<html lang="fr">
+  <body style="margin:0;background:#111827;font-family:Arial,sans-serif;color:#ffffff;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#111827;padding:32px 12px;">
+      <tr><td align="center">
+        <table role="presentation" width="620" cellspacing="0" cellpadding="0" style="max-width:620px;background:#1f2937;border:4px solid #ffb300;border-radius:16px;overflow:hidden;">
+          <tr><td style="padding:28px;text-align:center;background:#0f172a;">
+            <div style="font-size:34px;margin-bottom:10px;">🔐</div>
+            <h1 style="margin:0;color:#ffb300;font-size:25px;">Code de sécurité</h1>
+            <p style="margin:10px 0 0;color:#cbd5e1;">Confirmation de changement de mot de passe</p>
+          </td></tr>
+          <tr><td style="padding:28px;">
+            <p style="font-size:16px;line-height:1.7;margin:0 0 18px;">Bonjour <strong style="color:#64ffda;">{username}</strong>,</p>
+            <p style="font-size:16px;line-height:1.7;margin:0 0 18px;">Voici le code à saisir pour confirmer le changement de votre mot de passe :</p>
+            <div style="font-size:34px;letter-spacing:10px;text-align:center;color:#111827;background:#ffb300;border-radius:12px;padding:18px 12px;font-weight:bold;margin:24px 0;">{code}</div>
+            <p style="font-size:14px;line-height:1.6;color:#cbd5e1;margin:0;">Ce code expire dans 10 minutes. Si vous n’êtes pas à l’origine de cette demande, ne le partagez pas et ignorez ce message.</p>
+          </td></tr>
         </table>
       </td></tr>
     </table>
