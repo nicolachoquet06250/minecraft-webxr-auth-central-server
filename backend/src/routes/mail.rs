@@ -26,7 +26,7 @@ pub struct SupportMailRequest {
     pub category: String,
     pub subject: String,
     pub message: String,
-    pub server_id: Option<String>,
+    pub server_url: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -84,8 +84,8 @@ pub async fn send_support_mail(
         ("Utilisateur".to_string(), claims.username),
         ("ID utilisateur".to_string(), claims.sub),
     ];
-    if let Some(server_id) = payload.server_id {
-        metadata.push(("ID serveur".to_string(), server_id));
+    if let Some(server_url) = payload.server_url {
+        metadata.push(("URL du serveur".to_string(), server_url));
     }
 
     state
