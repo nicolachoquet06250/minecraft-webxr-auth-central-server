@@ -9,6 +9,8 @@ import ServersView from '@/views/ServersView.vue'
 import ServerDashboardView from '@/views/ServerDashboardView.vue'
 import ApiSwaggerView from '@/views/ApiSwaggerView.vue'
 import ApiDocumentationView from '@/views/ApiDocumentationView.vue'
+import ContactView from '@/views/ContactView.vue'
+import SupportView from '@/views/SupportView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -22,6 +24,8 @@ const router = createRouter({
     { path: '/servers/:id/dashboard', name: 'server-dashboard', component: ServerDashboardView, meta: { requiresAuth: true } },
     { path: '/api/swagger', name: 'api-swagger', component: ApiSwaggerView, meta: { requiresAuth: true } },
     { path: '/api/documentation', name: 'api-documentation', component: ApiDocumentationView, meta: { requiresAuth: true } },
+    { path: '/contact', name: 'contact', component: ContactView },
+    { path: '/support', name: 'support', component: SupportView, meta: { requiresAuth: true } },
   ],
 })
 
