@@ -81,6 +81,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/users/me", get(routes::user::get_profile))
         .route("/users/me", put(routes::user::update_profile))
         .route("/users/me", delete(routes::user::delete_account))
+        .route("/users/me/discord", delete(routes::user::unlink_discord))
         .route("/users/me/avatar", get(routes::avatar::get_active_avatar))
         .route("/users/me/avatar", delete(routes::avatar::clear_active_avatar))
         .route("/users/me/avatars", get(routes::avatar::list_avatars))
