@@ -94,6 +94,21 @@ const parseResponseBody = async (response: Response) => {
 
 const jsonBody = (data: unknown) => JSON.stringify(data)
 
+const captureAvatarPreviewImage = (): string | undefined => {
+  const canvas = document.querySelector<HTMLCanvasElement>('.avatar-canvas')
+  if (!canvas) return undefined
+  try {
+    return canvas.toDataURL('image/png')
+  } catch {
+    return undefined
+  }
+}
+
+const withAvatarPreview = <T extends { preview_image_data_url?: string }>(data: T): T => {
+  const previewImageDataUrl = captureAvatarPreviewImage()
+  return previewImageDataUrl ? { ...data, preview_image_data_url: previewImageDataUrl } : data
+}
+
 export const authApi = {
   register: (data: RegisterData): ApiResponse<AuthResponse> => request<AuthResponse>('/auth/register', { method: 'POST', body: jsonBody(data) }),
   login: (data: LoginData): ApiResponse<AuthResponse> => request<AuthResponse>('/auth/login', { method: 'POST', body: jsonBody(data) }),
@@ -113,8 +128,8 @@ export const avatarApi = {
   getActive: (): ApiResponse<ActiveAvatarResponse> => request<ActiveAvatarResponse>('/users/me/avatar'),
   clearActive: (): ApiResponse<null> => request<null>('/users/me/avatar', { method: 'DELETE' }),
   list: (): ApiResponse<UserAvatar[]> => request<UserAvatar[]>('/users/me/avatars'),
-  createCopy: (data: SaveAvatarData): ApiResponse<UserAvatar> => request<UserAvatar>('/users/me/avatars', { method: 'POST', body: jsonBody(data) }),
-  update: (id: string, data: UpdateAvatarData): ApiResponse<UserAvatar> => request<UserAvatar>(`/users/me/avatars/${id}`, { method: 'PUT', body: jsonBody(data) }),
+  createCopy: (data: SaveAvatarData): ApiResponse<UserAvatar> => request<UserAvatar>('/users/me/avatars', { method: 'POST', body: jsonBody(withAvatarPreview(data)) }),
+  update: (id: string, data: UpdateAvatarData): ApiResponse<UserAvatar> => request<UserAvatar>(`/users/me/avatars/${id}`, { method: 'PUT', body: jsonBody(withAvatarPreview(data)) }),
   delete: (id: string): ApiResponse<null> => request<null>(`/users/me/avatars/${id}`, { method: 'DELETE' }),
   select: (id: string): ApiResponse<null> => request<null>(`/users/me/avatars/${id}/select`, { method: 'PUT' }),
 }
