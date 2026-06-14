@@ -11,6 +11,7 @@ pub struct PasswordChangeCodeStore {
 #[derive(Clone)]
 struct PasswordChangeCode {
     code: String,
+    pending_password_hash: String,
     expires_at: DateTime<Utc>,
 }
 
@@ -21,7 +22,7 @@ impl PasswordChangeCodeStore {
         }
     }
 
-    pub async fn create_code(&self, user_id: &str) -> String {
+    pub async fn create_code(&self, user_id: &str, pending_password_hash: String) -> String {
         let code = generate_code();
         let expires_at = Utc::now() + Duration::minutes(10);
         let mut codes = self.codes.lock().await;
@@ -29,24 +30,22 @@ impl PasswordChangeCodeStore {
             user_id.to_string(),
             PasswordChangeCode {
                 code: code.clone(),
+                pending_password_hash,
                 expires_at,
             },
         );
         code
     }
 
-    pub async fn verify_and_consume(&self, user_id: &str, submitted_code: &str) -> bool {
+    pub async fn verify_and_consume(&self, user_id: &str, submitted_code: &str) -> Option<String> {
         let mut codes = self.codes.lock().await;
-        let Some(stored) = codes.get(user_id) else {
-            return false;
-        };
+        let stored = codes.get(user_id)?;
 
         if stored.expires_at < Utc::now() || stored.code != submitted_code.trim() {
-            return false;
+            return None;
         }
 
-        codes.remove(user_id);
-        true
+        codes.remove(user_id).map(|code| code.pending_password_hash)
     }
 }
 
