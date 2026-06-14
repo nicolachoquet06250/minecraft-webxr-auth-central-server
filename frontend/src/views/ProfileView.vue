@@ -286,3 +286,4 @@ const handleUpdate = async () => {
 .form-label { color: #ffd700; font-size: .62rem; }
 .form-input { background: rgba(0, 0, 0, 0.6); border: 2px solid #424242; color: white; padding: .55rem; font-family: 'Courier New', monospace; font-size: .78rem; width: 100%; outline: none; border-radius: 5px; }
 .form-textarea { resize: vertical; min-height: 80px; }
+</style>
