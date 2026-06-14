@@ -39,6 +39,9 @@ uuid = { version = "1", features = ["serde", "v4"] }
 # HTTP client for OAuth (using rustls instead of native-tls)
 reqwest = { version = "0.11", default-features = false, features = ["json", "rustls-tls"] }
 
+# Email
+lettre = { version = "0.11", default-features = false, features = ["builder", "smtp-transport", "tokio1-rustls-tls"] }
+
 # Environment variables
 dotenvy = "0.15"
 
