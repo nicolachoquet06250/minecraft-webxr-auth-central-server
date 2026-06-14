@@ -88,7 +88,8 @@ fn validate_preview_image_data_url(value: Option<&str>) -> Result<(), StatusCode
     if value.starts_with("data:image/png;base64,") || value.starts_with("data:image/jpeg;base64,") || value.starts_with("data:image/webp;base64,") || value.starts_with("data:image/svg+xml") { Ok(()) } else { Err(StatusCode::BAD_REQUEST) }
 }
 
-fn avatar_mail_preview_image_data_url(_preview_image_data_url: Option<&str>, texture_data: &str) -> String {
+fn avatar_mail_preview_image_data_url(preview_image_data_url: Option<&str>, texture_data: &str) -> String {
+    if let Some(preview_image_data_url) = preview_image_data_url { return preview_image_data_url.to_string(); }
     let svg = svg_from_texture_data(texture_data).unwrap_or_else(|_| empty_svg());
     format!("data:image/svg+xml;base64,{}", BASE64_STANDARD.encode(svg.as_bytes()))
 }
