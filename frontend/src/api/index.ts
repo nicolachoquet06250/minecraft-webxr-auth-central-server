@@ -60,8 +60,8 @@ export interface UserAvatar {
 }
 
 export interface ActiveAvatarResponse { kind: 'default' | 'custom'; avatar: UserAvatar | null }
-export interface SaveAvatarData { name: string; base_kind: string; texture_data: AvatarTextureData }
-export interface UpdateAvatarData { name?: string; texture_data: AvatarTextureData }
+export interface SaveAvatarData { name: string; base_kind: string; texture_data: AvatarTextureData; preview_image_data_url?: string }
+export interface UpdateAvatarData { name?: string; texture_data: AvatarTextureData; preview_image_data_url?: string }
 export interface ContactMailData { name: string; email: string; subject: string; message: string }
 export interface SupportMailData { name?: string; email?: string; category: string; subject: string; message: string; server_id?: string }
 export interface MailStatus { enabled: boolean }
