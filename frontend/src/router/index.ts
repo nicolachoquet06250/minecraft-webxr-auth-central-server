@@ -6,6 +6,8 @@ import RegisterView from '@/views/RegisterView.vue'
 import ProfileView from '@/views/ProfileView.vue'
 import AvatarBuilderView from '@/views/AvatarBuilderView.vue'
 import ServersView from '@/views/ServersView.vue'
+import FavoriteServersView from '@/views/FavoriteServersView.vue'
+import RecentServersView from '@/views/RecentServersView.vue'
 import ServerDashboardView from '@/views/ServerDashboardView.vue'
 import ApiSwaggerView from '@/views/ApiSwaggerView.vue'
 import ApiDocumentationView from '@/views/ApiDocumentationView.vue'
@@ -21,6 +23,8 @@ const router = createRouter({
     { path: '/profile', name: 'profile', component: ProfileView, meta: { requiresAuth: true } },
     { path: '/profile/avatar-builder', name: 'avatar-builder', component: AvatarBuilderView, meta: { requiresAuth: true } },
     { path: '/servers', name: 'servers', component: ServersView, meta: { requiresAuth: true } },
+    { path: '/servers/favorites', name: 'servers-favorites', component: FavoriteServersView, meta: { requiresAuth: true } },
+    { path: '/servers/recent', name: 'servers-recent', component: RecentServersView, meta: { requiresAuth: true } },
     { path: '/servers/:id/dashboard', name: 'server-dashboard', component: ServerDashboardView, meta: { requiresAuth: true } },
     { path: '/api/swagger', name: 'api-swagger', component: ApiSwaggerView, meta: { requiresAuth: true } },
     { path: '/api/documentation', name: 'api-documentation', component: ApiDocumentationView, meta: { requiresAuth: true } },
