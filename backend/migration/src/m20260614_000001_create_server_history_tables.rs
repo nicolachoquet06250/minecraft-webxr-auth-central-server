@@ -15,7 +15,6 @@ impl MigrationTrait for Migration {
             .col(ColumnDef::new(ServerVisit::Id).string_len(36).not_null().primary_key())
             .col(ColumnDef::new(ServerVisit::UserId).string_len(36).not_null())
             .col(ColumnDef::new(ServerVisit::ServerId).string_len(36).not_null())
-            .col(ColumnDef::new(ServerVisit::ServerUrl).string_len(255).not_null())
             .col(ColumnDef::new(ServerVisit::VisitedAt).date_time().not_null().default(Expr::current_timestamp()))
             .foreign_key(
                 ForeignKey::create()
@@ -87,7 +86,6 @@ enum ServerVisit {
     Id,
     UserId,
     ServerId,
-    ServerUrl,
     VisitedAt,
 }
 
