@@ -28,7 +28,7 @@ const router = createRouter({
     { path: '/servers/:id/dashboard', name: 'server-dashboard', component: ServerDashboardView, meta: { requiresAuth: true } },
     { path: '/api/swagger', name: 'api-swagger', component: ApiSwaggerView, meta: { requiresAuth: true } },
     { path: '/documentation', name: 'documentation', component: ApiDocumentationView, meta: { requiresAuth: true } },
-    { path: '/api/documentation', redirect: '/documentation' },
+    { path: '/api/documentation', redirect: '/documentation', meta: { requiresAuth: true } },
     { path: '/contact', name: 'contact', component: ContactView },
     { path: '/support', name: 'support', component: SupportView },
   ],
