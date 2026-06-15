@@ -146,13 +146,35 @@
           </div>
 
           <div v-if="!showEditForm" class="voxicraft-panel security-panel">
-            <h2 class="card-title">🔒 Sécurité et confidentialité</h2>
+            <h2 class="card-title">🔒 Sécurité</h2>
             <div class="info-list">
               <div class="info-item bio-content security-value">JWT Token actif</div>
               <div class="info-item bio-content security-value">Email : <span class="security-email">{{ authStore.user.email }}</span></div>
             </div>
             <AccountSecretForm />
           </div>
+
+          <div v-if="!showEditForm" class="voxicraft-panel privacy-panel">
+            <h2 class="card-title">🛡️ Confidentialité</h2>
+            <p class="privacy-warning">La suppression de ton profil est irréversible et supprimera toutes les données associées à ton compte.</p>
+            <button type="button" class="delete-profile-button" :disabled="deletingProfile" @click="showDeleteProfileModal = true">
+              🗑️ Supprimer mon profile
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showDeleteProfileModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="delete-profile-title">
+      <div class="modal-card voxicraft-panel">
+        <h2 id="delete-profile-title" class="modal-title">Supprimer mon profile ?</h2>
+        <p class="modal-text">Es-tu sûr de vouloir supprimer ton profile ? Cette action est irréversible.</p>
+        <p class="modal-text danger-text">Toutes les données associées à ton utilisateur seront supprimées.</p>
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" :disabled="deletingProfile" @click="showDeleteProfileModal = false">Non, annuler</button>
+          <button type="button" class="delete-profile-button" :disabled="deletingProfile" @click="confirmDeleteProfile">
+            {{ deletingProfile ? 'Suppression...' : 'Oui, supprimer définitivement' }}
+          </button>
         </div>
       </div>
     </div>
@@ -161,6 +183,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import AccountSecretForm from '@/components/AccountSecretForm.vue'
 import AvatarHeadImage from '@/components/AvatarHeadImage.vue'
 import AvatarSvgPreview from '@/components/AvatarSvgPreview.vue'
@@ -168,9 +191,11 @@ import { avatarApi, type UserAvatar } from '@/api'
 import { useAuthStore } from '@/stores/auth'
 import { useServerStore } from '@/stores/server'
 
+const router = useRouter()
 const authStore = useAuthStore()
 const serverStore = useServerStore()
 const showEditForm = ref(false)
+const showDeleteProfileModal = ref(false)
 const editData = ref({ username: '', avatar: 'steve', bio: '' })
 const customAvatars = ref<UserAvatar[]>([])
 const activeProfileAvatar = ref<UserAvatar | null>(null)
@@ -178,6 +203,7 @@ const selectedCustomAvatarId = ref('')
 const savingAvatarSelection = ref(false)
 const linkingDiscord = ref(false)
 const unlinkingDiscord = ref(false)
+const deletingProfile = ref(false)
 
 const serverCount = computed(() => serverStore.servers.length)
 const daysSinceJoined = computed(() => {
@@ -230,6 +256,19 @@ const clearPendingCustomAvatar = () => {
   selectedCustomAvatarId.value = ''
 }
 
+const confirmDeleteProfile = async () => {
+  deletingProfile.value = true
+  try {
+    const success = await authStore.deleteAccount()
+    if (success) {
+      showDeleteProfileModal.value = false
+      await router.replace({ name: 'login' })
+    }
+  } finally {
+    deletingProfile.value = false
+  }
+}
+
 const handleUpdate = async () => {
   savingAvatarSelection.value = true
   try {
@@ -258,8 +297,6 @@ const handleUpdate = async () => {
 .profile { min-height: calc(100vh - 80px); padding: 1.2rem .75rem; max-width: 100%; overflow-x: hidden; box-sizing: border-box; font-size: .82rem; }
 .profile :deep(*) { box-sizing: border-box; }
 .profile-header, .profile-content { max-width: 1060px; width: 100%; margin: 0 auto; min-width: 0; }
-.profile-header { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 1.1rem; align-items: center; margin-bottom: 1.35rem; }
-.voxicraft-panel { background: rgba(139, 69, 19, 0.9); border: 3px solid #5d4037; border-radius: 10px; padding: 1.05rem; box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.42); min-width: 0; width: 100%; max-width: 100%; overflow: hidden; }
 .avatar-display { position: relative; }
 .avatar-frame { width: 82px; height: 82px; background: linear-gradient(135deg, #64ffda, #4caf50); border: 3px solid #1a1a1a; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 5px 12px rgba(0, 0, 0, 0.35); overflow: hidden; padding: 4px; }
 .user-badge { position: absolute; bottom: -7px; right: -7px; background: linear-gradient(135deg, #4caf50, #66bb6a); border: 2px solid #1a1a1a; border-radius: 50px; padding: .22rem .48rem; font-size: .5rem; color: #fff; font-weight: bold; }
@@ -298,9 +335,17 @@ const handleUpdate = async () => {
 .stat-item strong { color: #64ffda; font-size: 1.15rem; line-height: 1.2; text-shadow: 2px 2px 0 rgba(0, 0, 0, .45); }
 .stat-item span { font-size: .78rem; line-height: 1.25; }
 .bio-content { width: 100%; overflow: hidden; overflow-wrap: anywhere; line-height: 1.45; }
-.security-panel { width: 100%; min-width: 0; overflow: hidden; }
+.security-panel, .privacy-panel { width: 100%; min-width: 0; overflow: hidden; }
 .security-value { display: block; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
 .security-email { display: inline; min-width: 0; }
+.privacy-warning, .modal-text { color: rgba(255, 255, 255, .78); font-size: .72rem; line-height: 1.5; margin-bottom: .75rem; }
+.danger-text { color: #ff8a80; }
+.delete-profile-button { display: flex; align-items: center; justify-content: center; gap: .38rem; padding: .62rem .75rem; border-radius: 5px; border: 2px solid #c62828; background: linear-gradient(135deg, #b71c1c, #ef5350); color: #fff; font-family: 'Press Start 2P', cursive; font-size: .58rem; line-height: 1.35; cursor: pointer; box-shadow: 3px 3px 0 rgba(0, 0, 0, .35); }
+.delete-profile-button:disabled { opacity: .65; cursor: not-allowed; }
+.modal-backdrop { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 1rem; background: rgba(0, 0, 0, .72); }
+.modal-card { width: min(520px, 100%); padding: 1.2rem; }
+.modal-title { color: #ff8a80; font-size: .95rem; margin-bottom: .8rem; }
+.modal-actions { display: flex; justify-content: flex-end; gap: .65rem; flex-wrap: wrap; margin-top: 1rem; }
 .custom-avatar-heading { display: flex; justify-content: space-between; align-items: center; gap: .65rem; min-width: 0; }
 .custom-avatar-clear { flex: 0 0 auto; padding: .38rem .52rem; border-radius: 6px; border: 2px solid #ff6b6b; background: rgba(255, 107, 107, 0.18); color: #fff; cursor: pointer; font-size: .55rem; }
 .custom-avatar-scroll { display: flex; gap: .65rem; max-width: 100%; overflow-x: auto; overflow-y: hidden; padding: .2rem .2rem .55rem; scroll-snap-type: x proximity; }
