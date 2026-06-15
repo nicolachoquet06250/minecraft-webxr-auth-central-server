@@ -15,12 +15,12 @@
       <div v-else-if="serverStore.recentServers.length === 0" class="empty-state voxicraft-panel">
         <div class="empty-icon">🕘</div>
         <h3>Aucun serveur récemment visité</h3>
-        <p class="voxicraft-text">Clique sur l’URL d’un serveur pour l’ajouter à cette liste.</p>
+        <p class="voxicraft-text">Visite un serveur pour l’ajouter à cette liste.</p>
         <router-link to="/servers" class="voxicraft-button">Voir les serveurs</router-link>
       </div>
 
       <div v-else class="server-grid">
-        <div v-for="entry in serverStore.recentServers" :key="entry.server.id" class="server-card voxicraft-panel" @click="goToDashboard(entry.server.id)">
+        <div v-for="entry in serverStore.recentServers" :key="entry.server.id" class="server-card voxicraft-panel">
           <div class="card-title-row">
             <h3>{{ entry.server.name }}</h3>
             <button
@@ -40,7 +40,7 @@
           <p><strong>Status:</strong> {{ entry.server.is_active ? '✅ Actif' : '🔴 Inactif' }}</p>
 
           <div class="button-container">
-            <button @click.stop="goToDashboard(entry.server.id)" class="voxicraft-button small primary">📊 Dashboard</button>
+            <button @click.stop="visitServer(entry.server)" class="voxicraft-button small primary">🌍 Visiter</button>
           </div>
         </div>
       </div>
@@ -50,11 +50,9 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import type { Server } from '@/api'
 import { useServerStore } from '@/stores/server'
 
-const router = useRouter()
 const serverStore = useServerStore()
 const loading = ref(false)
 
@@ -68,12 +66,13 @@ onMounted(async () => {
   }
 })
 
-const goToDashboard = (serverId: string) => {
-  router.push({ name: 'server-dashboard', params: { id: serverId } })
-}
-
 const openGameServer = async (server: Server) => {
   await serverStore.recordServerVisit(server.game_domain)
+}
+
+const visitServer = async (server: Server) => {
+  await serverStore.recordServerVisit(server.game_domain)
+  window.open(server.game_domain, '_blank', 'noopener,noreferrer')
 }
 
 const toggleFavorite = async (serverId: string) => {
@@ -95,7 +94,7 @@ const formatDate = (value?: string) => value ? new Date(value).toLocaleDateStrin
 .empty-state { text-align: center; padding: 3rem 2rem; max-width: 620px; margin: 0 auto; }
 .empty-icon { font-size: 4rem; margin-bottom: 1rem; }
 .server-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem; }
-.server-card { padding: 2rem; cursor: pointer; transition: all .3s ease; text-align: left; }
+.server-card { padding: 2rem; transition: all .3s ease; text-align: left; }
 .server-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0, 0, 0, .3); }
 .card-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
 .server-card h3 { color: #64ffda; margin: 0; font-size: 1.4rem; overflow-wrap: anywhere; }
