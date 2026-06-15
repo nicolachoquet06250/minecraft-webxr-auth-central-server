@@ -141,6 +141,55 @@ textarea.voxicraft-input {
   display: none !important;
 }
 
+.mods-list pre {
+  position: relative;
+  margin-top: 1rem;
+  padding: 3.65rem 1rem 1rem;
+  color: #d4d4d4;
+  background: #1e1e1e;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.35);
+}
+
+.mods-list pre::before {
+  content: '●  ●  ●    VSCode';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2.45rem;
+  display: flex;
+  align-items: center;
+  padding-left: 0.95rem;
+  color: #b7c0cd;
+  background: #323233;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.18rem;
+}
+
+.mods-list pre::after {
+  content: 'mod.js';
+  position: absolute;
+  top: 2.45rem;
+  left: 0;
+  height: 1.2rem;
+  padding: 0.25rem 0.9rem 0.3rem;
+  color: #d4d4d4;
+  background: #1e1e1e;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 0.72rem;
+  letter-spacing: 0;
+}
+
+.mods-list pre code {
+  color: #d4d4d4;
+}
+
 @media (max-width: 768px) {
   .voxicraft-title {
     font-size: 1.2rem;
