@@ -1,0 +1,123 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+      - feature/avatar-builder-babylon
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  frontend-tests:
+    name: Frontend tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm install
+
+      - name: Run frontend tests
+        working-directory: ./frontend
+        run: npm run test
+
+  backend-tests:
+    name: Backend tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libssl-dev
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+            backend/target/
+          key: ${{ runner.os }}-cargo-tests-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-tests-
+            ${{ runner.os }}-cargo-
+
+      - name: Run backend tests
+        run: cargo test --workspace
+
+  coverage:
+    name: Coverage badge
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    needs:
+      - frontend-tests
+      - backend-tests
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm install
+
+      - name: Install frontend coverage provider
+        working-directory: ./frontend
+        run: npm install --no-save @vitest/coverage-v8@4.0.15
+
+      - name: Run frontend coverage
+        working-directory: ./frontend
+        run: npx vitest run --coverage --coverage.reporter=json-summary
+
+      - name: Install Rust coverage tool
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Prepare backend coverage directory
+        run: mkdir -p backend/coverage
+
+      - name: Run backend coverage
+        run: cargo llvm-cov --workspace --lcov --output-path backend/coverage/lcov.info
+
+      - name: Update coverage badge endpoint
+        run: node .github/scripts/update-coverage-badge.mjs
+
+      - name: Commit coverage badge
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "ci: update coverage badge [skip ci]"
+          file_pattern: .github/badges/coverage.json

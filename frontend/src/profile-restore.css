@@ -1,0 +1,78 @@
+.profile.profile .profile-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 1.1rem;
+  align-items: center;
+  margin-bottom: 1.35rem;
+}
+
+.profile.profile .voxicraft-panel {
+  background: rgba(139, 69, 19, 0.9);
+  border: 3px solid #5d4037;
+  border-radius: 10px;
+  padding: 1.05rem;
+  box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.42);
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.profile.profile .avatar-selector {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.profile.profile .avatar-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 118px;
+  padding: 0.7rem 0.55rem;
+  border: 2px solid rgba(100, 255, 218, 0.22);
+  border-radius: 9px;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.58rem;
+  line-height: 1.25;
+  cursor: pointer;
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.28);
+  transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+}
+
+.profile.profile .avatar-option:hover {
+  transform: translateY(-2px);
+  border-color: rgba(100, 255, 218, 0.6);
+  background: rgba(100, 255, 218, 0.1);
+}
+
+.profile.profile .avatar-option.selected {
+  border-color: #64ffda;
+  background: rgba(100, 255, 218, 0.18);
+}
+
+.profile.profile .avatar-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.profile.profile .avatar-preview-img {
+  width: 54px;
+  height: 54px;
+  image-rendering: pixelated;
+}
+
+@media (max-width: 768px) {
+  .profile.profile .profile-header {
+    grid-template-columns: 1fr;
+    text-align: center;
+    justify-items: center;
+  }
+}

@@ -1,0 +1,138 @@
+name: Deploy after tests
+
+on:
+  workflow_run:
+    workflows:
+      - Tests
+    branches:
+      - main
+    types:
+      - completed
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: "24"
+
+jobs:
+  deploy:
+    name: Build and Deploy to AlwaysData
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    container:
+      image: debian:12
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm install
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
+
+      - name: Verify frontend build
+        run: |
+          if [ ! -d "frontend/dist" ]; then
+            echo "Frontend dist directory not found"
+            exit 1
+          fi
+
+      - name: Install system dependencies
+        run: |
+          apt-get update
+          apt-get install -y build-essential curl git ca-certificates pkg-config libssl-dev
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            backend/target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Build backend release with embedded frontend
+        run: cargo build --features embed-frontend --release
+
+      - name: Run database migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: ./target/release/migration up
+
+      - name: Create deployment package
+        run: |
+          mkdir -p deploy
+          cp target/release/voxicraft-auth-backend deploy/
+          cp backend/.env.production deploy/.env || echo "No .env.production file"
+          chmod +x deploy/voxicraft-auth-backend
+
+      - name: Backup current version on server
+        uses: appleboy/ssh-action@v1.2.0
+        continue-on-error: true
+        with:
+          host: ${{ secrets.ALWAYSDATA_HOST }}
+          username: ${{ secrets.ALWAYSDATA_USER }}
+          password: ${{ secrets.ALWAYSDATA_SSH_KEY }}
+          script: |
+            cd ${{ secrets.ALWAYSDATA_DEPLOY_PATH }}
+            if [ -f voxicraft-auth-backend ]; then
+              mv voxicraft-auth-backend voxicraft-auth-backend.backup.$(date +%Y%m%d_%H%M%S)
+            fi
+
+      - name: Upload files to AlwaysData
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.ALWAYSDATA_HOST }}
+          username: ${{ secrets.ALWAYSDATA_USER }}
+          password: ${{ secrets.ALWAYSDATA_SSH_KEY }}
+          source: deploy/*
+          target: ${{ secrets.ALWAYSDATA_DEPLOY_PATH }}
+          strip_components: 1
+          overwrite: true
+
+      - name: Verify deployment
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.ALWAYSDATA_HOST }}
+          username: ${{ secrets.ALWAYSDATA_USER }}
+          password: ${{ secrets.ALWAYSDATA_SSH_KEY }}
+          script: |
+            cd ${{ secrets.ALWAYSDATA_DEPLOY_PATH }}
+            chmod +x voxicraft-auth-backend
+            ls -lh voxicraft-auth-backend
+
+      - name: Restart server via AlwaysData API
+        run: |
+          chmod +x restart-server.sh
+          ./restart-server.sh ${{ secrets.ALWAYSDATA_API_KEY }} ${{ secrets.ALWAYSDATA_ACCOUNT }} ${{ secrets.ALWAYSDATA_SITE_ID }}
+
+      - name: Health check
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+        run: |
+          sleep 10
+          for retry in 1 2 3 4 5; do
+            http_code=$(curl -s -o /dev/null -w "%{http_code}" "$APP_URL")
+            if [ "$http_code" -eq 200 ] || [ "$http_code" -eq 301 ] || [ "$http_code" -eq 302 ]; then
+              exit 0
+            fi
+            sleep 5
+          done
+          exit 1

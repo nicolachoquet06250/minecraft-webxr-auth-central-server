@@ -1,5 +1,7 @@
 # Voxicraft Authentication Platform
 
+![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/nicolachoquet06250/minecraft-webxr-auth-central-server/refs/heads/main/.github/badges/coverage.json)
+
 Une plateforme d'authentification centralisée pour les serveurs Voxicraft.
 
 ## Architecture
@@ -118,90 +120,3 @@ npm run dev
 L'application sera accessible sur `http://localhost:5173`
 
 ## API Endpoints
-
-### Authentification
-- `POST /api/auth/register` - Inscription
-- `POST /api/auth/login` - Connexion
-- `GET /api/auth/discord/url` - Obtenir l'URL OAuth Discord
-- `GET /api/auth/discord/callback` - Callback Discord OAuth
-
-### Utilisateurs
-- `GET /api/users/me` - Profil de l'utilisateur connecté (Auth requis)
-- `PUT /api/users/me` - Modifier le profil (Auth requis)
-- `DELETE /api/users/me` - Supprimer le compte (Auth requis)
-- `GET /api/users/:id` - Profil public d'un utilisateur
-
-### Serveurs
-- `POST /api/servers` - Créer un serveur (Auth requis)
-- `GET /api/servers` - Liste des serveurs de l'utilisateur (Auth requis)
-- `GET /api/servers/:id` - Détails d'un serveur
-- `PUT /api/servers/:id` - Modifier un serveur (Auth requis, owner only)
-- `DELETE /api/servers/:id` - Supprimer un serveur (Auth requis, owner only)
-
-## Authentification
-
-L'API utilise des tokens JWT pour l'authentification. Pour les requêtes protégées, incluez le token dans le header:
-
-```
-Authorization: Bearer <votre_token_jwt>
-```
-
-## Configuration Discord OAuth
-
-1. Créer une application Discord sur https://discord.com/developers/applications
-2. Ajouter un OAuth2 redirect: `http://localhost:3000/auth/discord/callback`
-3. Activer les scopes: `identify`, `email`
-4. Copier le Client ID et Client Secret dans le fichier `.env`
-
-## Design Minecraft
-
-Le frontend utilise:
-- Police "Press Start 2P" pour l'effet pixel art
-- Palette de couleurs inspirée de Minecraft
-- Effets d'ombre 3D pour les boutons
-- Panels avec textures de bois
-- Animation de gradient pour le fond
-
-## Développement
-
-### Tests Backend
-```bash
-cd backend
-cargo test
-```
-
-### Build de production
-
-**Backend:**
-```bash
-cd backend
-cargo build --release
-```
-
-**Frontend:**
-```bash
-cd frontend
-npm run build
-```
-
-## Sécurité
-
-- Les mots de passe sont hashés avec bcrypt
-- Les tokens JWT expirent après 24h
-- CORS configuré pour le frontend
-- Validation des données côté serveur avec validator
-- Protection CSRF via les tokens
-
-## Roadmap
-
-- [ ] Système de vérification d'âge via service tiers
-- [ ] Gestion des rôles et permissions
-- [ ] API pour les serveurs de jeu
-- [ ] Système de bannissement
-- [ ] Logs d'activité
-- [ ] Interface d'administration
-
-## License
-
-MIT
-
