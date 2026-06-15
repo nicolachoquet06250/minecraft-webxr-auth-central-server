@@ -1,7 +1,9 @@
 use serde_json::{json, Value};
 
+use crate::routes::openapi_paths_extra::extra_openapi_paths;
+
 pub fn openapi_paths() -> Value {
-    json!({
+    let mut paths = json!({
         "/openapi.json": {
             "get": operation("openapi", "Récupérer le document OpenAPI", None, response_object())
         },
@@ -22,7 +24,15 @@ pub fn openapi_paths() -> Value {
             "get": secured_operation("servers", "Lister les serveurs du compte connecté", None, response_array_ref("ServerResponse")),
             "post": secured_operation("servers", "Créer un serveur de jeu", Some(ref_body("CreateServerRequest")), response_ref("ServerResponse"))
         }
-    })
+    });
+
+    if let (Some(base), Some(extra)) = (paths.as_object_mut(), extra_openapi_paths().as_object()) {
+        for (path, item) in extra {
+            base.insert(path.clone(), item.clone());
+        }
+    }
+
+    paths
 }
 
 fn operation(tag: &str, summary: &str, request_body: Option<Value>, responses: Value) -> Value {
