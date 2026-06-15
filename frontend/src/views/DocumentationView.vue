@@ -50,25 +50,72 @@ nano .env</pre></article>
           </div>
 
           <div v-else class="documentation-section">
-            <span class="section-kicker">Expérimental</span>
-            <h2>Documentation des mods</h2>
+            <span class="section-kicker">Mods client</span>
+            <h2>Créer un mod Voxicraft</h2>
+            <p>Un mod client est un module JavaScript chargé par le navigateur. Il expose une fonction <code>register</code> qui reçoit l'API de jeu et peut ensuite écouter les évènements, ajouter des blocs, enregistrer des commandes ou afficher de l'interface.</p>
             <div class="mods-list">
-              <article class="doc-card"><h3>Objectif</h3><p>Un mod peut ajouter du comportement navigateur, des assets, des écrans ou des intégrations avec l'API du jeu. Le chargement client reste découplé de l'authentification pour fonctionner en solo.</p></article>
-              <article class="doc-card"><h3>Manifest mod.json</h3><p>Le manifest décrit le mod : identifiant stable, nom affichable, version, fichier client principal et assets optionnels. Les clés optionnelles doivent être tolérées lorsqu'elles sont absentes.</p><pre>id: example-mod
-name: Example Mod
-version: 0.1.0
-client: client/mod.js
-assets: assets/icon.png</pre></article>
-              <article class="doc-card"><h3>Structure recommandée</h3><pre>mods/example-mod/
+              <article class="doc-card"><h3>1. Structure minimale</h3><p>Crée un dossier par mod. Le fichier <code>mod.json</code> décrit le mod et <code>client/mod.js</code> contient son code.</p><pre>mods/mon-premier-mod/
 ├── mod.json
 ├── client/mod.js
 └── assets/icon.png</pre></article>
-              <article class="doc-card"><h3>Routes publiques</h3><p>Les routes de manifest et fichiers client doivent rester publiques pour le solo et le multijoueur.</p><pre>GET /api/mods/manifest
-GET /mods/:id/client/...
-GET /mods/:id/assets/...</pre></article>
-              <article class="doc-card"><h3>Chargement client</h3><p>Le client récupère le manifest, charge le fichier JavaScript, puis le mod s'enregistre dans l'API du jeu.</p><pre>register(game)
-game.events.on('ready', callback)</pre></article>
-              <article class="doc-card"><h3>Sécurité</h3><p>Un serveur public ne doit servir que des mods qu'il contrôle. L'API exposée aux mods doit rester limitée, stable et documentée.</p></article>
+              <article class="doc-card"><h3>2. Déclarer le manifest</h3><p>Le champ <code>client</code> pointe vers le fichier JavaScript chargé côté navigateur. <code>assets</code> est optionnel et sert aux icônes, sons, modèles ou textures.</p><pre>{
+  "id": "mon-premier-mod",
+  "name": "Mon premier mod",
+  "version": "0.1.0",
+  "client": "client/mod.js",
+  "assets": ["assets/icon.png"]
+}</pre></article>
+              <article class="doc-card"><h3>3. Écrire le point d'entrée</h3><p>Le fichier client doit exporter une fonction <code>register(game)</code>. Elle est appelée une fois quand le mod est chargé.</p><pre>export function register(game) {
+  game.log.info('Mon mod est chargé')
+
+  game.events.on('ready', () =&gt; {
+    game.chat.system('Bienvenue sur ce serveur moddé !')
+  })
+}</pre></article>
+              <article class="doc-card"><h3>4. Cycle de vie conseillé</h3><p>Un mod peut retourner une fonction de nettoyage. Elle sera appelée si le mod est désactivé ou rechargé.</p><pre>export function register(game) {
+  const unsubscribe = game.events.on('tick', ({ delta }) =&gt; {
+    // logique répétée à chaque frame
+  })
+
+  return () =&gt; {
+    unsubscribe()
+  }
+}</pre></article>
+              <article class="doc-card"><h3>API évènements</h3><p>Les évènements permettent de réagir au jeu sans modifier le moteur.</p><pre>game.events.on('ready', callback)
+game.events.on('tick', ({ delta }) =&gt; {})
+game.events.on('block:break', ({ position, blockId }) =&gt; {})
+game.events.on('block:place', ({ position, blockId }) =&gt; {})
+game.events.on('player:join', ({ id, pseudo }) =&gt; {})
+game.events.on('player:leave', ({ id }) =&gt; {})</pre></article>
+              <article class="doc-card"><h3>API blocs</h3><p>Cette API sert à déclarer de nouveaux blocs ou à récupérer des blocs existants.</p><pre>game.blocks.register({
+  id: 'ruby_ore',
+  name: 'Minerai de rubis',
+  texture: '/mods/mon-premier-mod/assets/ruby_ore.png',
+  hardness: 3
+})
+
+const block = game.blocks.get('grass')</pre></article>
+              <article class="doc-card"><h3>API monde</h3><p>Elle permet de lire ou modifier le monde de manière contrôlée.</p><pre>const block = game.world.getBlock(x, y, z)
+game.world.setBlock(x, y, z, 'ruby_ore')
+game.world.removeBlock(x, y, z)</pre></article>
+              <article class="doc-card"><h3>API joueur</h3><p>Elle expose les informations utiles du joueur local et quelques actions sûres.</p><pre>const player = game.player.local()
+const position = game.player.position()
+game.player.freeze(true)
+game.player.freeze(false)</pre></article>
+              <article class="doc-card"><h3>API interface</h3><p>Un mod peut ajouter une entrée de menu, une notification ou un panneau simple.</p><pre>game.ui.toast('Nouveau bloc débloqué')
+game.ui.addMenuEntry({
+  id: 'ruby-panel',
+  label: 'Rubis',
+  onClick: () =&gt; game.ui.openPanel('ruby-panel')
+})</pre></article>
+              <article class="doc-card"><h3>API commandes</h3><p>Les commandes permettent d'exposer une action mod depuis le chat ou la console de jeu.</p><pre>game.commands.register('spawn-ruby', {
+  description: 'Place un minerai de rubis devant le joueur',
+  run: () =&gt; {
+    const pos = game.player.targetBlock()
+    game.world.setBlock(pos.x, pos.y, pos.z, 'ruby_ore')
+  }
+})</pre></article>
+              <article class="doc-card"><h3>Bonnes pratiques</h3><p>Préfixe tes identifiants avec l'id du mod, libère tes listeners dans la fonction de nettoyage, évite les boucles coûteuses dans <code>tick</code>, et ne suppose jamais que les autres mods sont chargés.</p></article>
             </div>
           </div>
         </section>
