@@ -67,6 +67,7 @@ async fn main() -> anyhow::Result<()> {
     });
 
     let public_routes = Router::new()
+        .route("/openapi.json", get(routes::openapi::openapi_json))
         .route("/auth/register", post(routes::auth::register))
         .route("/auth/login", post(routes::auth::login))
         .route("/auth/discord/url", get(routes::auth::discord_oauth_url))

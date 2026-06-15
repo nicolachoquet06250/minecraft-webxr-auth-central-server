@@ -1,8 +1,10 @@
 use axum::{
     body::Body,
-    http::{header, StatusCode, Uri},
+    http::{StatusCode, Uri},
     response::{IntoResponse, Response},
 };
+#[cfg(feature = "embed-frontend")]
+use axum::http::header;
 #[cfg(feature = "embed-frontend")]
 use include_dir::{include_dir, Dir};
 #[cfg(feature = "embed-frontend")]
@@ -97,7 +99,6 @@ fn replace_api_url(content: &[u8]) -> Vec<u8> {
         text = text.replace("http://localhost:8080/api", &api_url);
 
         tracing::debug!("Replaced API URL with: {}", api_url);
-
         text.into_bytes()
     } else {
         // Si ce n'est pas du texte valide UTF-8, retourner tel quel
