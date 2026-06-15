@@ -20,7 +20,7 @@
       </div>
 
       <div v-else class="server-grid">
-        <div v-for="entry in serverStore.favoriteServers" :key="entry.server.id" class="server-card voxicraft-panel" @click="goToDashboard(entry.server.id)">
+        <div v-for="entry in serverStore.favoriteServers" :key="entry.server.id" class="server-card voxicraft-panel">
           <div class="card-title-row">
             <h3>{{ entry.server.name }}</h3>
             <span class="favorite-badge">⭐ Favori</span>
@@ -31,7 +31,7 @@
           <p><strong>Status:</strong> {{ entry.server.is_active ? '✅ Actif' : '🔴 Inactif' }}</p>
 
           <div class="button-container">
-            <button @click.stop="goToDashboard(entry.server.id)" class="voxicraft-button small primary">📊 Dashboard</button>
+            <button @click.stop="visitServer(entry.server)" class="voxicraft-button small primary">🌍 Visiter</button>
             <button @click.stop="unfavorite(entry.server.id)" class="voxicraft-button small danger">Retirer des favoris</button>
           </div>
         </div>
@@ -42,11 +42,9 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import type { Server } from '@/api'
 import { useServerStore } from '@/stores/server'
 
-const router = useRouter()
 const serverStore = useServerStore()
 const loading = ref(false)
 
@@ -59,12 +57,13 @@ onMounted(async () => {
   }
 })
 
-const goToDashboard = (serverId: string) => {
-  router.push({ name: 'server-dashboard', params: { id: serverId } })
-}
-
 const openGameServer = async (server: Server) => {
   await serverStore.recordServerVisit(server.game_domain)
+}
+
+const visitServer = async (server: Server) => {
+  await serverStore.recordServerVisit(server.game_domain)
+  window.open(server.game_domain, '_blank', 'noopener,noreferrer')
 }
 
 const unfavorite = async (serverId: string) => {
@@ -84,7 +83,7 @@ const formatDate = (value: string) => new Date(value).toLocaleDateString('fr-FR'
 .empty-state { text-align: center; padding: 3rem 2rem; max-width: 620px; margin: 0 auto; }
 .empty-icon { font-size: 4rem; margin-bottom: 1rem; }
 .server-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem; }
-.server-card { padding: 2rem; cursor: pointer; transition: all .3s ease; text-align: left; }
+.server-card { padding: 2rem; transition: all .3s ease; text-align: left; }
 .server-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0, 0, 0, .3); }
 .card-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
 .server-card h3 { color: #64ffda; margin: 0; font-size: 1.4rem; overflow-wrap: anywhere; }
