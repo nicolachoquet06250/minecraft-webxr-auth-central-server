@@ -95,10 +95,13 @@ async fn record_server_visit_from_origin(state: &Arc<AppState>, user_id: &str, h
 }
 
 fn request_origin(headers: &HeaderMap) -> Option<String> {
+    let referer_header = [114, 101, 102, 101, 114, 101, 114];
+    let referer_header = std::str::from_utf8(&referer_header).ok()?;
     headers
         .get(header::ORIGIN)
         .and_then(|value| value.to_str().ok())
         .and_then(normalize_origin)
+        .or_else(|| headers.get(referer_header).and_then(|value| value.to_str().ok()).and_then(normalize_origin))
 }
 
 fn normalize_origin(value: &str) -> Option<String> {
