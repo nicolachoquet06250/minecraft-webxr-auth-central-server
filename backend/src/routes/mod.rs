@@ -7,3 +7,4 @@ pub mod matrix_color;
 pub mod mail;
 pub mod account_security;
 pub mod login_origin;
+pub mod openapi;
