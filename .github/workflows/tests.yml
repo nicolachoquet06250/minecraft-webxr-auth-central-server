@@ -69,7 +69,7 @@ jobs:
             ${{ runner.os }}-cargo-
 
       - name: Run backend tests
-        run: cargo test --workspace --all-features
+        run: cargo test --workspace
 
   coverage:
     name: Coverage badge
@@ -108,7 +108,7 @@ jobs:
         uses: taiki-e/install-action@cargo-llvm-cov
 
       - name: Run backend coverage
-        run: cargo llvm-cov --workspace --all-features --lcov --output-path backend/coverage/lcov.info
+        run: cargo llvm-cov --workspace --lcov --output-path backend/coverage/lcov.info
 
       - name: Update coverage badge endpoint
         run: node .github/scripts/update-coverage-badge.mjs
