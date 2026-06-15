@@ -137,7 +137,7 @@ p, li { color: rgba(255,255,255,.82); line-height: 1.95; }
 .doc-card { background: rgba(0,0,0,.28); border: 1px solid rgba(100,255,218,.18); border-radius: 12px; padding: 1.45rem; min-width: 0; }
 .important-card { border-color: rgba(255,215,0,.55); }
 .warning-card { border-color: rgba(255,193,7,.55); }
-.download-link { display: flex; align-items: center; justify-content: center; width: 100%; max-width: 100%; box-sizing: border-box; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #1a1a1a; background: #64ffda; border: 2px solid #1a1a1a; border-radius: 8px; padding: .85rem 1rem; text-decoration: none; font-weight: 800; box-shadow: 3px 3px 0 rgba(0,0,0,.35); }
+.download-link { display: flex; align-items: center; justify-content: center; width: 100%; max-width: 100%; min-height: 3.25rem; box-sizing: border-box; white-space: normal; overflow-wrap: anywhere; word-break: break-word; text-align: center; color: #1a1a1a; background: #64ffda; border: 2px solid #1a1a1a; border-radius: 8px; padding: .85rem 1rem; text-decoration: none; font-weight: 800; line-height: 1.35; box-shadow: 3px 3px 0 rgba(0,0,0,.35); }
 pre { overflow: auto; background: rgba(0,0,0,.58); color: #d8fff6; border-radius: 10px; padding: 1rem; font-size: .85rem; line-height: 1.7; }
 code { color: #64ffda; overflow-wrap: anywhere; }
 .route-heading { display: flex; flex-wrap: wrap; gap: .9rem; align-items: center; margin-bottom: 1rem; }
@@ -152,5 +152,5 @@ code { color: #64ffda; overflow-wrap: anywhere; }
 .param-table th { color: #ffd700; background: rgba(0,0,0,.28); }
 .empty-note { color: rgba(255,255,255,.62); font-style: italic; }
 @media (max-width: 900px) { .documentation-layout { grid-template-columns: 1fr; gap: 1.25rem; } .documentation-menu { position: static; } }
-@media (max-width: 768px) { .documentation { padding: 1rem .55rem; } .documentation-panel { padding: 1rem; } .doc-grid { grid-template-columns: 1fr; } .doc-card { padding: 1rem; } .menu-tab { text-align: center; } .download-link { white-space: normal; } }
+@media (max-width: 768px) { .documentation { padding: 1rem .55rem; } .documentation-panel { padding: 1rem; } .doc-grid { grid-template-columns: 1fr; } .doc-card { padding: 1rem; } .menu-tab { text-align: center; } }
 </style>
