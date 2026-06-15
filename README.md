@@ -4,8 +4,6 @@
 
 Une plateforme d'authentification centralisée pour les serveurs Voxicraft.
 
-> Documentation front active : `frontend/src/views/DocumentationView.vue`.
-
 ## Architecture
 
 ### Backend (Rust)
