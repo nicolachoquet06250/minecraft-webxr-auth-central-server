@@ -9,7 +9,6 @@ pub struct RegisterRequest {
     pub username: String,
     
     #[validate(email)]
-    #[schema(format = Email)]
     pub email: String,
     
     #[validate(length(min = 8))]
@@ -28,7 +27,6 @@ pub struct RegisterRequest {
 #[derive(Debug, Deserialize, Validate, ToSchema)]
 pub struct ConfirmRegisterRequest {
     #[validate(email)]
-    #[schema(format = Email)]
     pub email: String,
 
     #[validate(length(min = 6, max = 6))]
@@ -45,7 +43,6 @@ pub struct RegisterCodeResponse {
 #[derive(Debug, Deserialize, Validate, ToSchema)]
 pub struct LoginRequest {
     #[validate(email)]
-    #[schema(format = Email)]
     pub email: String,
     
     #[schema(format = Password)]
@@ -63,7 +60,6 @@ pub struct UserResponse {
     #[schema(pattern = "^[0-9a-fA-F-]{36}$")]
     pub id: String,
     pub username: String,
-    #[schema(format = Email)]
     pub email: String,
     #[schema(example = "steve")]
     pub avatar: String,
@@ -98,6 +94,5 @@ pub struct DiscordCallbackQuery {
 
 #[derive(Debug, Serialize, ToSchema)]
 pub struct DiscordOAuthUrl {
-    #[schema(format = Uri)]
     pub url: String,
 }
