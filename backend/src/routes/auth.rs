@@ -1,6 +1,6 @@
 use axum::{
     extract::{Query, State},
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
     response::{Json, Redirect},
 };
 use chrono::NaiveDate;
@@ -12,6 +12,7 @@ use validator::Validate;
 use crate::{
     dto::{AuthResponse, DiscordCallbackQuery, DiscordOAuthUrl, LoginRequest, RegisterRequest, UserResponse},
     models::{user, User},
+    routes::login_origin,
     services::{hash_password, verify_password},
     AppState,
 };
@@ -32,7 +33,8 @@ pub async fn register(State(state): State<Arc<AppState>>, Json(payload): Json<Re
     Ok(Json(AuthResponse { token, user: user_to_response(user) }))
 }
 
-pub async fn login(State(state): State<Arc<AppState>>, Json(payload): Json<LoginRequest>) -> Result<Json<AuthResponse>, StatusCode> {
+pub async fn login(State(state): State<Arc<AppState>>, headers: HeaderMap, Json(payload): Json<LoginRequest>) -> Result<Json<AuthResponse>, StatusCode> {
+    if !login_origin::is_allowed(&state, &headers).await? { return Err(StatusCode::FORBIDDEN); }
     if payload.validate().is_err() { return Err(StatusCode::BAD_REQUEST); }
     let user = User::find().filter(user::Column::Email.eq(&payload.email)).one(&state.db).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?.ok_or(StatusCode::UNAUTHORIZED)?;
     let password_hash = user.password_hash.as_ref().ok_or(StatusCode::UNAUTHORIZED)?;
