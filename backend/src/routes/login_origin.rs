@@ -6,6 +6,7 @@ use url::Url;
 use crate::{models::{server, Server}, AppState};
 
 const CENTRAL_HOSTS: [&str; 2] = ["central.voxicraft.fr", "localhost"];
+const VOXICRAFT_SERVER_ORIGIN_HEADER: &str = "x-voxicraft-server-origin";
 
 pub async fn is_allowed(state: &Arc<AppState>, headers: &HeaderMap) -> Result<bool, StatusCode> {
     let Some(origin) = origin_from_headers(headers) else {
@@ -30,6 +31,12 @@ fn origin_from_headers(headers: &HeaderMap) -> Option<String> {
         .get(header::ORIGIN)
         .and_then(|value| value.to_str().ok())
         .and_then(normalize_origin)
+        .or_else(|| {
+            headers
+                .get(VOXICRAFT_SERVER_ORIGIN_HEADER)
+                .and_then(|value| value.to_str().ok())
+                .and_then(normalize_origin)
+        })
 }
 
 fn normalize_origin(value: &str) -> Option<String> {
