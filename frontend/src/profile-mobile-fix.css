@@ -1,0 +1,94 @@
+@media (max-width: 768px) {
+  .profile.profile {
+    padding: 0.85rem 0.55rem;
+    overflow-x: hidden;
+  }
+
+  .profile.profile .voxicraft-container,
+  .profile.profile .profile-header,
+  .profile.profile .profile-content,
+  .profile.profile .left-column,
+  .profile.profile .right-column,
+  .profile.profile .voxicraft-panel {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .profile.profile .profile-header {
+    grid-template-columns: 1fr;
+    text-align: center;
+    justify-items: stretch;
+    align-items: stretch;
+  }
+
+  .profile.profile .avatar-display,
+  .profile.profile .header-info,
+  .profile.profile .header-actions {
+    justify-self: center;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .profile.profile .header-actions,
+  .profile.profile .left-column,
+  .profile.profile .right-column {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .profile.profile .profile-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.95rem;
+  }
+
+  .profile.profile .left-column,
+  .profile.profile .right-column {
+    gap: 0.95rem;
+  }
+
+  .profile.profile .info-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .profile.profile .avatar-info-item,
+  .profile.profile .discord-info-item {
+    align-items: stretch;
+  }
+
+  .profile.profile .profile-avatar-card,
+  .profile.profile .discord-linked-card,
+  .profile.profile .discord-link-button,
+  .profile.profile .delete-profile-button {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .profile.profile .profile-avatar-card {
+    align-items: center;
+  }
+
+  .profile.profile .actions-grid,
+  .profile.profile .stats-grid,
+  .profile.profile .avatar-selector {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .profile.profile .action-btn,
+  .profile.profile .btn-avatar,
+  .profile.profile .btn-edit,
+  .profile.profile .btn-submit,
+  .profile.profile .btn-cancel {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .profile.profile .modal-actions,
+  .profile.profile .form-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
