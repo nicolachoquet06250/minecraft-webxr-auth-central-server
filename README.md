@@ -1,6 +1,6 @@
 # Voxicraft Authentication Platform
 
-![Coverage](https://img.shields.io/badge/coverage-0%25-red)
+![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/nicolachoquet06250/minecraft-webxr-auth-central-server/main/.github/badges/coverage.json)
 
 Une plateforme d'authentification centralisée pour les serveurs Voxicraft.
 
