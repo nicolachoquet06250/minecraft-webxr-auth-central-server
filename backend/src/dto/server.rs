@@ -9,7 +9,6 @@ pub struct CreateServerRequest {
     pub name: String,
 
     #[validate(url)]
-    #[schema(format = Uri)]
     pub game_domain: String,
 
     #[validate(length(max = 500))]
@@ -32,7 +31,6 @@ pub struct UpdateServerRequest {
 
 #[derive(Debug, Deserialize, Validate, ToSchema)]
 pub struct RecordServerVisitRequest {
-    #[schema(format = Uri)]
     pub server_url: String,
 }
 
