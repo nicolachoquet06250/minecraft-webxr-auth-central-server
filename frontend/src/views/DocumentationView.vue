@@ -25,13 +25,17 @@
                 <div class="platform-grid">
                   <div>
                     <h4>Linux</h4>
-                    <pre>wget https://github.com/nicolachoquet06250/minecraft-webxr/releases/download/server-v0.4.0/voxicraft-server-linux-x86_64.tar.gz</pre>
+                    <div class="terminal-window">
+                      <div class="terminal-header"><div class="terminal-controls"><span class="terminal-dot red"></span><span class="terminal-dot yellow"></span><span class="terminal-dot green"></span></div><button class="copy-button" type="button" @click="copyCommand(linuxDownloadCommand)">Copier</button></div>
+                      <pre><code>{{ linuxDownloadCommand }}</code></pre>
+                    </div>
                   </div>
                   <div>
                     <h4>Windows</h4>
-                    <pre>Invoke-WebRequest `
-  -Uri "https://github.com/nicolachoquet06250/minecraft-webxr/releases/download/server-v0.4.0/voxicraft-server-windows-x86_64.zip" `
-  -OutFile "voxicraft-server-windows-x86_64.zip"</pre>
+                    <div class="terminal-window">
+                      <div class="terminal-header"><div class="terminal-controls"><span class="terminal-dot red"></span><span class="terminal-dot yellow"></span><span class="terminal-dot green"></span></div><button class="copy-button" type="button" @click="copyCommand(windowsDownloadCommand)">Copier</button></div>
+                      <pre><code>{{ windowsDownloadCommand }}</code></pre>
+                    </div>
                   </div>
                 </div>
               </article>
@@ -42,15 +46,17 @@
                 <div class="platform-grid">
                   <div>
                     <h4>Linux</h4>
-                    <pre>tar -xzf voxicraft-server-linux-x86_64.tar.gz
-cd voxicraft-server</pre>
+                    <div class="terminal-window">
+                      <div class="terminal-header"><div class="terminal-controls"><span class="terminal-dot red"></span><span class="terminal-dot yellow"></span><span class="terminal-dot green"></span></div><button class="copy-button" type="button" @click="copyCommand(linuxExtractCommand)">Copier</button></div>
+                      <pre><code>{{ linuxExtractCommand }}</code></pre>
+                    </div>
                   </div>
                   <div>
                     <h4>Windows</h4>
-                    <pre>Expand-Archive `
-  -Path .\voxicraft-server-windows-x86_64.zip `
-  -DestinationPath .\voxicraft-server
-cd .\voxicraft-server</pre>
+                    <div class="terminal-window">
+                      <div class="terminal-header"><div class="terminal-controls"><span class="terminal-dot red"></span><span class="terminal-dot yellow"></span><span class="terminal-dot green"></span></div><button class="copy-button" type="button" @click="copyCommand(windowsExtractCommand)">Copier</button></div>
+                      <pre><code>{{ windowsExtractCommand }}</code></pre>
+                    </div>
                   </div>
                 </div>
               </article>
@@ -60,9 +66,7 @@ cd .\voxicraft-server</pre>
                 <p>Crée un fichier <code>.env</code> à côté du binaire, puis renseigne les variables nécessaires à ton environnement.</p>
                 <div class="table-scroll">
                   <table class="param-table">
-                    <thead>
-                      <tr><th>Variable</th><th>Type</th><th>Statut</th><th>Valeur par défaut</th><th>Description</th></tr>
-                    </thead>
+                    <thead><tr><th>Variable</th><th>Type</th><th>Statut</th><th>Valeur par défaut</th><th>Description</th></tr></thead>
                     <tbody>
                       <tr><td><code>DATABASE_URL</code></td><td>URL</td><td>Obligatoire</td><td>—</td><td>Connexion à la base de données. Accepte MySQL en production ou SQLite en local.</td></tr>
                       <tr><td><code>JWT_SECRET</code></td><td>Chaîne secrète</td><td>Obligatoire</td><td>—</td><td>Clé utilisée pour signer et vérifier les tokens JWT.</td></tr>
@@ -93,12 +97,17 @@ cd .\voxicraft-server</pre>
                 <div class="platform-grid">
                   <div>
                     <h4>Linux</h4>
-                    <pre>chmod +x voxicraft_server
-./voxicraft_server</pre>
+                    <div class="terminal-window">
+                      <div class="terminal-header"><div class="terminal-controls"><span class="terminal-dot red"></span><span class="terminal-dot yellow"></span><span class="terminal-dot green"></span></div><button class="copy-button" type="button" @click="copyCommand(linuxRunCommand)">Copier</button></div>
+                      <pre><code>{{ linuxRunCommand }}</code></pre>
+                    </div>
                   </div>
                   <div>
                     <h4>Windows</h4>
-                    <pre>.\voxicraft_server.exe</pre>
+                    <div class="terminal-window">
+                      <div class="terminal-header"><div class="terminal-controls"><span class="terminal-dot red"></span><span class="terminal-dot yellow"></span><span class="terminal-dot green"></span></div><button class="copy-button" type="button" @click="copyCommand(windowsRunCommand)">Copier</button></div>
+                      <pre><code>{{ windowsRunCommand }}</code></pre>
+                    </div>
                   </div>
                 </div>
               </article>
@@ -127,12 +136,8 @@ cd .\voxicraft-server</pre>
             <h2>Créer un mod Voxicraft</h2>
             <p>Un mod Voxicraft est une extension placée dans le dossier <code>mods/</code> d'un serveur de jeu. Cette documentation décrit ce qu'il faut créer, comment déclarer le mod, et quelles APIs tu peux utiliser côté navigateur et côté serveur.</p>
             <p><strong>Statut :</strong> le système de mods est encore expérimental. Le format peut évoluer, mais la structure ci-dessous est celle à utiliser pour créer un mod aujourd'hui.</p>
-
             <div class="mods-list">
-              <article class="doc-card">
-                <h3>1. Créer le dossier du mod</h3>
-                <p>Crée un dossier par mod. L'identifiant du dossier doit être stable, sans espace, sans slash et sans <code>..</code>.</p>
-                <pre>mods/
+              <article class="doc-card"><h3>1. Créer le dossier du mod</h3><p>Crée un dossier par mod. L'identifiant du dossier doit être stable, sans espace, sans slash et sans <code>..</code>.</p><pre>mods/
   ruby-tools/
     mod.json
     client/
@@ -141,13 +146,8 @@ cd .\voxicraft-server</pre>
       assets/
         ruby_ore.png
     server/
-      mod.wasm</pre>
-              </article>
-
-              <article class="doc-card">
-                <h3>2. Déclarer <code>mod.json</code></h3>
-                <p>Le manifest décrit le nom du mod, sa version, les fichiers à charger et les permissions demandées. Un mod peut être <code>client</code>, <code>server</code> ou <code>both</code>.</p>
-                <pre>{
+      mod.wasm</pre></article>
+              <article class="doc-card"><h3>2. Déclarer <code>mod.json</code></h3><p>Le manifest décrit le nom du mod, sa version, les fichiers à charger et les permissions demandées. Un mod peut être <code>client</code>, <code>server</code> ou <code>both</code>.</p><pre>{
   "id": "ruby-tools",
   "name": "Ruby Tools",
   "version": "0.1.0",
@@ -174,33 +174,9 @@ cd .\voxicraft-server</pre>
       "world.write"
     ]
   }
-}</pre>
-              </article>
-
-              <article class="doc-card">
-                <h3>Champs du manifest</h3>
-                <div class="table-scroll">
-                  <table class="param-table">
-                    <thead><tr><th>Champ</th><th>Obligatoire</th><th>Description</th></tr></thead>
-                    <tbody>
-                      <tr><td><code>id</code></td><td>Oui</td><td>Identifiant unique du mod.</td></tr>
-                      <tr><td><code>name</code></td><td>Oui</td><td>Nom affiché dans les outils et messages.</td></tr>
-                      <tr><td><code>version</code></td><td>Oui</td><td>Version du mod, idéalement en SemVer.</td></tr>
-                      <tr><td><code>side</code></td><td>Oui</td><td><code>client</code>, <code>server</code> ou <code>both</code>.</td></tr>
-                      <tr><td><code>client.entry</code></td><td>Pour un mod client</td><td>Fichier JavaScript chargé par le navigateur.</td></tr>
-                      <tr><td><code>client.types</code></td><td>Non</td><td>Fichier de types TypeScript pour l'autocomplétion.</td></tr>
-                      <tr><td><code>client.assets</code></td><td>Non</td><td>Dossier public des images, sons, modèles ou textures du mod.</td></tr>
-                      <tr><td><code>server.entry</code></td><td>Pour un mod serveur</td><td>Fichier WebAssembly serveur.</td></tr>
-                      <tr><td><code>permissions</code></td><td>Non</td><td>Liste les APIs demandées par le mod.</td></tr>
-                    </tbody>
-                  </table>
-                </div>
-              </article>
-
-              <article class="doc-card">
-                <h3>3. Écrire un mod client</h3>
-                <p>Le fichier déclaré dans <code>client.entry</code> doit exporter <code>activate(ctx)</code>. Il peut aussi exporter <code>deactivate(ctx)</code> pour nettoyer les ressources du mod.</p>
-                <pre>export async function activate(ctx) {
+}</pre></article>
+              <article class="doc-card"><h3>Champs du manifest</h3><div class="table-scroll"><table class="param-table"><thead><tr><th>Champ</th><th>Obligatoire</th><th>Description</th></tr></thead><tbody><tr><td><code>id</code></td><td>Oui</td><td>Identifiant unique du mod.</td></tr><tr><td><code>name</code></td><td>Oui</td><td>Nom affiché dans les outils et messages.</td></tr><tr><td><code>version</code></td><td>Oui</td><td>Version du mod, idéalement en SemVer.</td></tr><tr><td><code>side</code></td><td>Oui</td><td><code>client</code>, <code>server</code> ou <code>both</code>.</td></tr><tr><td><code>client.entry</code></td><td>Pour un mod client</td><td>Fichier JavaScript chargé par le navigateur.</td></tr><tr><td><code>client.types</code></td><td>Non</td><td>Fichier de types TypeScript pour l'autocomplétion.</td></tr><tr><td><code>client.assets</code></td><td>Non</td><td>Dossier public des images, sons, modèles ou textures du mod.</td></tr><tr><td><code>server.entry</code></td><td>Pour un mod serveur</td><td>Fichier WebAssembly serveur.</td></tr><tr><td><code>permissions</code></td><td>Non</td><td>Liste les APIs demandées par le mod.</td></tr></tbody></table></div></article>
+              <article class="doc-card"><h3>3. Écrire un mod client</h3><p>Le fichier déclaré dans <code>client.entry</code> doit exporter <code>activate(ctx)</code>. Il peut aussi exporter <code>deactivate(ctx)</code> pour nettoyer les ressources du mod.</p><pre>export async function activate(ctx) {
   ctx.ui.notify('Ruby Tools chargé')
 
   const observer = ctx.scene.onBeforeRenderObservable.add(() =&gt; {
@@ -214,13 +190,8 @@ cd .\voxicraft-server</pre>
 
 export async function deactivate(ctx) {
   ctx.ui.notify('Ruby Tools déchargé')
-}</pre>
-              </article>
-
-              <article class="doc-card">
-                <h3>API front disponible</h3>
-                <p>Dans <code>activate(ctx)</code>, le paramètre <code>ctx</code> expose les APIs utilisables côté navigateur.</p>
-                <pre>ctx.BABYLON
+}</pre></article>
+              <article class="doc-card"><h3>API front disponible</h3><p>Dans <code>activate(ctx)</code>, le paramètre <code>ctx</code> expose les APIs utilisables côté navigateur.</p><pre>ctx.BABYLON
 ctx.scene
 ctx.engine
 ctx.player
@@ -229,13 +200,8 @@ ctx.droppedItems
 ctx.events
 ctx.ui.notify(message)
 ctx.resolveAssetUrl(path)
-ctx.addDisposable(disposable)</pre>
-              </article>
-
-              <article class="doc-card">
-                <h3>API front — Babylon.js</h3>
-                <p>Utilise <code>ctx.BABYLON</code>, <code>ctx.scene</code> et <code>ctx.engine</code> pour créer des meshes, matériaux, particules ou observers Babylon.js.</p>
-                <pre>export async function activate(ctx) {
+ctx.addDisposable(disposable)</pre></article>
+              <article class="doc-card"><h3>API front — Babylon.js</h3><p>Utilise <code>ctx.BABYLON</code>, <code>ctx.scene</code> et <code>ctx.engine</code> pour créer des meshes, matériaux, particules ou observers Babylon.js.</p><pre>export async function activate(ctx) {
   const mesh = ctx.BABYLON.MeshBuilder.CreateBox(
     'ruby-tools-marker',
     { size: 0.25 },
@@ -244,52 +210,26 @@ ctx.addDisposable(disposable)</pre>
 
   mesh.position.set(0, 2, 0)
   ctx.addDisposable(mesh)
-}</pre>
-              </article>
-
-              <article class="doc-card">
-                <h3>API front — assets du mod</h3>
-                <p><code>ctx.resolveAssetUrl(path)</code> retourne l'URL publique d'un fichier situé dans <code>client.assets</code>.</p>
-                <pre>export async function activate(ctx) {
+}</pre></article>
+              <article class="doc-card"><h3>API front — assets du mod</h3><p><code>ctx.resolveAssetUrl(path)</code> retourne l'URL publique d'un fichier situé dans <code>client.assets</code>.</p><pre>export async function activate(ctx) {
   const textureUrl = ctx.resolveAssetUrl('ruby_ore.png')
   const texture = new ctx.BABYLON.Texture(textureUrl, ctx.scene)
 
   ctx.addDisposable(texture)
-}</pre>
-              </article>
-
-              <article class="doc-card">
-                <h3>API front — interface</h3>
-                <p><code>ctx.ui.notify(message)</code> affiche une notification simple dans le jeu.</p>
-                <pre>export async function activate(ctx) {
+}</pre></article>
+              <article class="doc-card"><h3>API front — interface</h3><p><code>ctx.ui.notify(message)</code> affiche une notification simple dans le jeu.</p><pre>export async function activate(ctx) {
   ctx.ui.notify('Nouveau minerai disponible : rubis')
-}</pre>
-              </article>
-
-              <article class="doc-card">
-                <h3>API front — évènements et nettoyage</h3>
-                <p><code>ctx.events</code> sert à brancher la logique du mod sur les évènements exposés par le jeu. Tout listener, mesh, observer ou texture créé par le mod doit être libéré via <code>ctx.addDisposable</code> ou <code>deactivate</code>.</p>
-                <pre>export async function activate(ctx) {
+}</pre></article>
+              <article class="doc-card"><h3>API front — évènements et nettoyage</h3><p><code>ctx.events</code> sert à brancher la logique du mod sur les évènements exposés par le jeu. Tout listener, mesh, observer ou texture créé par le mod doit être libéré via <code>ctx.addDisposable</code> ou <code>deactivate</code>.</p><pre>export async function activate(ctx) {
   const unsubscribe = ctx.events.on('ready', () =&gt; {
     ctx.ui.notify('Le monde est prêt')
   })
 
   ctx.addDisposable({ dispose: unsubscribe })
-}</pre>
-              </article>
-
-              <article class="doc-card">
-                <h3>API back disponible</h3>
-                <p>Un mod serveur se déclare avec <code>server.runtime = "wasm"</code> et <code>server.entry</code>. Les permissions serveur actuellement prévues sont :</p>
-                <pre>world.read
-world.write</pre>
-                <p>Ces permissions servent à documenter ce que le mod serveur veut faire côté monde. L'exécution complète des mods serveur WebAssembly reste expérimentale : ne pars pas du principe qu'un mod serveur dispose déjà des mêmes capacités qu'un mod client.</p>
-              </article>
-
-              <article class="doc-card">
-                <h3>Mod client uniquement</h3>
-                <p>Pour créer un mod qui ne tourne que dans le navigateur, utilise <code>side: "client"</code> et retire le bloc <code>server</code>.</p>
-                <pre>{
+}</pre></article>
+              <article class="doc-card"><h3>API back disponible</h3><p>Un mod serveur se déclare avec <code>server.runtime = "wasm"</code> et <code>server.entry</code>. Les permissions serveur actuellement prévues sont :</p><pre>world.read
+world.write</pre><p>Ces permissions servent à documenter ce que le mod serveur veut faire côté monde. L'exécution complète des mods serveur WebAssembly reste expérimentale : ne pars pas du principe qu'un mod serveur dispose déjà des mêmes capacités qu'un mod client.</p></article>
+              <article class="doc-card"><h3>Mod client uniquement</h3><p>Pour créer un mod qui ne tourne que dans le navigateur, utilise <code>side: "client"</code> et retire le bloc <code>server</code>.</p><pre>{
   "id": "hud-helper",
   "name": "HUD Helper",
   "version": "0.1.0",
@@ -299,22 +239,12 @@ world.write</pre>
     "entry": "client/mod.js",
     "assets": "client/assets"
   }
-}</pre>
-              </article>
-
-              <article class="doc-card">
-                <h3>Tester rapidement le mod</h3>
-                <p>Lance le serveur avec le dossier <code>mods/</code>, puis vérifie que le manifest et le fichier client sont accessibles.</p>
-                <pre>MODS_DIR=mods ./voxicraft_server
+}</pre></article>
+              <article class="doc-card"><h3>Tester rapidement le mod</h3><p>Lance le serveur avec le dossier <code>mods/</code>, puis vérifie que le manifest et le fichier client sont accessibles.</p><pre>MODS_DIR=mods ./voxicraft_server
 
 curl -i http://localhost:8080/api/mods/manifest
-curl -i http://localhost:8080/mods/ruby-tools/client/mod.js</pre>
-              </article>
-
-              <article class="doc-card">
-                <h3>Bonnes pratiques</h3>
-                <p>Préfixe les IDs avec l'ID du mod, garde un manifest simple, libère toutes les ressources créées, évite les traitements lourds à chaque frame, et déclare uniquement les permissions réellement nécessaires.</p>
-              </article>
+curl -i http://localhost:8080/mods/ruby-tools/client/mod.js</pre></article>
+              <article class="doc-card"><h3>Bonnes pratiques</h3><p>Préfixe les IDs avec l'ID du mod, garde un manifest simple, libère toutes les ressources créées, évite les traitements lourds à chaque frame, et déclare uniquement les permissions réellement nécessaires.</p></article>
             </div>
           </div>
         </section>
@@ -335,6 +265,12 @@ const activeTab = ref<'quick-start' | 'api-doc' | 'mods-doc'>('quick-start')
 const apiSpec = ref<JsonMap | null>(null)
 const apiLoading = ref(true)
 const apiError = ref('')
+const linuxDownloadCommand = 'wget https://github.com/nicolachoquet06250/minecraft-webxr/releases/download/server-v0.4.0/voxicraft-server-linux-x86_64.tar.gz'
+const windowsDownloadCommand = 'Invoke-WebRequest `\n  -Uri "https://github.com/nicolachoquet06250/minecraft-webxr/releases/download/server-v0.4.0/voxicraft-server-windows-x86_64.zip" `\n  -OutFile "voxicraft-server-windows-x86_64.zip"'
+const linuxExtractCommand = 'tar -xzf voxicraft-server-linux-x86_64.tar.gz\ncd voxicraft-server'
+const windowsExtractCommand = 'Expand-Archive `\n  -Path .\\voxicraft-server-windows-x86_64.zip `\n  -DestinationPath .\\voxicraft-server\ncd .\\voxicraft-server'
+const linuxRunCommand = 'chmod +x voxicraft_server\n./voxicraft_server'
+const windowsRunCommand = '.\\voxicraft_server.exe'
 
 const apiRoutes = computed<ApiRoute[]>(() => {
   const methods = ['get', 'post', 'put', 'patch', 'delete']
@@ -353,6 +289,7 @@ onMounted(async () => {
   }
 })
 
+async function copyCommand(command: string) { await navigator.clipboard.writeText(command) }
 function tabClass(tab: 'quick-start' | 'api-doc' | 'mods-doc') { return ['menu-tab', { active: activeTab.value === tab }] }
 function asMap(value: unknown): JsonMap { return value && typeof value === 'object' && !Array.isArray(value) ? value as JsonMap : {} }
 function asArray(value: unknown): unknown[] { return Array.isArray(value) ? value : [] }
@@ -387,7 +324,17 @@ p, li { color: rgba(255,255,255,.82); line-height: 1.95; }
 .important-card { border-color: rgba(255,215,0,.55); }
 .warning-card { border-color: rgba(255,193,7,.55); }
 .download-link { display: flex; align-items: center; justify-content: center; width: 100%; max-width: 100%; min-height: 3.25rem; box-sizing: border-box; white-space: normal; overflow-wrap: anywhere; word-break: break-word; text-align: center; color: #1a1a1a; background: #64ffda; border: 2px solid #1a1a1a; border-radius: 8px; padding: .85rem 1rem; text-decoration: none; font-weight: 800; line-height: 1.35; box-shadow: 3px 3px 0 rgba(0,0,0,.35); }
+.terminal-window { overflow: hidden; background: #0b1020; border: 1px solid rgba(100,255,218,.24); border-radius: 12px; box-shadow: 0 14px 28px rgba(0,0,0,.35); }
+.terminal-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 2.4rem; padding: .45rem .75rem; background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.04)); border-bottom: 1px solid rgba(255,255,255,.08); }
+.terminal-controls { display: flex; gap: .45rem; align-items: center; }
+.terminal-dot { width: .72rem; height: .72rem; border-radius: 50%; display: inline-block; box-shadow: inset 0 -1px 1px rgba(0,0,0,.35); }
+.terminal-dot.red { background: #ff5f57; }
+.terminal-dot.yellow { background: #ffbd2e; }
+.terminal-dot.green { background: #28c840; }
+.copy-button { color: #1a1a1a; background: #64ffda; border: 1px solid #1a1a1a; border-radius: 7px; padding: .35rem .65rem; font-size: .78rem; font-weight: 800; cursor: pointer; box-shadow: 2px 2px 0 rgba(0,0,0,.3); }
+.copy-button:hover { filter: brightness(1.05); }
 pre { overflow: auto; background: rgba(0,0,0,.58); color: #d8fff6; border-radius: 10px; padding: 1rem; font-size: .85rem; line-height: 1.7; }
+.terminal-window pre { margin: 0; border-radius: 0; background: #050816; }
 code { color: #64ffda; overflow-wrap: anywhere; }
 .route-heading { display: flex; flex-wrap: wrap; gap: .9rem; align-items: center; margin-bottom: 1rem; }
 .method-badge { display: inline-flex; justify-content: center; min-width: 72px; padding: .45rem .65rem; border-radius: 8px; color: #111; font-weight: 800; background: #64ffda; }
