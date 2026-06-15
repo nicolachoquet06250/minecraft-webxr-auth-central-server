@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:unit": "vitest run src/**/*.unit.test.ts",
+    "test:functional": "vitest run src/**/*.functional.test.ts"
   },
   "dependencies": {
     "@babylonjs/core": "^9.10.1",
@@ -25,6 +28,7 @@
     "@vue/tsconfig": "^0.9.1",
     "typescript": "~6.0.2",
     "vite": "^8.0.12",
+    "vitest": "^4.0.15",
     "vue-tsc": "^3.2.8"
   }
 }
