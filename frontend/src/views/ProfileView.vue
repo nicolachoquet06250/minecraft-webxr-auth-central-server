@@ -154,7 +154,7 @@
             <AccountSecretForm />
           </div>
 
-          <div v-if="!showEditForm" class="voxicraft-panel privacy-panel">
+          <div class="voxicraft-panel privacy-panel">
             <h2 class="card-title">🛡️ Confidentialité</h2>
             <p class="privacy-warning">La suppression de ton profil est irréversible et supprimera toutes les données associées à ton compte.</p>
             <button type="button" class="delete-profile-button" :disabled="deletingProfile" @click="showDeleteProfileModal = true">
@@ -330,6 +330,12 @@ const handleUpdate = async () => {
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .actions-grid, .stats-grid, .avatar-selector { display: grid; grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); gap: .65rem; min-width: 0; }
 .actions-grid { display: flex; flex-wrap: wrap; }
+.avatar-selector { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.avatar-option { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .45rem; min-height: 118px; padding: .7rem .55rem; border: 2px solid rgba(100, 255, 218, .22); border-radius: 9px; background: rgba(0, 0, 0, .35); color: #fff; font-family: 'Press Start 2P', cursive; font-size: .58rem; line-height: 1.25; cursor: pointer; box-shadow: 3px 3px 0 rgba(0, 0, 0, .28); transition: border-color .15s ease, background-color .15s ease, transform .15s ease; }
+.avatar-option:hover { transform: translateY(-2px); border-color: rgba(100, 255, 218, .6); background: rgba(100, 255, 218, .1); }
+.avatar-option.selected { border-color: #64ffda; background: rgba(100, 255, 218, .18); }
+.avatar-option input { position: absolute; opacity: 0; pointer-events: none; }
+.avatar-preview-img { width: 54px; height: 54px; image-rendering: pixelated; }
 .stats-grid { grid-template-columns: repeat(2, minmax(100px, 1fr)); }
 .stat-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .35rem; text-align: center; min-height: 88px; }
 .stat-item strong { color: #64ffda; font-size: 1.15rem; line-height: 1.2; text-shadow: 2px 2px 0 rgba(0, 0, 0, .45); }
