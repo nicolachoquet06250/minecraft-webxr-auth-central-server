@@ -24,7 +24,7 @@
         <div class="footer-section">
           <h4>À propos</h4>
           <ul>
-            <li><router-link to="/api/documentation">Documentation</router-link></li>
+            <li><router-link to="/documentation">Documentation</router-link></li>
             <li><router-link to="/api/swagger">API</router-link></li>
             <li><router-link to="/support">Support</router-link></li>
             <li><router-link to="/contact">Contact</router-link></li>
