@@ -107,6 +107,9 @@ jobs:
       - name: Install Rust coverage tool
         uses: taiki-e/install-action@cargo-llvm-cov
 
+      - name: Prepare backend coverage directory
+        run: mkdir -p backend/coverage
+
       - name: Run backend coverage
         run: cargo llvm-cov --workspace --lcov --output-path backend/coverage/lcov.info
 
