@@ -94,8 +94,7 @@ const formatDate = (value?: string) => value ? new Date(value).toLocaleDateStrin
 .empty-state { text-align: center; padding: 3rem 2rem; max-width: 620px; margin: 0 auto; }
 .empty-icon { font-size: 4rem; margin-bottom: 1rem; }
 .server-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem; }
-.server-card { padding: 2rem; transition: all .3s ease; text-align: left; }
-.server-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0, 0, 0, .3); }
+.server-card { padding: 2rem; text-align: left; }
 .card-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
 .server-card h3 { color: #64ffda; margin: 0; font-size: 1.4rem; overflow-wrap: anywhere; }
 .favorite-star-button { flex: 0 0 auto; width: 2.35rem; height: 2.35rem; display: inline-flex; align-items: center; justify-content: center; border: 2px solid #ffb300; border-radius: 8px; background: rgba(0, 0, 0, .32); color: #ffca28; font-size: 1.35rem; line-height: 1; cursor: pointer; box-shadow: 3px 3px 0 rgba(0, 0, 0, .32); transition: transform .15s ease, background-color .15s ease, color .15s ease; }

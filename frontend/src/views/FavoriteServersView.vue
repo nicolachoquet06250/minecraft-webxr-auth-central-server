@@ -83,8 +83,7 @@ const formatDate = (value: string) => new Date(value).toLocaleDateString('fr-FR'
 .empty-state { text-align: center; padding: 3rem 2rem; max-width: 620px; margin: 0 auto; }
 .empty-icon { font-size: 4rem; margin-bottom: 1rem; }
 .server-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem; }
-.server-card { padding: 2rem; transition: all .3s ease; text-align: left; }
-.server-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0, 0, 0, .3); }
+.server-card { padding: 2rem; text-align: left; }
 .card-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
 .server-card h3 { color: #64ffda; margin: 0; font-size: 1.4rem; overflow-wrap: anywhere; }
 .favorite-badge { background: #ffb300; color: #1a1a1a; border: 2px solid #ff8f00; border-radius: 6px; padding: .3rem .45rem; font-size: .7rem; font-family: 'Press Start 2P', cursive; white-space: nowrap; }
