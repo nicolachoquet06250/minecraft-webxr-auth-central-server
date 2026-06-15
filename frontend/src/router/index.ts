@@ -10,7 +10,7 @@ import FavoriteServersView from '@/views/FavoriteServersView.vue'
 import RecentServersView from '@/views/RecentServersView.vue'
 import ServerDashboardView from '@/views/ServerDashboardView.vue'
 import ApiSwaggerView from '@/views/ApiSwaggerView.vue'
-import ApiDocumentationView from '@/views/ApiDocumentationView.vue'
+import DocumentationView from '@/views/DocumentationView.vue'
 import ContactView from '@/views/ContactView.vue'
 import SupportView from '@/views/SupportView.vue'
 
@@ -27,7 +27,7 @@ const router = createRouter({
     { path: '/servers/recent', name: 'servers-recent', component: RecentServersView, meta: { requiresAuth: true } },
     { path: '/servers/:id/dashboard', name: 'server-dashboard', component: ServerDashboardView, meta: { requiresAuth: true } },
     { path: '/api/swagger', name: 'api-swagger', component: ApiSwaggerView, meta: { requiresAuth: true } },
-    { path: '/documentation', name: 'documentation', component: ApiDocumentationView, meta: { requiresAuth: true } },
+    { path: '/documentation', name: 'documentation', component: DocumentationView, meta: { requiresAuth: true } },
     { path: '/api/documentation', redirect: '/documentation', meta: { requiresAuth: true } },
     { path: '/contact', name: 'contact', component: ContactView },
     { path: '/support', name: 'support', component: SupportView },
