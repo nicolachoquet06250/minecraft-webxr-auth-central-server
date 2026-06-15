@@ -1,21 +1,23 @@
 use axum::{response::IntoResponse, Json};
-use utoipa::{
-    openapi::{
-        security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
-        OpenApi as OpenApiDocument,
-    },
-    Modify, OpenApi,
-};
+use serde_json::json;
+use utoipa::OpenApi;
 
-use crate::dto::{
-    ActiveAvatarResponse, AuthResponse, AvatarResponse, ConfirmRegisterRequest, CreateServerRequest,
-    DiscordOAuthUrl, FavoriteServerResponse, LoginRequest, RecordServerVisitRequest,
-    RegisterCodeResponse, RegisterRequest, SaveAvatarRequest, ServerHistoryResponse, ServerResponse,
-    UpdateAvatarRequest, UpdateServerRequest, UpdateUserRequest, UserResponse,
+use crate::{
+    dto::{
+        ActiveAvatarResponse, AuthResponse, AvatarResponse, ConfirmRegisterRequest, CreateServerRequest,
+        DiscordOAuthUrl, FavoriteServerResponse, LoginRequest, RecordServerVisitRequest,
+        RegisterCodeResponse, RegisterRequest, SaveAvatarRequest, ServerHistoryResponse, ServerResponse,
+        UpdateAvatarRequest, UpdateServerRequest, UpdateUserRequest, UserResponse,
+    },
+    routes::openapi_paths::openapi_paths,
 };
 
 pub async fn openapi_json() -> impl IntoResponse {
-    Json(ApiDoc::openapi())
+    let mut document = serde_json::to_value(ApiDoc::openapi()).unwrap_or_else(|_| json!({}));
+    if let Some(root) = document.as_object_mut() {
+        root.insert("paths".to_string(), openapi_paths());
+    }
+    Json(document)
 }
 
 #[derive(OpenApi)]
@@ -40,7 +42,6 @@ pub async fn openapi_json() -> impl IntoResponse {
         SaveAvatarRequest,
         UpdateAvatarRequest
     )),
-    modifiers(&SecurityAddon),
     tags(
         (name = "openapi", description = "Document OpenAPI"),
         (name = "auth", description = "Authentification"),
@@ -53,21 +54,3 @@ pub async fn openapi_json() -> impl IntoResponse {
     servers((url = "/api"))
 )]
 struct ApiDoc;
-
-struct SecurityAddon;
-
-impl Modify for SecurityAddon {
-    fn modify(&self, openapi: &mut OpenApiDocument) {
-        if let Some(components) = openapi.components.as_mut() {
-            components.add_security_scheme(
-                "bearerAuth",
-                SecurityScheme::Http(
-                    HttpBuilder::new()
-                        .scheme(HttpAuthScheme::Bearer)
-                        .bearer_format("JWT")
-                        .build(),
-                ),
-            );
-        }
-    }
-}
