@@ -123,10 +123,11 @@ function schemaExample(schema?: JsonMap): unknown { const resolved = resolveSche
 .documentation-panel { max-width: 1480px; margin: 0 auto; padding: 2.25rem; }
 .documentation-header { text-align: center; margin-bottom: 2.5rem; }
 .documentation-intro { max-width: 920px; margin: 1rem auto 0; line-height: 1.9; color: rgba(255,255,255,.82); }
-.documentation-layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 2.5rem; align-items: start; }
-.documentation-menu { position: sticky; top: 100px; display: flex; flex-direction: column; gap: .9rem; padding: 1rem; background: rgba(0,0,0,.24); border: 1px solid rgba(100,255,218,.22); border-radius: 14px; }
-.menu-tab { color: #aaa; background: rgba(0,0,0,.35); border: 2px solid rgba(100,255,218,.18); border-radius: 8px; padding: .9rem 1rem; text-align: left; font-weight: 700; cursor: pointer; line-height: 1.45; }
-.menu-tab.active { color: #1a1a1a; background: #64ffda; border-color: #1a1a1a; box-shadow: 3px 3px 0 rgba(0,0,0,.35); }
+.documentation-layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 2.5rem; align-items: start; }
+.documentation-menu { position: sticky; top: 100px; display: flex; flex-direction: column; gap: .95rem; padding: 1.15rem; background: linear-gradient(180deg, rgba(92,54,24,.96), rgba(58,32,16,.98)); border: 2px solid rgba(255,215,0,.62); border-radius: 18px; box-shadow: 0 0 0 3px rgba(0,0,0,.35), 7px 7px 0 rgba(0,0,0,.42); }
+.menu-tab { color: #f4f0e8; background: rgba(48,28,15,.92); border: 2px solid rgba(255,215,0,.42); border-radius: 10px; padding: .95rem 1rem; text-align: left; font-weight: 800; cursor: pointer; line-height: 1.45; box-shadow: 4px 4px 0 rgba(0,0,0,.36); text-shadow: 2px 2px 0 rgba(0,0,0,.45); transition: transform .12s ease, border-color .12s ease, background .12s ease; }
+.menu-tab:hover { border-color: rgba(255,215,0,.78); background: rgba(70,42,22,.96); transform: translate(-1px, -1px); }
+.menu-tab.active { color: #1a1a1a; background: #64ffda; border-color: #1a1a1a; box-shadow: 4px 4px 0 rgba(0,0,0,.52); text-shadow: none; }
 .documentation-content { min-width: 0; }
 .section-kicker { color: #ffd700; text-transform: uppercase; font-size: .75rem; letter-spacing: .08em; }
 h2 { color: #64ffda; margin: .55rem 0 1.2rem; line-height: 1.35; }
@@ -137,7 +138,7 @@ p, li { color: rgba(255,255,255,.82); line-height: 1.95; }
 .doc-card { background: rgba(0,0,0,.28); border: 1px solid rgba(100,255,218,.18); border-radius: 12px; padding: 1.45rem; min-width: 0; }
 .important-card { border-color: rgba(255,215,0,.55); }
 .warning-card { border-color: rgba(255,193,7,.55); }
-.download-link { display: flex; align-items: center; justify-content: center; width: 100%; max-width: 100%; box-sizing: border-box; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #1a1a1a; background: #64ffda; border: 2px solid #1a1a1a; border-radius: 8px; padding: .85rem 1rem; text-decoration: none; font-weight: 800; box-shadow: 3px 3px 0 rgba(0,0,0,.35); }
+.download-link { display: flex; align-items: center; justify-content: center; width: 100%; max-width: 100%; min-height: 3.25rem; box-sizing: border-box; white-space: normal; overflow-wrap: anywhere; word-break: break-word; text-align: center; color: #1a1a1a; background: #64ffda; border: 2px solid #1a1a1a; border-radius: 8px; padding: .85rem 1rem; text-decoration: none; font-weight: 800; line-height: 1.35; box-shadow: 3px 3px 0 rgba(0,0,0,.35); }
 pre { overflow: auto; background: rgba(0,0,0,.58); color: #d8fff6; border-radius: 10px; padding: 1rem; font-size: .85rem; line-height: 1.7; }
 code { color: #64ffda; overflow-wrap: anywhere; }
 .route-heading { display: flex; flex-wrap: wrap; gap: .9rem; align-items: center; margin-bottom: 1rem; }
@@ -152,5 +153,5 @@ code { color: #64ffda; overflow-wrap: anywhere; }
 .param-table th { color: #ffd700; background: rgba(0,0,0,.28); }
 .empty-note { color: rgba(255,255,255,.62); font-style: italic; }
 @media (max-width: 900px) { .documentation-layout { grid-template-columns: 1fr; gap: 1.25rem; } .documentation-menu { position: static; } }
-@media (max-width: 768px) { .documentation { padding: 1rem .55rem; } .documentation-panel { padding: 1rem; } .doc-grid { grid-template-columns: 1fr; } .doc-card { padding: 1rem; } .menu-tab { text-align: center; } .download-link { white-space: normal; } }
+@media (max-width: 768px) { .documentation { padding: 1rem .55rem; } .documentation-panel { padding: 1rem; } .doc-grid { grid-template-columns: 1fr; } .doc-card { padding: 1rem; } .menu-tab { text-align: center; } }
 </style>
