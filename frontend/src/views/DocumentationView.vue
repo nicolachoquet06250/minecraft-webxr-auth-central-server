@@ -8,27 +8,100 @@
 
       <div class="documentation-layout">
         <aside class="documentation-menu">
-          <button :class="tabClass('quick-start')" type="button" @click="activeTab = 'quick-start'">Quick start serveur</button>
+          <button :class="tabClass('quick-start')" type="button" @click="activeTab = 'quick-start'">Quickstart</button>
           <button :class="tabClass('api-doc')" type="button" @click="activeTab = 'api-doc'">API centrale</button>
           <button :class="tabClass('mods-doc')" type="button" @click="activeTab = 'mods-doc'">Mods</button>
         </aside>
 
         <section class="documentation-content">
           <div v-if="activeTab === 'quick-start'" class="documentation-section">
-            <span class="section-kicker">Quick start</span>
-            <h2>Installer un serveur de jeu</h2>
-            <div class="doc-grid">
+            <span class="section-kicker">Quickstart</span>
+            <h2>Installer le serveur central</h2>
+            <div class="quickstart-list">
               <article class="doc-card important-card">
                 <h3>1. Télécharger</h3>
-                <p>Récupère toujours la dernière release publiée.</p>
-                <a class="download-link" href="https://github.com/nicolachoquet06250/minecraft-webxr/releases/latest" target="_blank" rel="noopener noreferrer">Télécharger la dernière version</a>
+                <p>Récupère la dernière release publiée, puis prends l'archive correspondant à ton système.</p>
+                <a class="download-link" href="https://github.com/nicolachoquet06250/minecraft-webxr-auth-central-server/releases/latest" target="_blank" rel="noopener noreferrer">Télécharger la dernière version</a>
+                <div class="platform-grid">
+                  <div>
+                    <h4>Linux</h4>
+                    <pre>wget https://github.com/nicolachoquet06250/minecraft-webxr-auth-central-server/releases/latest/download/voxicraft-auth-backend-linux.tar.gz</pre>
+                  </div>
+                  <div>
+                    <h4>Windows</h4>
+                    <pre>Invoke-WebRequest `
+  -Uri "https://github.com/nicolachoquet06250/minecraft-webxr-auth-central-server/releases/latest/download/voxicraft-auth-backend-windows.zip" `
+  -OutFile "voxicraft-auth-backend-windows.zip"</pre>
+                  </div>
+                </div>
               </article>
-              <article class="doc-card"><h3>2. Extraire</h3><p>Décompresse l'archive sur la machine serveur.</p><pre>tar -xzf voxicraft-server-*.tar.gz
-cd voxicraft-server</pre></article>
-              <article class="doc-card"><h3>3. Configurer</h3><p>Prépare le fichier d'environnement.</p><pre>cp .env.example .env
-nano .env</pre></article>
-              <article class="doc-card"><h3>4. Lancer</h3><p>Démarre le binaire serveur.</p><pre>chmod +x voxicraft_server
-./voxicraft_server</pre></article>
+
+              <article class="doc-card">
+                <h3>2. Extraire</h3>
+                <p>Décompresse l'archive dans le dossier qui contiendra le serveur central.</p>
+                <div class="platform-grid">
+                  <div>
+                    <h4>Linux</h4>
+                    <pre>tar -xzf voxicraft-auth-backend-linux.tar.gz
+cd voxicraft-auth-backend</pre>
+                  </div>
+                  <div>
+                    <h4>Windows</h4>
+                    <pre>Expand-Archive `
+  -Path .\voxicraft-auth-backend-windows.zip `
+  -DestinationPath .\voxicraft-auth-backend
+cd .\voxicraft-auth-backend</pre>
+                  </div>
+                </div>
+              </article>
+
+              <article class="doc-card">
+                <h3>3. Configurer les variables d'environnement</h3>
+                <p>Crée un fichier <code>.env</code> à côté du binaire, puis renseigne les variables nécessaires à ton environnement.</p>
+                <div class="table-scroll">
+                  <table class="param-table">
+                    <thead>
+                      <tr><th>Variable</th><th>Type</th><th>Statut</th><th>Valeur par défaut</th><th>Description</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr><td><code>DATABASE_URL</code></td><td>URL</td><td>Obligatoire</td><td>—</td><td>Connexion à la base de données. Accepte MySQL en production ou SQLite en local.</td></tr>
+                      <tr><td><code>JWT_SECRET</code></td><td>Chaîne secrète</td><td>Obligatoire</td><td>—</td><td>Clé utilisée pour signer et vérifier les tokens JWT.</td></tr>
+                      <tr><td><code>API_HOST</code></td><td>Host / IP</td><td>Optionnelle</td><td><code>0.0.0.0</code></td><td>Adresse réseau sur laquelle le backend écoute.</td></tr>
+                      <tr><td><code>API_PORT</code></td><td>Nombre</td><td>Optionnelle</td><td><code>8080</code></td><td>Port HTTP du backend.</td></tr>
+                      <tr><td><code>CORS_ORIGIN</code></td><td>Liste d'URLs</td><td>Optionnelle</td><td><code>http://localhost:5173,http://localhost:5176</code></td><td>Origines front autorisées. Sépare plusieurs URLs avec des virgules.</td></tr>
+                      <tr><td><code>DOMAIN</code></td><td>URL</td><td>Optionnelle</td><td><code>http://localhost:8080</code></td><td>Domaine public du backend. Sert à remplacer l'URL API utilisée par le frontend embarqué.</td></tr>
+                      <tr><td><code>DISCORD_CLIENT_ID</code></td><td>Chaîne</td><td>Optionnelle</td><td>Chaîne vide</td><td>Client ID Discord OAuth. Nécessaire uniquement pour activer la connexion Discord.</td></tr>
+                      <tr><td><code>DISCORD_CLIENT_SECRET</code></td><td>Chaîne secrète</td><td>Optionnelle</td><td>Chaîne vide</td><td>Secret Discord OAuth. Nécessaire uniquement pour activer la connexion Discord.</td></tr>
+                      <tr><td><code>DISCORD_REDIRECT_URI</code></td><td>URL</td><td>Optionnelle</td><td>Chaîne vide</td><td>URL de callback Discord déclarée dans l'application Discord.</td></tr>
+                      <tr><td><code>SMTP_HOST</code></td><td>Host</td><td>Optionnelle</td><td>Chaîne vide</td><td>Serveur SMTP. Si absent, le service mail est désactivé.</td></tr>
+                      <tr><td><code>SMTP_PORT</code></td><td>Nombre</td><td>Optionnelle</td><td><code>587</code></td><td>Port SMTP utilisé pour envoyer les emails.</td></tr>
+                      <tr><td><code>SMTP_USERNAME</code></td><td>Chaîne</td><td>Optionnelle</td><td>Chaîne vide</td><td>Identifiant SMTP. Requis si le service mail est activé.</td></tr>
+                      <tr><td><code>SMTP_PASSWORD</code></td><td>Chaîne secrète</td><td>Optionnelle</td><td>Chaîne vide</td><td>Mot de passe SMTP. Requis si le service mail est activé.</td></tr>
+                      <tr><td><code>SMTP_FROM</code></td><td>Email</td><td>Optionnelle</td><td>Chaîne vide</td><td>Adresse expéditrice des emails. Requise si le service mail est activé.</td></tr>
+                      <tr><td><code>SMTP_STARTTLS</code></td><td>Booléen</td><td>Optionnelle</td><td><code>true</code></td><td>Active STARTTLS. Mets <code>false</code> ou <code>0</code> pour le désactiver.</td></tr>
+                      <tr><td><code>CONTACT_EMAIL</code></td><td>Email</td><td>Optionnelle</td><td><code>SMTP_FROM</code></td><td>Adresse qui reçoit les messages du formulaire de contact.</td></tr>
+                      <tr><td><code>SUPPORT_EMAIL</code></td><td>Email</td><td>Optionnelle</td><td><code>CONTACT_EMAIL</code></td><td>Adresse qui reçoit les demandes support.</td></tr>
+                      <tr><td><code>ENVIRONMENT</code></td><td>Chaîne</td><td>Optionnelle</td><td><code>development</code></td><td>Nom de l'environnement utilisé pour documenter ou distinguer dev, staging et production.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </article>
+
+              <article class="doc-card">
+                <h3>4. Lancer</h3>
+                <p>Démarre le binaire avec le fichier <code>.env</code> renseigné.</p>
+                <div class="platform-grid">
+                  <div>
+                    <h4>Linux</h4>
+                    <pre>chmod +x voxicraft-auth-backend
+./voxicraft-auth-backend</pre>
+                  </div>
+                  <div>
+                    <h4>Windows</h4>
+                    <pre>.\voxicraft-auth-backend.exe</pre>
+                  </div>
+                </div>
+              </article>
             </div>
           </div>
 
@@ -306,8 +379,10 @@ function schemaExample(schema?: JsonMap): unknown { const resolved = resolveSche
 h2 { color: #64ffda; margin: .55rem 0 1.2rem; line-height: 1.35; }
 h3, h4 { color: #ffd700; margin-bottom: 1rem; line-height: 1.45; }
 p, li { color: rgba(255,255,255,.82); line-height: 1.95; }
-.doc-grid, .mods-list, .api-route-list { display: grid; gap: 1.35rem; }
+.doc-grid, .quickstart-list, .mods-list, .api-route-list { display: grid; gap: 1.35rem; }
+.quickstart-list { grid-template-columns: 1fr; }
 .doc-grid { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.platform-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem; margin-top: 1rem; }
 .doc-card { background: rgba(0,0,0,.28); border: 1px solid rgba(100,255,218,.18); border-radius: 12px; padding: 1.45rem; min-width: 0; }
 .important-card { border-color: rgba(255,215,0,.55); }
 .warning-card { border-color: rgba(255,193,7,.55); }
@@ -322,9 +397,9 @@ code { color: #64ffda; overflow-wrap: anywhere; }
 .route-block { margin-top: 1.45rem; }
 .table-scroll { overflow-x: auto; }
 .param-table { width: 100%; border-collapse: collapse; color: rgba(255,255,255,.84); }
-.param-table th, .param-table td { padding: .8rem; border: 1px solid rgba(100,255,218,.18); text-align: left; line-height: 1.6; }
+.param-table th, .param-table td { padding: .8rem; border: 1px solid rgba(100,255,218,.18); text-align: left; line-height: 1.6; vertical-align: top; }
 .param-table th { color: #ffd700; background: rgba(0,0,0,.28); }
 .empty-note { color: rgba(255,255,255,.62); font-style: italic; }
 @media (max-width: 900px) { .documentation-layout { grid-template-columns: 1fr; gap: 1.25rem; } .documentation-menu { position: static; } }
-@media (max-width: 768px) { .documentation { padding: 1rem .55rem; } .documentation-panel { padding: 1rem; } .doc-grid { grid-template-columns: 1fr; } .doc-card { padding: 1rem; } .menu-tab { text-align: center; } }
+@media (max-width: 768px) { .documentation { padding: 1rem .55rem; } .documentation-panel { padding: 1rem; } .doc-grid { grid-template-columns: 1fr; } .platform-grid { grid-template-columns: 1fr; } .doc-card { padding: 1rem; } .menu-tab { text-align: center; } }
 </style>
