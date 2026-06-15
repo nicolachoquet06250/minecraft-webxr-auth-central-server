@@ -50,72 +50,198 @@ nano .env</pre></article>
           </div>
 
           <div v-else class="documentation-section">
-            <span class="section-kicker">Mods client</span>
+            <span class="section-kicker">Mods</span>
             <h2>Créer un mod Voxicraft</h2>
-            <p>Un mod client est un module JavaScript chargé par le navigateur. Il expose une fonction <code>register</code> qui reçoit l'API de jeu et peut ensuite écouter les évènements, ajouter des blocs, enregistrer des commandes ou afficher de l'interface.</p>
+            <p>Un mod Voxicraft est une extension placée dans le dossier <code>mods/</code> d'un serveur de jeu. Cette documentation décrit ce qu'il faut créer, comment déclarer le mod, et quelles APIs tu peux utiliser côté navigateur et côté serveur.</p>
+            <p><strong>Statut :</strong> le système de mods est encore expérimental. Le format peut évoluer, mais la structure ci-dessous est celle à utiliser pour créer un mod aujourd'hui.</p>
+
             <div class="mods-list">
-              <article class="doc-card"><h3>1. Structure minimale</h3><p>Crée un dossier par mod. Le fichier <code>mod.json</code> décrit le mod et <code>client/mod.js</code> contient son code.</p><pre>mods/mon-premier-mod/
-├── mod.json
-├── client/mod.js
-└── assets/icon.png</pre></article>
-              <article class="doc-card"><h3>2. Déclarer le manifest</h3><p>Le champ <code>client</code> pointe vers le fichier JavaScript chargé côté navigateur. <code>assets</code> est optionnel et sert aux icônes, sons, modèles ou textures.</p><pre>{
-  "id": "mon-premier-mod",
-  "name": "Mon premier mod",
+              <article class="doc-card">
+                <h3>1. Créer le dossier du mod</h3>
+                <p>Crée un dossier par mod. L'identifiant du dossier doit être stable, sans espace, sans slash et sans <code>..</code>.</p>
+                <pre>mods/
+  ruby-tools/
+    mod.json
+    client/
+      mod.js
+      mod.d.ts
+      assets/
+        ruby_ore.png
+    server/
+      mod.wasm</pre>
+              </article>
+
+              <article class="doc-card">
+                <h3>2. Déclarer <code>mod.json</code></h3>
+                <p>Le manifest décrit le nom du mod, sa version, les fichiers à charger et les permissions demandées. Un mod peut être <code>client</code>, <code>server</code> ou <code>both</code>.</p>
+                <pre>{
+  "id": "ruby-tools",
+  "name": "Ruby Tools",
   "version": "0.1.0",
-  "client": "client/mod.js",
-  "assets": ["assets/icon.png"]
-}</pre></article>
-              <article class="doc-card"><h3>3. Écrire le point d'entrée</h3><p>Le fichier client doit exporter une fonction <code>register(game)</code>. Elle est appelée une fois quand le mod est chargé.</p><pre>export function register(game) {
-  game.log.info('Mon mod est chargé')
-
-  game.events.on('ready', () =&gt; {
-    game.chat.system('Bienvenue sur ce serveur moddé !')
-  })
-}</pre></article>
-              <article class="doc-card"><h3>4. Cycle de vie conseillé</h3><p>Un mod peut retourner une fonction de nettoyage. Elle sera appelée si le mod est désactivé ou rechargé.</p><pre>export function register(game) {
-  const unsubscribe = game.events.on('tick', ({ delta }) =&gt; {
-    // logique répétée à chaque frame
-  })
-
-  return () =&gt; {
-    unsubscribe()
+  "side": "both",
+  "client": {
+    "runtime": "javascript",
+    "entry": "client/mod.js",
+    "types": "client/mod.d.ts",
+    "assets": "client/assets"
+  },
+  "server": {
+    "runtime": "wasm",
+    "entry": "server/mod.wasm"
+  },
+  "permissions": {
+    "client": [
+      "babylon.scene",
+      "game.player.read",
+      "game.events",
+      "ui.notify"
+    ],
+    "server": [
+      "world.read",
+      "world.write"
+    ]
   }
-}</pre></article>
-              <article class="doc-card"><h3>API évènements</h3><p>Les évènements permettent de réagir au jeu sans modifier le moteur.</p><pre>game.events.on('ready', callback)
-game.events.on('tick', ({ delta }) =&gt; {})
-game.events.on('block:break', ({ position, blockId }) =&gt; {})
-game.events.on('block:place', ({ position, blockId }) =&gt; {})
-game.events.on('player:join', ({ id, pseudo }) =&gt; {})
-game.events.on('player:leave', ({ id }) =&gt; {})</pre></article>
-              <article class="doc-card"><h3>API blocs</h3><p>Cette API sert à déclarer de nouveaux blocs ou à récupérer des blocs existants.</p><pre>game.blocks.register({
-  id: 'ruby_ore',
-  name: 'Minerai de rubis',
-  texture: '/mods/mon-premier-mod/assets/ruby_ore.png',
-  hardness: 3
-})
+}</pre>
+              </article>
 
-const block = game.blocks.get('grass')</pre></article>
-              <article class="doc-card"><h3>API monde</h3><p>Elle permet de lire ou modifier le monde de manière contrôlée.</p><pre>const block = game.world.getBlock(x, y, z)
-game.world.setBlock(x, y, z, 'ruby_ore')
-game.world.removeBlock(x, y, z)</pre></article>
-              <article class="doc-card"><h3>API joueur</h3><p>Elle expose les informations utiles du joueur local et quelques actions sûres.</p><pre>const player = game.player.local()
-const position = game.player.position()
-game.player.freeze(true)
-game.player.freeze(false)</pre></article>
-              <article class="doc-card"><h3>API interface</h3><p>Un mod peut ajouter une entrée de menu, une notification ou un panneau simple.</p><pre>game.ui.toast('Nouveau bloc débloqué')
-game.ui.addMenuEntry({
-  id: 'ruby-panel',
-  label: 'Rubis',
-  onClick: () =&gt; game.ui.openPanel('ruby-panel')
-})</pre></article>
-              <article class="doc-card"><h3>API commandes</h3><p>Les commandes permettent d'exposer une action mod depuis le chat ou la console de jeu.</p><pre>game.commands.register('spawn-ruby', {
-  description: 'Place un minerai de rubis devant le joueur',
-  run: () =&gt; {
-    const pos = game.player.targetBlock()
-    game.world.setBlock(pos.x, pos.y, pos.z, 'ruby_ore')
+              <article class="doc-card">
+                <h3>Champs du manifest</h3>
+                <div class="table-scroll">
+                  <table class="param-table">
+                    <thead><tr><th>Champ</th><th>Obligatoire</th><th>Description</th></tr></thead>
+                    <tbody>
+                      <tr><td><code>id</code></td><td>Oui</td><td>Identifiant unique du mod.</td></tr>
+                      <tr><td><code>name</code></td><td>Oui</td><td>Nom affiché dans les outils et messages.</td></tr>
+                      <tr><td><code>version</code></td><td>Oui</td><td>Version du mod, idéalement en SemVer.</td></tr>
+                      <tr><td><code>side</code></td><td>Oui</td><td><code>client</code>, <code>server</code> ou <code>both</code>.</td></tr>
+                      <tr><td><code>client.entry</code></td><td>Pour un mod client</td><td>Fichier JavaScript chargé par le navigateur.</td></tr>
+                      <tr><td><code>client.types</code></td><td>Non</td><td>Fichier de types TypeScript pour l'autocomplétion.</td></tr>
+                      <tr><td><code>client.assets</code></td><td>Non</td><td>Dossier public des images, sons, modèles ou textures du mod.</td></tr>
+                      <tr><td><code>server.entry</code></td><td>Pour un mod serveur</td><td>Fichier WebAssembly serveur.</td></tr>
+                      <tr><td><code>permissions</code></td><td>Non</td><td>Liste les APIs demandées par le mod.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </article>
+
+              <article class="doc-card">
+                <h3>3. Écrire un mod client</h3>
+                <p>Le fichier déclaré dans <code>client.entry</code> doit exporter <code>activate(ctx)</code>. Il peut aussi exporter <code>deactivate(ctx)</code> pour nettoyer les ressources du mod.</p>
+                <pre>export async function activate(ctx) {
+  ctx.ui.notify('Ruby Tools chargé')
+
+  const observer = ctx.scene.onBeforeRenderObservable.add(() =&gt; {
+    // logique exécutée à chaque frame
+  })
+
+  ctx.addDisposable({
+    dispose: () =&gt; ctx.scene.onBeforeRenderObservable.remove(observer)
+  })
+}
+
+export async function deactivate(ctx) {
+  ctx.ui.notify('Ruby Tools déchargé')
+}</pre>
+              </article>
+
+              <article class="doc-card">
+                <h3>API front disponible</h3>
+                <p>Dans <code>activate(ctx)</code>, le paramètre <code>ctx</code> expose les APIs utilisables côté navigateur.</p>
+                <pre>ctx.BABYLON
+ctx.scene
+ctx.engine
+ctx.player
+ctx.worldChunks
+ctx.droppedItems
+ctx.events
+ctx.ui.notify(message)
+ctx.resolveAssetUrl(path)
+ctx.addDisposable(disposable)</pre>
+              </article>
+
+              <article class="doc-card">
+                <h3>API front — Babylon.js</h3>
+                <p>Utilise <code>ctx.BABYLON</code>, <code>ctx.scene</code> et <code>ctx.engine</code> pour créer des meshes, matériaux, particules ou observers Babylon.js.</p>
+                <pre>export async function activate(ctx) {
+  const mesh = ctx.BABYLON.MeshBuilder.CreateBox(
+    'ruby-tools-marker',
+    { size: 0.25 },
+    ctx.scene
+  )
+
+  mesh.position.set(0, 2, 0)
+  ctx.addDisposable(mesh)
+}</pre>
+              </article>
+
+              <article class="doc-card">
+                <h3>API front — assets du mod</h3>
+                <p><code>ctx.resolveAssetUrl(path)</code> retourne l'URL publique d'un fichier situé dans <code>client.assets</code>.</p>
+                <pre>export async function activate(ctx) {
+  const textureUrl = ctx.resolveAssetUrl('ruby_ore.png')
+  const texture = new ctx.BABYLON.Texture(textureUrl, ctx.scene)
+
+  ctx.addDisposable(texture)
+}</pre>
+              </article>
+
+              <article class="doc-card">
+                <h3>API front — interface</h3>
+                <p><code>ctx.ui.notify(message)</code> affiche une notification simple dans le jeu.</p>
+                <pre>export async function activate(ctx) {
+  ctx.ui.notify('Nouveau minerai disponible : rubis')
+}</pre>
+              </article>
+
+              <article class="doc-card">
+                <h3>API front — évènements et nettoyage</h3>
+                <p><code>ctx.events</code> sert à brancher la logique du mod sur les évènements exposés par le jeu. Tout listener, mesh, observer ou texture créé par le mod doit être libéré via <code>ctx.addDisposable</code> ou <code>deactivate</code>.</p>
+                <pre>export async function activate(ctx) {
+  const unsubscribe = ctx.events.on('ready', () =&gt; {
+    ctx.ui.notify('Le monde est prêt')
+  })
+
+  ctx.addDisposable({ dispose: unsubscribe })
+}</pre>
+              </article>
+
+              <article class="doc-card">
+                <h3>API back disponible</h3>
+                <p>Un mod serveur se déclare avec <code>server.runtime = "wasm"</code> et <code>server.entry</code>. Les permissions serveur actuellement prévues sont :</p>
+                <pre>world.read
+world.write</pre>
+                <p>Ces permissions servent à documenter ce que le mod serveur veut faire côté monde. L'exécution complète des mods serveur WebAssembly reste expérimentale : ne pars pas du principe qu'un mod serveur dispose déjà des mêmes capacités qu'un mod client.</p>
+              </article>
+
+              <article class="doc-card">
+                <h3>Mod client uniquement</h3>
+                <p>Pour créer un mod qui ne tourne que dans le navigateur, utilise <code>side: "client"</code> et retire le bloc <code>server</code>.</p>
+                <pre>{
+  "id": "hud-helper",
+  "name": "HUD Helper",
+  "version": "0.1.0",
+  "side": "client",
+  "client": {
+    "runtime": "javascript",
+    "entry": "client/mod.js",
+    "assets": "client/assets"
   }
-})</pre></article>
-              <article class="doc-card"><h3>Bonnes pratiques</h3><p>Préfixe tes identifiants avec l'id du mod, libère tes listeners dans la fonction de nettoyage, évite les boucles coûteuses dans <code>tick</code>, et ne suppose jamais que les autres mods sont chargés.</p></article>
+}</pre>
+              </article>
+
+              <article class="doc-card">
+                <h3>Tester rapidement le mod</h3>
+                <p>Lance le serveur avec le dossier <code>mods/</code>, puis vérifie que le manifest et le fichier client sont accessibles.</p>
+                <pre>MODS_DIR=mods ./voxicraft_server
+
+curl -i http://localhost:8080/api/mods/manifest
+curl -i http://localhost:8080/mods/ruby-tools/client/mod.js</pre>
+              </article>
+
+              <article class="doc-card">
+                <h3>Bonnes pratiques</h3>
+                <p>Préfixe les IDs avec l'ID du mod, garde un manifest simple, libère toutes les ressources créées, évite les traitements lourds à chaque frame, et déclare uniquement les permissions réellement nécessaires.</p>
+              </article>
             </div>
           </div>
         </section>
