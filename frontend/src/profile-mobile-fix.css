@@ -92,3 +92,27 @@
     align-items: stretch;
   }
 }
+
+.profile.profile .discord-linked-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 38px;
+  width: 100%;
+}
+
+.profile.profile .discord-linked-content {
+  align-items: flex-start;
+  text-align: left;
+  min-width: 0;
+}
+
+.profile.profile .discord-linked-card small {
+  max-width: 100%;
+  text-align: left;
+}
+
+.profile.profile .discord-unlink-button {
+  justify-self: stretch;
+  align-self: stretch;
+  width: 38px;
+  min-width: 38px;
+}
