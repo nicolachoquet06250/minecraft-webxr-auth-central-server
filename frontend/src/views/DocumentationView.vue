@@ -16,41 +16,41 @@
         <section class="documentation-content">
           <div v-if="activeTab === 'quick-start'" class="documentation-section">
             <span class="section-kicker">Quickstart</span>
-            <h2>Installer le serveur central</h2>
+            <h2>Installer un serveur de jeu</h2>
             <div class="quickstart-list">
               <article class="doc-card important-card">
                 <h3>1. Télécharger</h3>
-                <p>Récupère la dernière release publiée, puis prends l'archive correspondant à ton système.</p>
-                <a class="download-link" href="https://github.com/nicolachoquet06250/minecraft-webxr-auth-central-server/releases/latest" target="_blank" rel="noopener noreferrer">Télécharger la dernière version</a>
+                <p>Récupère l'archive correspondant à ton système.</p>
+                <a class="download-link" href="https://github.com/nicolachoquet06250/minecraft-webxr/releases/tag/server-v0.4.0" target="_blank" rel="noopener noreferrer">Voir la release server-v0.4.0</a>
                 <div class="platform-grid">
                   <div>
                     <h4>Linux</h4>
-                    <pre>wget https://github.com/nicolachoquet06250/minecraft-webxr-auth-central-server/releases/latest/download/voxicraft-auth-backend-linux.tar.gz</pre>
+                    <pre>wget https://github.com/nicolachoquet06250/minecraft-webxr/releases/download/server-v0.4.0/voxicraft-server-linux-x86_64.tar.gz</pre>
                   </div>
                   <div>
                     <h4>Windows</h4>
                     <pre>Invoke-WebRequest `
-  -Uri "https://github.com/nicolachoquet06250/minecraft-webxr-auth-central-server/releases/latest/download/voxicraft-auth-backend-windows.zip" `
-  -OutFile "voxicraft-auth-backend-windows.zip"</pre>
+  -Uri "https://github.com/nicolachoquet06250/minecraft-webxr/releases/download/server-v0.4.0/voxicraft-server-windows-x86_64.zip" `
+  -OutFile "voxicraft-server-windows-x86_64.zip"</pre>
                   </div>
                 </div>
               </article>
 
               <article class="doc-card">
                 <h3>2. Extraire</h3>
-                <p>Décompresse l'archive dans le dossier qui contiendra le serveur central.</p>
+                <p>Décompresse l'archive dans le dossier qui contiendra le serveur de jeu.</p>
                 <div class="platform-grid">
                   <div>
                     <h4>Linux</h4>
-                    <pre>tar -xzf voxicraft-auth-backend-linux.tar.gz
-cd voxicraft-auth-backend</pre>
+                    <pre>tar -xzf voxicraft-server-linux-x86_64.tar.gz
+cd voxicraft-server</pre>
                   </div>
                   <div>
                     <h4>Windows</h4>
                     <pre>Expand-Archive `
-  -Path .\voxicraft-auth-backend-windows.zip `
-  -DestinationPath .\voxicraft-auth-backend
-cd .\voxicraft-auth-backend</pre>
+  -Path .\voxicraft-server-windows-x86_64.zip `
+  -DestinationPath .\voxicraft-server
+cd .\voxicraft-server</pre>
                   </div>
                 </div>
               </article>
@@ -93,12 +93,12 @@ cd .\voxicraft-auth-backend</pre>
                 <div class="platform-grid">
                   <div>
                     <h4>Linux</h4>
-                    <pre>chmod +x voxicraft-auth-backend
-./voxicraft-auth-backend</pre>
+                    <pre>chmod +x voxicraft_server
+./voxicraft_server</pre>
                   </div>
                   <div>
                     <h4>Windows</h4>
-                    <pre>.\voxicraft-auth-backend.exe</pre>
+                    <pre>.\voxicraft_server.exe</pre>
                   </div>
                 </div>
               </article>
