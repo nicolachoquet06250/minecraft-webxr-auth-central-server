@@ -108,6 +108,21 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const deleteAccount = async () => {
+    loading.value = true
+    error.value = null
+    try {
+      await userApi.deleteAccount()
+      clearAuth()
+      return true
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'Failed to delete account'
+      return false
+    } finally {
+      loading.value = false
+    }
+  }
+
   const getDiscordAuthUrl = async () => {
     try {
       const response = await authApi.getDiscordUrl()
@@ -130,6 +145,7 @@ export const useAuthStore = defineStore('auth', () => {
     fetchProfile,
     updateProfile,
     unlinkDiscord,
+    deleteAccount,
     getDiscordAuthUrl,
     setToken,
   }
