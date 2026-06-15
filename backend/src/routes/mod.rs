@@ -9,3 +9,4 @@ pub mod account_security;
 pub mod login_origin;
 pub mod openapi;
 pub mod openapi_paths;
+pub mod openapi_paths_extra;
