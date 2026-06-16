@@ -81,12 +81,29 @@ fn response_paginated_user_search() -> Value {
                                 "type": "array",
                                 "items": {
                                     "type": "object",
-                                    "required": ["id", "username", "avatar", "avatar_url"],
+                                    "required": ["id", "username", "avatar"],
                                     "properties": {
                                         "id": { "type": "string" },
                                         "username": { "type": "string" },
-                                        "avatar": { "type": "string", "example": "steve" },
-                                        "avatar_url": { "type": "string", "example": "/api/users/00000000-0000-0000-0000-000000000000/profile-pic.svg" }
+                                        "avatar": {
+                                            "type": "object",
+                                            "required": ["kind", "base_kind", "url"],
+                                            "properties": {
+                                                "kind": {
+                                                    "type": "string",
+                                                    "enum": ["default", "custom"],
+                                                    "example": "custom"
+                                                },
+                                                "base_kind": {
+                                                    "type": "string",
+                                                    "example": "steve"
+                                                },
+                                                "url": {
+                                                    "type": "string",
+                                                    "example": "/api/users/00000000-0000-0000-0000-000000000000/profile-pic.svg"
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             },
