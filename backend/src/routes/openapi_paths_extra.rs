@@ -2,8 +2,16 @@ use serde_json::{json, Value};
 
 pub fn extra_openapi_paths() -> Value {
     json!({
+        "/users/search": {
+            "get": secured_operation(
+                "users",
+                "Rechercher des utilisateurs",
+                None,
+                response_paginated_user_search()
+            )
+        },
         "/users/{id}": {
-            "get": operation_with_id("users", "Récupérer un profil public", None, response_ref("UserResponse"))
+            "get": secured_operation_with_id("users", "Récupérer un profil utilisateur", None, response_ref("UserResponse"))
         },
         "/users/me/avatar": {
             "get": secured_operation("avatars", "Récupérer l'avatar actif", None, response_ref("ActiveAvatarResponse")),
@@ -21,7 +29,7 @@ pub fn extra_openapi_paths() -> Value {
             "put": secured_operation_with_id("avatars", "Sélectionner un avatar personnalisé", None, response_no_content("Avatar sélectionné"))
         },
         "/servers/{id}": {
-            "get": operation_with_id("servers", "Récupérer un serveur public", None, response_ref("ServerResponse")),
+            "get": secured_operation_with_id("servers", "Récupérer un serveur", None, response_ref("ServerResponse")),
             "put": secured_operation_with_id("servers", "Modifier un serveur", Some(ref_body("UpdateServerRequest")), response_ref("ServerResponse")),
             "delete": secured_operation_with_id("servers", "Supprimer un serveur", None, response_no_content("Serveur supprimé"))
         }
@@ -58,3 +66,40 @@ fn schema_ref(schema: &str) -> Value { json!({ "$ref": format!("#/components/sch
 fn response_ref(schema: &str) -> Value { json!({ "200": { "description": "OK", "content": { "application/json": { "schema": schema_ref(schema) } } } }) }
 fn response_array_ref(schema: &str) -> Value { json!({ "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": schema_ref(schema) } } } } }) }
 fn response_no_content(description: &str) -> Value { json!({ "204": { "description": description } }) }
+
+fn response_paginated_user_search() -> Value {
+    json!({
+        "200": {
+            "description": "OK",
+            "content": {
+                "application/json": {
+                    "schema": {
+                        "type": "object",
+                        "required": ["items", "page", "page_size", "total", "total_pages"],
+                        "properties": {
+                            "items": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "required": ["id", "username", "avatar", "avatar_url"],
+                                    "properties": {
+                                        "id": { "type": "string" },
+                                        "username": { "type": "string" },
+                                        "avatar": { "type": "string", "example": "steve" },
+                                        "avatar_url": { "type": "string", "example": "/api/users/00000000-0000-0000-0000-000000000000/profile-pic.svg" }
+                                    }
+                                }
+                            },
+                            "page": { "type": "integer", "format": "uint64", "minimum": 1, "example": 1 },
+                            "page_size": { "type": "integer", "format": "uint64", "minimum": 1, "maximum": 50, "example": 20 },
+                            "total": { "type": "integer", "format": "uint64", "example": 42 },
+                            "total_pages": { "type": "integer", "format": "uint64", "example": 3 }
+                        }
+                    }
+                }
+            }
+        },
+        "400": { "description": "Requête invalide, q doit contenir au moins 2 caractères" },
+        "401": { "description": "JWT manquant ou invalide" }
+    })
+}
