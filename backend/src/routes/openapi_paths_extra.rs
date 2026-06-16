@@ -87,7 +87,7 @@ fn response_paginated_user_search() -> Value {
                                         "username": { "type": "string" },
                                         "avatar": {
                                             "type": "object",
-                                            "required": ["kind", "base_kind", "url"],
+                                            "required": ["kind", "base_kind", "name", "url"],
                                             "properties": {
                                                 "kind": {
                                                     "type": "string",
@@ -97,6 +97,10 @@ fn response_paginated_user_search() -> Value {
                                                 "base_kind": {
                                                     "type": "string",
                                                     "example": "steve"
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Avatar médiéval"
                                                 },
                                                 "url": {
                                                     "type": "string",
