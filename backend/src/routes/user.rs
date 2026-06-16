@@ -3,7 +3,7 @@ use axum::{
     http::StatusCode,
     response::Json,
 };
-use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect, Set};
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder, QuerySelect, Set};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use validator::Validate;
@@ -16,13 +16,15 @@ use crate::{
 };
 
 const USER_SEARCH_MIN_QUERY_LEN: usize = 2;
-const USER_SEARCH_DEFAULT_LIMIT: u64 = 20;
-const USER_SEARCH_MAX_LIMIT: u64 = 50;
+const USER_SEARCH_DEFAULT_PAGE: u64 = 1;
+const USER_SEARCH_DEFAULT_PAGE_SIZE: u64 = 20;
+const USER_SEARCH_MAX_PAGE_SIZE: u64 = 50;
 
 #[derive(Debug, Deserialize)]
 pub struct UserSearchQuery {
     pub q: String,
-    pub limit: Option<u64>,
+    pub page: Option<u64>,
+    pub page_size: Option<u64>,
 }
 
 #[derive(Debug, Serialize)]
@@ -31,6 +33,15 @@ pub struct UserSearchResult {
     pub username: String,
     pub avatar: String,
     pub avatar_url: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct PaginatedUserSearchResponse {
+    pub items: Vec<UserSearchResult>,
+    pub page: u64,
+    pub page_size: u64,
+    pub total: u64,
+    pub total_pages: u64,
 }
 
 pub async fn get_profile(Extension(claims): Extension<Claims>, State(state): State<Arc<AppState>>) -> Result<Json<UserResponse>, StatusCode> {
@@ -43,32 +54,50 @@ pub async fn search_users(
     Extension(claims): Extension<Claims>,
     State(state): State<Arc<AppState>>,
     Query(params): Query<UserSearchQuery>,
-) -> Result<Json<Vec<UserSearchResult>>, StatusCode> {
+) -> Result<Json<PaginatedUserSearchResponse>, StatusCode> {
     let query = params.q.trim();
     if query.chars().count() < USER_SEARCH_MIN_QUERY_LEN {
         return Err(StatusCode::BAD_REQUEST);
     }
 
-    let limit = params
-        .limit
-        .unwrap_or(USER_SEARCH_DEFAULT_LIMIT)
-        .min(USER_SEARCH_MAX_LIMIT);
+    let page = params.page.unwrap_or(USER_SEARCH_DEFAULT_PAGE).max(1);
+    let page_size = params
+        .page_size
+        .unwrap_or(USER_SEARCH_DEFAULT_PAGE_SIZE)
+        .clamp(1, USER_SEARCH_MAX_PAGE_SIZE);
+    let offset = (page - 1) * page_size;
 
-    let users = User::find()
+    let base_query = User::find()
         .filter(user::Column::Id.ne(&claims.sub))
-        .filter(user::Column::Username.contains(query))
+        .filter(user::Column::Username.contains(query));
+
+    let total = base_query
+        .clone()
+        .count(&state.db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let users = base_query
         .order_by_asc(user::Column::Username)
-        .limit(limit)
+        .offset(offset)
+        .limit(page_size)
         .all(&state.db)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let results = users
+    let items = users
         .into_iter()
         .map(user_to_search_result)
         .collect();
+    let total_pages = if total == 0 { 0 } else { total.div_ceil(page_size) };
 
-    Ok(Json(results))
+    Ok(Json(PaginatedUserSearchResponse {
+        items,
+        page,
+        page_size,
+        total,
+        total_pages,
+    }))
 }
 
 pub async fn get_user_by_id(Path(user_id): Path<String>, State(state): State<Arc<AppState>>) -> Result<Json<UserResponse>, StatusCode> {
