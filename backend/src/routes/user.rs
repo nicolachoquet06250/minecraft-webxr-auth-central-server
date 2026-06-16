@@ -49,6 +49,8 @@ pub struct PaginatedUserSearchResponse {
     pub page_size: u64,
     pub total: u64,
     pub total_pages: u64,
+    pub next_url: Option<String>,
+    pub previous_url: Option<String>,
 }
 
 pub async fn get_profile(Extension(claims): Extension<Claims>, State(state): State<Arc<AppState>>) -> Result<Json<UserResponse>, StatusCode> {
@@ -113,6 +115,16 @@ pub async fn search_users(
         .map(|user| user_to_search_result(user, &active_avatars_by_user_id))
         .collect();
     let total_pages = if total == 0 { 0 } else { total.div_ceil(page_size) };
+    let next_url = if page < total_pages {
+        Some(user_search_page_url(query, page + 1, page_size))
+    } else {
+        None
+    };
+    let previous_url = if page > 1 && total_pages > 0 {
+        Some(user_search_page_url(query, page - 1, page_size))
+    } else {
+        None
+    };
 
     Ok(Json(PaginatedUserSearchResponse {
         items,
@@ -120,6 +132,8 @@ pub async fn search_users(
         page_size,
         total,
         total_pages,
+        next_url,
+        previous_url,
     }))
 }
 
@@ -188,6 +202,15 @@ fn user_to_search_result(user: user::Model, active_avatars_by_user_id: &HashMap<
         username: user.username,
         avatar,
     }
+}
+
+fn user_search_page_url(query: &str, page: u64, page_size: u64) -> String {
+    format!(
+        "/api/users/search?q={}&page={}&page_size={}",
+        urlencoding::encode(query),
+        page,
+        page_size,
+    )
 }
 
 fn base_avatar_name(base_kind: &str) -> &str {
