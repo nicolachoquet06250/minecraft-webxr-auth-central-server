@@ -74,9 +74,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/auth/discord/callback", get(routes::auth::discord_callback))
         .route("/mail/status", get(routes::mail::mail_status))
         .route("/contact", post(routes::mail::send_contact_mail))
-        .route("/support", post(routes::mail::send_support_mail))
-        .route("/users/:id", get(routes::user::get_user_by_id))
-        .route("/servers/:id", get(routes::server::get_server));
+        .route("/support", post(routes::mail::send_support_mail));
 
     let protected_routes = Router::new()
         .route("/users/me", get(routes::user::get_profile))
@@ -92,6 +90,8 @@ async fn main() -> anyhow::Result<()> {
         .route("/users/me/avatars/:id/select", put(routes::avatar::select_avatar))
         .route("/users/me/profile-pic.svg", get(routes::avatar::get_profile_pic_svg))
         .route("/users/me/profile-pic.svg", options(routes::avatar::profile_pic_preflight))
+        .route("/users/search", get(routes::user::search_users))
+        .route("/users/:id", get(routes::user::get_user_by_id))
         .route("/users/:id/profile-pic.svg", get(routes::avatar::get_user_profile_pic_svg))
         .route("/users/:id/profile-pic.svg", options(routes::avatar::profile_pic_preflight))
         .route("/users/:id/matrix-color", get(routes::matrix_color::get_user_matrix_color))
@@ -101,6 +101,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/servers/recent", get(routes::server::get_recent_servers))
         .route("/servers/favorites", get(routes::server::get_favorite_servers))
         .route("/servers/visit", post(routes::server::record_server_visit))
+        .route("/servers/:id", get(routes::server::get_server))
         .route("/servers/:id/favorite", post(routes::server::favorite_server))
         .route("/servers/:id/favorite", delete(routes::server::unfavorite_server))
         .route("/servers/:id", put(routes::server::update_server))
