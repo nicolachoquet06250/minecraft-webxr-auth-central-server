@@ -75,7 +75,7 @@ pub async fn search_users(
     let offset = (page - 1) * page_size;
 
     let base_query = User::find()
-        .filter(user::Column::Id.ne(&claims.sub))
+        .filter(user::Column::Id.ne(claims.sub.clone()))
         .filter(user::Column::Username.contains(query));
 
     let total = base_query
