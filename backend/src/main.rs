@@ -90,6 +90,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/users/me/avatars/:id/select", put(routes::avatar::select_avatar))
         .route("/users/me/profile-pic.svg", get(routes::avatar::get_profile_pic_svg))
         .route("/users/me/profile-pic.svg", options(routes::avatar::profile_pic_preflight))
+        .route("/users/search", get(routes::user::search_users))
         .route("/users/:id", get(routes::user::get_user_by_id))
         .route("/users/:id/profile-pic.svg", get(routes::avatar::get_user_profile_pic_svg))
         .route("/users/:id/profile-pic.svg", options(routes::avatar::profile_pic_preflight))
