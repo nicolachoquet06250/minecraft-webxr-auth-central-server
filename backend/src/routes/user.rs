@@ -22,7 +22,7 @@ const USER_SEARCH_MAX_PAGE_SIZE: u64 = 50;
 
 #[derive(Debug, Deserialize)]
 pub struct UserSearchQuery {
-    pub q: String,
+    pub q: Option<String>,
     pub page: Option<u64>,
     pub page_size: Option<u64>,
 }
@@ -64,9 +64,11 @@ pub async fn search_users(
     State(state): State<Arc<AppState>>,
     Query(params): Query<UserSearchQuery>,
 ) -> Result<Json<PaginatedUserSearchResponse>, StatusCode> {
-    let query = params.q.trim();
-    if query.chars().count() < USER_SEARCH_MIN_QUERY_LEN {
-        return Err(StatusCode::BAD_REQUEST);
+    let query = params.q.as_deref().map(str::trim).filter(|value| !value.is_empty());
+    if let Some(query) = query {
+        if query.chars().count() < USER_SEARCH_MIN_QUERY_LEN {
+            return Err(StatusCode::BAD_REQUEST);
+        }
     }
 
     let page = params.page.unwrap_or(USER_SEARCH_DEFAULT_PAGE).max(1);
@@ -76,9 +78,10 @@ pub async fn search_users(
         .clamp(1, USER_SEARCH_MAX_PAGE_SIZE);
     let offset = (page - 1) * page_size;
 
-    let base_query = User::find()
-        .filter(user::Column::Id.ne(claims.sub.clone()))
-        .filter(user::Column::Username.contains(query));
+    let mut base_query = User::find().filter(user::Column::Id.ne(claims.sub.clone()));
+    if let Some(query) = query {
+        base_query = base_query.filter(user::Column::Username.contains(query));
+    }
 
     let total = base_query
         .clone()
@@ -204,13 +207,17 @@ fn user_to_search_result(user: user::Model, active_avatars_by_user_id: &HashMap<
     }
 }
 
-fn user_search_page_url(query: &str, page: u64, page_size: u64) -> String {
-    format!(
-        "/api/users/search?q={}&page={}&page_size={}",
-        urlencoding::encode(query),
-        page,
-        page_size,
-    )
+fn user_search_page_url(query: Option<&str>, page: u64, page_size: u64) -> String {
+    if let Some(query) = query {
+        format!(
+            "/api/users/search?q={}&page={}&page_size={}",
+            urlencoding::encode(query),
+            page,
+            page_size,
+        )
+    } else {
+        format!("/api/users/search?page={}&page_size={}", page, page_size)
+    }
 }
 
 fn base_avatar_name(base_kind: &str) -> &str {

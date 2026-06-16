@@ -3,12 +3,33 @@ use serde_json::{json, Value};
 pub fn extra_openapi_paths() -> Value {
     json!({
         "/users/search": {
-            "get": secured_operation(
-                "users",
-                "Rechercher des utilisateurs",
-                None,
-                response_paginated_user_search()
-            )
+            "get": {
+                "tags": ["users"],
+                "summary": "Lister ou rechercher des utilisateurs",
+                "security": [{ "bearerAuth": [] }],
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": false,
+                        "description": "Recherche par nom d'utilisateur. Si absent ou vide, tous les utilisateurs sont listés en pagination.",
+                        "schema": { "type": "string", "minLength": 2 }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": { "type": "integer", "format": "uint64", "minimum": 1, "default": 1 }
+                    },
+                    {
+                        "name": "page_size",
+                        "in": "query",
+                        "required": false,
+                        "schema": { "type": "integer", "format": "uint64", "minimum": 1, "maximum": 50, "default": 20 }
+                    }
+                ],
+                "responses": response_paginated_user_search()
+            }
         },
         "/users/{id}": {
             "get": secured_operation_with_id("users", "Récupérer un profil utilisateur", None, response_ref("UserResponse"))
@@ -118,7 +139,7 @@ fn response_paginated_user_search() -> Value {
                             "next_url": {
                                 "type": "string",
                                 "nullable": true,
-                                "example": "/api/users/search?q=nic&page=2&page_size=20"
+                                "example": "/api/users/search?page=2&page_size=20"
                             },
                             "previous_url": {
                                 "type": "string",
@@ -130,7 +151,7 @@ fn response_paginated_user_search() -> Value {
                 }
             }
         },
-        "400": { "description": "Requête invalide, q doit contenir au moins 2 caractères" },
+        "400": { "description": "Requête invalide, q doit contenir au moins 2 caractères quand il est renseigné" },
         "401": { "description": "JWT manquant ou invalide" }
     })
 }
