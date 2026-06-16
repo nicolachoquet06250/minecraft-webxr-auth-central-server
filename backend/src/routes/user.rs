@@ -31,6 +31,7 @@ pub struct UserSearchQuery {
 pub struct UserSearchAvatar {
     pub kind: String,
     pub base_kind: String,
+    pub name: String,
     pub url: String,
 }
 
@@ -169,12 +170,15 @@ fn user_to_search_result(user: user::Model, active_avatars_by_user_id: &HashMap<
         UserSearchAvatar {
             kind: "custom".to_string(),
             base_kind: active_avatar.base_kind.clone(),
+            name: active_avatar.name.clone(),
             url: avatar_url,
         }
     } else {
+        let base_kind = user.avatar.clone();
         UserSearchAvatar {
             kind: "default".to_string(),
-            base_kind: user.avatar.clone(),
+            name: base_avatar_name(&base_kind).to_string(),
+            base_kind,
             url: avatar_url,
         }
     };
@@ -183,5 +187,13 @@ fn user_to_search_result(user: user::Model, active_avatars_by_user_id: &HashMap<
         id: user.id,
         username: user.username,
         avatar,
+    }
+}
+
+fn base_avatar_name(base_kind: &str) -> &str {
+    match base_kind {
+        "steve" => "Steve",
+        "alex" => "Alex",
+        _ => "Avatar par défaut",
     }
 }
