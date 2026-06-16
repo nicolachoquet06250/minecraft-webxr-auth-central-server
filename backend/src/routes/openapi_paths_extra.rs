@@ -75,7 +75,7 @@ fn response_paginated_user_search() -> Value {
                 "application/json": {
                     "schema": {
                         "type": "object",
-                        "required": ["items", "page", "page_size", "total", "total_pages"],
+                        "required": ["items", "page", "page_size", "total", "total_pages", "next_url", "previous_url"],
                         "properties": {
                             "items": {
                                 "type": "array",
@@ -114,7 +114,17 @@ fn response_paginated_user_search() -> Value {
                             "page": { "type": "integer", "format": "uint64", "minimum": 1, "example": 1 },
                             "page_size": { "type": "integer", "format": "uint64", "minimum": 1, "maximum": 50, "example": 20 },
                             "total": { "type": "integer", "format": "uint64", "example": 42 },
-                            "total_pages": { "type": "integer", "format": "uint64", "example": 3 }
+                            "total_pages": { "type": "integer", "format": "uint64", "example": 3 },
+                            "next_url": {
+                                "type": "string",
+                                "nullable": true,
+                                "example": "/api/users/search?q=nic&page=2&page_size=20"
+                            },
+                            "previous_url": {
+                                "type": "string",
+                                "nullable": true,
+                                "example": null
+                            }
                         }
                     }
                 }
