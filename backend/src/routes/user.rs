@@ -5,12 +5,12 @@ use axum::{
 };
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder, QuerySelect, Set};
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 use validator::Validate;
 
 use crate::{
     dto::{UpdateUserRequest, UserResponse},
-    models::{user, User},
+    models::{avatar, user, Avatar, User},
     services::Claims,
     AppState,
 };
@@ -28,11 +28,17 @@ pub struct UserSearchQuery {
 }
 
 #[derive(Debug, Serialize)]
+pub struct UserSearchAvatar {
+    pub kind: String,
+    pub base_kind: String,
+    pub url: String,
+}
+
+#[derive(Debug, Serialize)]
 pub struct UserSearchResult {
     pub id: String,
     pub username: String,
-    pub avatar: String,
-    pub avatar_url: String,
+    pub avatar: UserSearchAvatar,
 }
 
 #[derive(Debug, Serialize)]
@@ -85,9 +91,25 @@ pub async fn search_users(
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
+    let user_ids = users.iter().map(|user| user.id.clone()).collect::<Vec<_>>();
+    let active_avatars = if user_ids.is_empty() {
+        Vec::new()
+    } else {
+        Avatar::find()
+            .filter(avatar::Column::UserId.is_in(user_ids))
+            .filter(avatar::Column::IsActive.eq(true))
+            .all(&state.db)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+    };
+    let active_avatars_by_user_id = active_avatars
+        .into_iter()
+        .map(|avatar| (avatar.user_id.clone(), avatar))
+        .collect::<HashMap<_, _>>();
+
     let items = users
         .into_iter()
-        .map(user_to_search_result)
+        .map(|user| user_to_search_result(user, &active_avatars_by_user_id))
         .collect();
     let total_pages = if total == 0 { 0 } else { total.div_ceil(page_size) };
 
@@ -141,11 +163,25 @@ fn user_to_response(user: user::Model) -> UserResponse {
     UserResponse { id: user.id.to_string(), username: user.username, email: user.email, avatar: user.avatar, bio: user.bio, birthdate: user.birthdate.to_string(), age_verified: user.age_verified, discord_username: user.discord_username, created_at: user.created_at.to_string() }
 }
 
-fn user_to_search_result(user: user::Model) -> UserSearchResult {
+fn user_to_search_result(user: user::Model, active_avatars_by_user_id: &HashMap<String, avatar::Model>) -> UserSearchResult {
+    let avatar_url = format!("/api/users/{}/profile-pic.svg", user.id);
+    let avatar = if let Some(active_avatar) = active_avatars_by_user_id.get(&user.id) {
+        UserSearchAvatar {
+            kind: "custom".to_string(),
+            base_kind: active_avatar.base_kind.clone(),
+            url: avatar_url,
+        }
+    } else {
+        UserSearchAvatar {
+            kind: "default".to_string(),
+            base_kind: user.avatar.clone(),
+            url: avatar_url,
+        }
+    };
+
     UserSearchResult {
-        avatar_url: format!("/api/users/{}/profile-pic.svg", user.id),
         id: user.id,
         username: user.username,
-        avatar: user.avatar,
+        avatar,
     }
 }
