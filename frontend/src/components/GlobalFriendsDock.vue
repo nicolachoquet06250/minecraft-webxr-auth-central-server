@@ -112,74 +112,56 @@ const avatarObjectUrls = ref<Record<string, string>>({})
 const loadingAvatarUrls = new Set<string>()
 const avatarPlaceholder = 'data:image/svg+xml;utf8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2048%2048%22%3E%3Crect%20width=%2248%22%20height=%2248%22%20rx=%228%22%20fill=%22%23212121%22/%3E%3Crect%20x=%2214%22%20y=%2210%22%20width=%2220%22%20height=%2220%22%20fill=%22%2364ffda%22%20opacity=%22.75%22/%3E%3Crect%20x=%2210%22%20y=%2234%22%20width=%2228%22%20height=%228%22%20fill=%22%2364ffda%22%20opacity=%22.45%22/%3E%3C/svg%3E'
 
-watch(
-  () => authStore.isAuthenticated,
-  async (isAuthenticated) => {
-    if (isAuthenticated) {
-      await refreshAll()
-    } else {
-      drawerOpen.value = false
-      clearAvatarUrls()
-    }
-  },
-  { immediate: true }
-)
-
-watch(
-  () => [
-    friendsStore.incomingRequests.map((request) => request.requester.avatar.url).join('|'),
-    friendsStore.outgoingRequests.map((request) => request.receiver.avatar.url).join('|'),
-    friendsStore.friends.map((entry) => entry.user.avatar.url).join('|'),
-  ],
-  () => { void loadVisibleAvatars() },
-  { deep: false }
-)
-
-onBeforeUnmount(() => clearAvatarUrls())
-
-const toggleDrawer = async () => {
+async function toggleDrawer() {
   drawerOpen.value = !drawerOpen.value
   if (drawerOpen.value) await refreshAll()
 }
 
-const closeDrawer = () => {
+function closeDrawer() {
   drawerOpen.value = false
 }
 
-const refreshAll = async () => {
+async function refreshAll() {
   await friendsStore.fetchAll()
   await loadVisibleAvatars()
 }
 
-const acceptRequest = async (requestId: string) => {
+async function acceptRequest(requestId: string) {
   await friendsStore.acceptRequest(requestId)
   await loadVisibleAvatars()
 }
 
-const refuseRequest = async (requestId: string) => {
+async function refuseRequest(requestId: string) {
   await friendsStore.refuseRequest(requestId)
   await loadVisibleAvatars()
 }
 
-const removeFriend = async (userId: string) => {
+async function removeFriend(userId: string) {
   await friendsStore.removeFriend(userId)
   await loadVisibleAvatars()
 }
 
-const formatDate = (value: string) => new Date(value).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
-const avatarSrc = (path: string) => avatarObjectUrls.value[path] || avatarPlaceholder
+function formatDate(value: string) {
+  return new Date(value).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
+}
 
-const collectVisibleAvatarPaths = () => Array.from(new Set([
-  ...friendsStore.incomingRequests.map((request) => request.requester.avatar.url),
-  ...friendsStore.outgoingRequests.map((request) => request.receiver.avatar.url),
-  ...friendsStore.friends.map((entry) => entry.user.avatar.url),
-]))
+function avatarSrc(path: string) {
+  return avatarObjectUrls.value[path] || avatarPlaceholder
+}
 
-const loadVisibleAvatars = async () => {
+function collectVisibleAvatarPaths() {
+  return Array.from(new Set([
+    ...friendsStore.incomingRequests.map((request) => request.requester.avatar.url),
+    ...friendsStore.outgoingRequests.map((request) => request.receiver.avatar.url),
+    ...friendsStore.friends.map((entry) => entry.user.avatar.url),
+  ]))
+}
+
+async function loadVisibleAvatars() {
   await Promise.all(collectVisibleAvatarPaths().map((path) => loadProtectedAvatar(path)))
 }
 
-const loadProtectedAvatar = async (path: string) => {
+async function loadProtectedAvatar(path: string) {
   if (!path || avatarObjectUrls.value[path] || loadingAvatarUrls.has(path)) return
   const token = localStorage.getItem('auth_token')
   if (!token) return
@@ -198,12 +180,38 @@ const loadProtectedAvatar = async (path: string) => {
   }
 }
 
-const apiAsset = (path: string) => path.startsWith('http') ? path : `${API_BASE_URL}${path.startsWith('/api') ? path.slice(4) : path}`
+function apiAsset(path: string) {
+  return path.startsWith('http') ? path : `${API_BASE_URL}${path.startsWith('/api') ? path.slice(4) : path}`
+}
 
-const clearAvatarUrls = () => {
+function clearAvatarUrls() {
   Object.values(avatarObjectUrls.value).forEach((url) => URL.revokeObjectURL(url))
   avatarObjectUrls.value = {}
 }
+
+watch(
+  () => authStore.isAuthenticated,
+  async (isAuthenticated) => {
+    if (isAuthenticated) await refreshAll()
+    else {
+      drawerOpen.value = false
+      clearAvatarUrls()
+    }
+  },
+  { immediate: true }
+)
+
+watch(
+  () => [
+    friendsStore.incomingRequests.map((request) => request.requester.avatar.url).join('|'),
+    friendsStore.outgoingRequests.map((request) => request.receiver.avatar.url).join('|'),
+    friendsStore.friends.map((entry) => entry.user.avatar.url).join('|'),
+  ],
+  () => { void loadVisibleAvatars() },
+  { deep: false }
+)
+
+onBeforeUnmount(() => clearAvatarUrls())
 </script>
 
 <style scoped>
