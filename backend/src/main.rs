@@ -92,6 +92,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/users/me/profile-pic.svg", options(routes::avatar::profile_pic_preflight))
         .route("/users/search", get(routes::user::search_users))
         .route("/users/:id", get(routes::user::get_user_by_id))
+        .route("/users/:id/avatar", get(routes::avatar::get_user_active_avatar))
         .route("/users/:id/profile-pic.svg", get(routes::avatar::get_user_profile_pic_svg))
         .route("/users/:id/profile-pic.svg", options(routes::avatar::profile_pic_preflight))
         .route("/users/:id/matrix-color", get(routes::matrix_color::get_user_matrix_color))

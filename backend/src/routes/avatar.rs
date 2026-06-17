@@ -16,8 +16,12 @@ pub async fn list_avatars(Extension(claims): Extension<Claims>, State(state): St
 }
 
 pub async fn get_active_avatar(Extension(claims): Extension<Claims>, State(state): State<Arc<AppState>>) -> Result<Json<ActiveAvatarResponse>, StatusCode> {
-    let avatar = Avatar::find().filter(avatar::Column::UserId.eq(claims.sub)).filter(avatar::Column::IsActive.eq(true)).one(&state.db).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    Ok(Json(ActiveAvatarResponse { kind: if avatar.is_some() { "custom" } else { "default" }.to_string(), avatar: avatar.map(to_response) }))
+    active_avatar_response(&state, &claims.sub).await
+}
+
+pub async fn get_user_active_avatar(Extension(_claims): Extension<Claims>, State(state): State<Arc<AppState>>, Path(user_id): Path<String>) -> Result<Json<ActiveAvatarResponse>, StatusCode> {
+    User::find_by_id(user_id.clone()).one(&state.db).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?.ok_or(StatusCode::NOT_FOUND)?;
+    active_avatar_response(&state, &user_id).await
 }
 
 pub async fn get_profile_pic_svg(Extension(claims): Extension<Claims>, State(state): State<Arc<AppState>>) -> Result<Response, StatusCode> { profile_pic_response(&state, &claims.sub).await }
@@ -77,6 +81,11 @@ pub async fn clear_active_avatar(Extension(claims): Extension<Claims>, State(sta
     Ok(StatusCode::NO_CONTENT)
 }
 
+async fn active_avatar_response(state: &Arc<AppState>, user_id: &str) -> Result<Json<ActiveAvatarResponse>, StatusCode> {
+    let avatar = Avatar::find().filter(avatar::Column::UserId.eq(user_id)).filter(avatar::Column::IsActive.eq(true)).one(&state.db).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    Ok(Json(ActiveAvatarResponse { kind: if avatar.is_some() { "custom" } else { "default" }.to_string(), avatar: avatar.map(to_response) }))
+}
+
 async fn profile_pic_response(state: &Arc<AppState>, user_id: &str) -> Result<Response, StatusCode> {
     let active_avatar = Avatar::find().filter(avatar::Column::UserId.eq(user_id)).filter(avatar::Column::IsActive.eq(true)).one(&state.db).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     let svg = if let Some(active_avatar) = active_avatar { svg_from_texture_data(&active_avatar.texture_data)? } else { let current_user = User::find_by_id(user_id.to_string()).one(&state.db).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?.ok_or(StatusCode::NOT_FOUND)?; default_profile_pic_svg(&current_user.avatar) };
@@ -121,5 +130,5 @@ fn build_svg<F>(width: usize, height: usize, matrix: &[String], color_for: F) ->
 fn empty_svg() -> String { r#"<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" shape-rendering="crispEdges"/>"#.to_string() }
 fn steve_head_matrix() -> Vec<String> { vec!["FFFFFFFF".to_string(), "FAAKKKAF".to_string(), "ABBJBBGK".to_string(), "NBNNGBII".to_string(), "JCENJEMJ".to_string(), "IBNLLNGD".to_string(), "IIPHHKDD".to_string(), "HHOPPODD".to_string()] }
 fn alex_head_matrix() -> Vec<String> { vec!["BBBBBBBB".to_string(), "BCCDDCBB".to_string(), "BCCHHCCB".to_string(), "BGGHHGGB".to_string(), "GJKHHKJG".to_string(), "GGGHGGGG".to_string(), "GGGLLGGG".to_string(), "GGGGGGGG".to_string()] }
-fn steve_head_color(key: char) -> Option<[f64; 4]> { match key { 'A' => Some([0.24, 0.17, 0.09, 1.0]), 'B' => Some([0.67, 0.51, 0.42, 1.0]), 'C' => Some([0.96, 0.96, 0.97, 1.0]), 'D' => Some([0.48, 0.33, 0.22, 1.0]), 'E' => Some([0.24, 0.12, 0.59, 1.0]), 'F' => Some([0.16, 0.11, 0.04, 1.0]), 'G' => Some([0.59, 0.44, 0.33, 1.0]), 'H' => Some([0.44, 0.28, 0.20, 1.0]), 'I' => Some([0.56, 0.39, 0.28, 1.0]), 'J' => Some([0.69, 0.55, 0.47, 1.0]), 'K' => Some([0.28, 0.19, 0.11, 1.0]), 'L' => Some([0.38, 0.24, 0.18, 1.0]), 'M' => Some([0.91, 0.89, 0.94, 1.0]), 'N' => Some([0.63, 0.47, 0.41, 1.0]), 'O' => Some([0.22, 0.12, 0.03, 1.0]), 'P' => Some([0.26, 0.15, 0.07, 1.0]), _ => None } }
-fn alex_head_color(key: char) -> Option<[f64; 4]> { match key { 'A' => Some([0.74, 0.33, 0.05, 1.0]), 'B' => Some([0.86, 0.43, 0.08, 1.0]), 'C' => Some([0.95, 0.55, 0.12, 1.0]), 'D' => Some([1.0, 0.66, 0.20, 1.0]), 'E' => Some([0.82, 0.55, 0.34, 1.0]), 'F' => Some([0.93, 0.70, 0.47, 1.0]), 'G' => Some([1.0, 0.80, 0.55, 1.0]), 'H' => Some([1.0, 0.88, 0.68, 1.0]), 'I' => Some([0.72, 0.43, 0.26, 1.0]), 'J' => Some([0.96, 0.94, 0.88, 1.0]), 'K' => Some([0.10, 0.35, 0.16, 1.0]), 'L' => Some([0.74, 0.42, 0.34, 1.0]), _ => None } }
+fn steve_head_color(key: char) -> Option<[f64; 4]> { match key { 'A' => Some([0.24, 0.17, 0.09, 1.0]), 'B' => Some([0.67, 0.51, 0.42, 1.0]), 'C' => Some([0.96, 0.96, 0.97, 1.0]), 'D' => Some([0.48, 0.33, 0.22, 1.0]), 'E' => Some([0.24, 0.12, 0.59, 1.0]), 'F' => Some([0.16, 0.11, 0.04, 1.0]), 'G' => Some([0.59, 0.44, 0.33, 1.0]), 'H' => Some([0.44, 0.28, 0.20, 1.0]), 'I' => Some([0.56, 0.39, 0.28, 1.0]), 'J' => Some([0.69, 0.55, 0.47, 1.0]), 'K' => Some([0.28, 0.19, 0.11, 1.0]), 'L' => Some([0.38, 0.24, 0.18, 1.0]), 'M' => Some([0.91, 0.89, 0.91, 1.0]), 'N' => Some([0.68, 0.52, 0.44, 1.0]), 'O' => Some([0.31, 0.17, 0.13, 1.0]), 'P' => Some([0.36, 0.20, 0.16, 1.0]), _ => None } }
+fn alex_head_color(key: char) -> Option<[f64; 4]> { match key { 'B' => Some([0.43, 0.25, 0.12, 1.0]), 'C' => Some([0.72, 0.43, 0.20, 1.0]), 'D' => Some([0.92, 0.62, 0.34, 1.0]), 'G' => Some([0.77, 0.47, 0.24, 1.0]), 'H' => Some([0.58, 0.32, 0.14, 1.0]), 'J' => Some([0.11, 0.23, 0.65, 1.0]), 'K' => Some([0.96, 0.96, 0.97, 1.0]), 'L' => Some([0.79, 0.36, 0.27, 1.0]), _ => None } }
