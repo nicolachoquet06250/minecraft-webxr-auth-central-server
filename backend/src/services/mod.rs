@@ -3,6 +3,7 @@ pub mod discord;
 pub mod friend_mail;
 pub mod mail;
 pub mod password_reset;
+pub mod presence_ws;
 
 pub use auth::*;
 pub use discord::*;

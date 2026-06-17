@@ -9,7 +9,7 @@ embed-frontend = ["dep:include_dir"]
 
 [dependencies]
 # Web framework
-axum = "0.7"
+axum = { version = "0.7", features = ["ws"] }
 axum-server = { version = "0.7", features = ["tls-rustls"] }
 tower = "0.4"
 tower-http = { version = "0.5", features = ["cors", "trace"] }

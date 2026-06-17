@@ -74,7 +74,8 @@ async fn main() -> anyhow::Result<()> {
         .route("/auth/discord/callback", get(routes::auth::discord_callback))
         .route("/mail/status", get(routes::mail::mail_status))
         .route("/contact", post(routes::mail::send_contact_mail))
-        .route("/support", post(routes::mail::send_support_mail));
+        .route("/support", post(routes::mail::send_support_mail))
+        .route("/friends/presence/realtime", get(routes::friends_presence_ws::friends_presence_socket));
 
     let protected_routes = Router::new()
         .route("/users/me", get(routes::user::get_profile))
