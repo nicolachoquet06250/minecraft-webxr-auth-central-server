@@ -5,6 +5,29 @@
         <div v-if="loading" class="state-message">⏳ Chargement du profil...</div>
         <div v-else-if="error" class="error-message">{{ error }}</div>
         <template v-else-if="user">
+          <div v-if="!isOwnProfile" class="profile-relation-corner">
+            <span v-if="relationStatus === 'friend'" class="friend-badge" title="Ami">✓ Ami</span>
+            <button
+              v-else-if="relationStatus === 'none'"
+              class="profile-icon-button add"
+              type="button"
+              title="Demander en ami"
+              aria-label="Demander en ami"
+              :disabled="relationLoading"
+              @click="sendFriendRequest"
+            >🤝</button>
+            <span v-else-if="relationStatus === 'outgoing'" class="relation-state-badge" title="Demande envoyée">⏳</span>
+            <button
+              v-else-if="relationStatus === 'incoming'"
+              class="profile-icon-button accept"
+              type="button"
+              title="Accepter la demande"
+              aria-label="Accepter la demande"
+              :disabled="relationLoading"
+              @click="acceptIncomingRequest"
+            >✓</button>
+          </div>
+
           <div class="identity-row">
             <img :src="profileImageSrc" :alt="`Avatar de ${user.username}`" class="profile-picture" />
             <div class="identity-copy">
@@ -43,14 +66,19 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ArcRotateCamera, Color4, Engine, HemisphericLight, Mesh, Scene, Vector3 } from '@babylonjs/core'
 import request, { type ActiveAvatarResponse, type User } from '@/api'
+import { useAuthStore } from '@/stores/auth'
+import { useFriendsStore } from '@/stores/friends'
 import { buildCharacter, getAllBodyParts } from '@/character-builder/character-builder'
 import { createCharacterModelFromAvatar, createEditableAvatar, createEditableAvatarFromApi, type EditableAvatar } from '@/character-builder/avatar-editor'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
 const route = useRoute()
+const authStore = useAuthStore()
+const friendsStore = useFriendsStore()
 const user = ref<User | null>(null)
 const activeAvatar = ref<ActiveAvatarResponse | null>(null)
 const loading = ref(true)
+const relationLoading = ref(false)
 const error = ref('')
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 const profileImageSrc = ref('')
@@ -64,6 +92,15 @@ let startedAt = performance.now()
 const userId = computed(() => String(route.params.id || ''))
 const baseAvatarKind = computed(() => activeAvatar.value?.avatar?.base_kind || user.value?.avatar || 'alex')
 const genderLabel = computed(() => baseAvatarKind.value === 'steve' ? 'Homme' : 'Femme')
+const isOwnProfile = computed(() => !!user.value && authStore.user?.id === user.value.id)
+const relationStatus = computed(() => {
+  if (!user.value || isOwnProfile.value) return 'self'
+  if (friendsStore.friendIds.has(user.value.id)) return 'friend'
+  if (friendsStore.outgoingRequestReceiverIds.has(user.value.id)) return 'outgoing'
+  if (friendsStore.incomingRequestRequesterIds.has(user.value.id)) return 'incoming'
+  return 'none'
+})
+const incomingRequest = computed(() => user.value ? friendsStore.incomingRequests.find((request) => request.requester.id === user.value?.id) : undefined)
 const formattedBirthdate = computed(() => {
   if (!user.value?.birthdate) return 'Date inconnue'
   const date = new Date(user.value.birthdate)
@@ -82,14 +119,14 @@ const age = computed(() => {
 })
 
 onMounted(async () => {
-  await loadProfile()
+  await Promise.all([loadProfile(), friendsStore.fetchAll()])
   await nextTick()
   initScene()
   renderAvatar()
 })
 
 watch(userId, async () => {
-  await loadProfile()
+  await Promise.all([loadProfile(), friendsStore.fetchAll()])
   renderAvatar()
 })
 
@@ -131,6 +168,22 @@ async function loadProfilePicture() {
   })
   if (!response.ok) return
   profileImageSrc.value = URL.createObjectURL(await response.blob())
+}
+
+async function sendFriendRequest() {
+  if (!user.value || relationLoading.value) return
+  relationLoading.value = true
+  await friendsStore.sendRequest(user.value.id)
+  await friendsStore.fetchAll()
+  relationLoading.value = false
+}
+
+async function acceptIncomingRequest() {
+  if (!incomingRequest.value || relationLoading.value) return
+  relationLoading.value = true
+  await friendsStore.acceptRequest(incomingRequest.value.id)
+  await friendsStore.fetchAll()
+  relationLoading.value = false
 }
 
 function currentEditableAvatar(): EditableAvatar {
@@ -194,7 +247,15 @@ function resize() { engine?.resize() }
 .user-profile-page { min-height: calc(100vh - 80px); padding: 2rem 1rem; }
 .profile-layout { max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: minmax(300px, .85fr) minmax(0, 1.15fr); gap: 1.5rem; align-items: stretch; }
 .profile-info-card, .avatar-viewer-card { padding: 1.5rem; min-width: 0; }
-.identity-row { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 1rem; align-items: start; }
+.profile-info-card { position: relative; }
+.profile-relation-corner { position: absolute; top: 1rem; right: 1rem; z-index: 2; display: flex; align-items: center; justify-content: flex-end; }
+.friend-badge { display: inline-flex; align-items: center; justify-content: center; min-height: 32px; padding: .35rem .7rem; border-radius: 999px; background: rgba(46,125,50,.35); border: 2px solid #64ffda; color: #a5d6a7; font-family: monospace; font-weight: 900; box-shadow: 3px 3px 0 rgba(0,0,0,.45); }
+.relation-state-badge { width: 38px; height: 34px; display: inline-flex; align-items: center; justify-content: center; background: rgba(255,179,0,.24); border: 2px solid #ffb300; color: #ffe082; box-shadow: 3px 3px 0 rgba(0,0,0,.45); }
+.profile-icon-button { width: 42px; height: 38px; display: inline-flex; align-items: center; justify-content: center; border: 3px solid #3e2723; color: #fff; box-shadow: 3px 3px 0 rgba(0,0,0,.45); cursor: pointer; font-size: 1.05rem; }
+.profile-icon-button.add { background: #2e7d32; border-color: #1b5e20; }
+.profile-icon-button.accept { background: #2e7d32; border-color: #1b5e20; }
+.profile-icon-button:disabled { opacity: .55; cursor: not-allowed; }
+.identity-row { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 1rem; align-items: start; padding-right: 5rem; }
 .profile-picture { width: 96px; height: 96px; object-fit: contain; background: rgba(0,0,0,.35); border: 4px solid #4a4a4a; border-radius: 12px; image-rendering: pixelated; }
 .identity-copy { min-width: 0; text-align: left; }
 .username-title { margin: 0 0 .4rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -211,5 +272,5 @@ function resize() { engine?.resize() }
 .state-message, .error-message { padding: 1rem; text-align: center; color: #d7ccc8; }
 .error-message { color: #ff6b6b; border: 2px solid #ff6b6b; background: rgba(255,107,107,.12); border-radius: 8px; }
 @media (max-width: 900px) { .profile-layout { grid-template-columns: 1fr; } .avatar-canvas { height: 420px; } }
-@media (max-width: 560px) { .user-profile-page { padding: 1rem .55rem; } .profile-info-card, .avatar-viewer-card { padding: .85rem; } .identity-row { grid-template-columns: 72px minmax(0, 1fr); gap: .75rem; } .profile-picture { width: 72px; height: 72px; } .avatar-canvas { height: 360px; } .viewer-header { flex-direction: column; } }
+@media (max-width: 560px) { .user-profile-page { padding: 1rem .55rem; } .profile-info-card, .avatar-viewer-card { padding: .85rem; } .profile-relation-corner { top: .7rem; right: .7rem; } .identity-row { grid-template-columns: 72px minmax(0, 1fr); gap: .75rem; padding-right: 3.25rem; } .profile-picture { width: 72px; height: 72px; } .avatar-canvas { height: 360px; } .viewer-header { flex-direction: column; } }
 </style>
