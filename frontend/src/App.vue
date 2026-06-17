@@ -5,6 +5,7 @@
       <RouterView />
     </main>
     <Footer />
+    <GlobalFriendsDock />
   </div>
 </template>
 
@@ -14,6 +15,7 @@ import { onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import Navbar from '@/components/Navbar.vue'
 import Footer from '@/components/Footer.vue'
+import GlobalFriendsDock from '@/components/GlobalFriendsDock.vue'
 
 const authStore = useAuthStore()
 
