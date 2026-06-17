@@ -291,10 +291,6 @@ const openGameServer = async (server: Server) => {
   min-width: 0;
 }
 
-.server-card.voxicraft-panel {
-  max-width: 100%;
-}
-
 .server-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
@@ -393,6 +389,12 @@ const openGameServer = async (server: Server) => {
   .button-container,
   .servers-header {
     flex-direction: column;
+  }
+}
+
+@media (max-width: 768px) and (orientation: portrait) {
+  .server-card.voxicraft-panel {
+    max-width: 100%;
   }
 }
 </style>
