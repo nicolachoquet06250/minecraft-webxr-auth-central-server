@@ -5,13 +5,15 @@ use axum::{
 };
 use sea_orm::{ColumnTrait, Condition, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+use std::{sync::Arc, sync::OnceLock};
 
 use crate::{
     models::{friendship, server, Friendship, Server},
-    services::Claims,
+    services::{presence_ws::PresenceWsHub, Claims},
     AppState,
 };
+
+static PRESENCE_HUB: OnceLock<PresenceWsHub> = OnceLock::new();
 
 #[derive(Debug, Deserialize)]
 pub struct PresenceSocketQuery {
@@ -69,7 +71,8 @@ pub async fn friends_presence_socket(
 
 async fn handle_socket(state: Arc<AppState>, claims: Claims, mut socket: WebSocket) {
     let user_id = claims.sub.clone();
-    let (session_id, mut receiver) = state.presence_ws_hub.register(&user_id).await;
+    let hub = presence_hub().clone();
+    let (session_id, mut receiver) = hub.register(&user_id).await;
 
     loop {
         tokio::select! {
@@ -80,7 +83,7 @@ async fn handle_socket(state: Arc<AppState>, claims: Claims, mut socket: WebSock
             }
             received = socket.recv() => {
                 match received {
-                    Some(Ok(Message::Text(text))) => handle_inbound_message(&state, &claims, &text).await,
+                    Some(Ok(Message::Text(text))) => handle_inbound_message(&state, &hub, &claims, &text).await,
                     Some(Ok(Message::Close(_))) | None => break,
                     Some(Ok(_)) => {}
                     Some(Err(_)) => break,
@@ -89,10 +92,10 @@ async fn handle_socket(state: Arc<AppState>, claims: Claims, mut socket: WebSock
         }
     }
 
-    state.presence_ws_hub.unregister(&user_id, &session_id).await;
+    hub.unregister(&user_id, &session_id).await;
 }
 
-async fn handle_inbound_message(state: &Arc<AppState>, claims: &Claims, text: &str) {
+async fn handle_inbound_message(state: &Arc<AppState>, hub: &PresenceWsHub, claims: &Claims, text: &str) {
     let Ok(message) = serde_json::from_str::<PresenceSocketMessage>(text) else {
         return;
     };
@@ -124,8 +127,12 @@ async fn handle_inbound_message(state: &Arc<AppState>, claims: &Claims, text: &s
     };
 
     if let Ok(serialized) = serde_json::to_string(&outbound) {
-        state.presence_ws_hub.send_to_users(&friend_ids, serialized).await;
+        hub.send_to_users(&friend_ids, serialized).await;
     }
+}
+
+fn presence_hub() -> &'static PresenceWsHub {
+    PRESENCE_HUB.get_or_init(PresenceWsHub::default)
 }
 
 async fn find_server_payload(state: &Arc<AppState>, game_domain: &str) -> Option<PresenceSocketServerPayload> {
