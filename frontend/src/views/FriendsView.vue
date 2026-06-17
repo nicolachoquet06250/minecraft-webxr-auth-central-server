@@ -24,7 +24,7 @@
                   <img :src="avatarSrc(request.requester.avatar.url)" :alt="request.requester.avatar.name" class="avatar-img" />
                   <div class="user-info request-user-info">
                     <strong :title="request.requester.username">{{ request.requester.username }}</strong>
-                    <span>Envoyée le {{ formatDate(request.created_at) }}</span>
+                    <span>Le {{ formatDate(request.created_at) }}</span>
                   </div>
                 </div>
                 <div class="action-row compact request-actions">
