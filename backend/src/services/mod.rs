@@ -1,5 +1,6 @@
 pub mod auth;
 pub mod discord;
+pub mod friend_mail;
 pub mod mail;
 pub mod password_reset;
 
