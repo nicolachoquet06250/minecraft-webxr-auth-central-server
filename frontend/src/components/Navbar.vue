@@ -11,6 +11,9 @@
           <router-link to="/servers" class="navbar-link">
             🖥️ Mes Serveurs
           </router-link>
+          <router-link to="/friends" class="navbar-link">
+            👥 Amis
+          </router-link>
           <router-link to="/profile" class="navbar-link">
             👤 Profil
           </router-link>
@@ -39,6 +42,9 @@
       <template v-if="authStore.isAuthenticated">
         <router-link to="/servers" class="mobile-link" @click="closeMobileMenu">
           🖥️ Mes Serveurs
+        </router-link>
+        <router-link to="/friends" class="mobile-link" @click="closeMobileMenu">
+          👥 Amis
         </router-link>
         <router-link to="/profile" class="mobile-link" @click="closeMobileMenu">
           👤 Profil
