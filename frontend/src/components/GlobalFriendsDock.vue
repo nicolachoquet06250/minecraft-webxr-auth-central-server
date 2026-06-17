@@ -68,9 +68,19 @@
                   <div class="mini-user-info">
                     <strong :title="entry.user.username">{{ entry.user.username }}</strong>
                     <span>{{ entry.user.avatar.name }}</span>
+                    <span v-if="friendPresenceServer(entry.user.id)" class="mini-presence online" :title="friendPresenceServer(entry.user.id)?.name">📍 {{ friendPresenceServer(entry.user.id)?.name }}</span>
+                    <span v-else class="mini-presence offline">hors jeu</span>
                   </div>
                 </div>
                 <div class="mini-actions friend-mini-actions">
+                  <button
+                    v-if="friendPresenceServer(entry.user.id)"
+                    class="mini-join-button"
+                    type="button"
+                    title="Rejoindre"
+                    aria-label="Rejoindre"
+                    @click="joinServer(friendPresenceServer(entry.user.id))"
+                  >🚪</button>
                   <router-link
                     class="mini-profile-button"
                     :to="`/users/${entry.user.id}`"
@@ -110,6 +120,7 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { serverApi, type FriendPresenceServer } from '@/api'
 import { useAuthStore } from '@/stores/auth'
 import { useFriendsStore } from '@/stores/friends'
 
@@ -148,6 +159,16 @@ async function refuseRequest(requestId: string) {
 async function removeFriend(userId: string) {
   await friendsStore.removeFriend(userId)
   await loadVisibleAvatars()
+}
+
+function friendPresenceServer(userId: string) {
+  return friendsStore.presenceFor(userId)
+}
+
+function joinServer(server: FriendPresenceServer | null | undefined) {
+  if (!server) return
+  void serverApi.recordServerVisit(server.game_domain)
+  window.open(server.game_domain, '_blank', 'noopener,noreferrer')
 }
 
 function formatDate(value: string) {
@@ -261,10 +282,14 @@ onBeforeUnmount(() => clearAvatarUrls())
 .mini-user-info { min-width: 0; }
 .mini-user-info strong { display: block; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.1; }
 .mini-user-info span { display: block; color: #d7ccc8; font-size: .78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: .2rem; }
+.mini-presence.online { color: #a5d6a7; }
+.mini-presence.offline { color: #a8a8a8; font-style: italic; }
 .mini-actions { display: flex; gap: .45rem; }
 .friend-mini-actions { flex: 0 0 auto; }
 .two-actions { display: grid; grid-template-columns: 1fr 1fr; }
-.mini-button, .mini-trash, .mini-profile-button { min-width: 36px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border: 2px solid #3e2723; color: #fff; font-weight: 900; box-shadow: 2px 2px 0 rgba(0,0,0,.5); cursor: pointer; text-decoration: none; }
+.mini-button, .mini-trash, .mini-profile-button, .mini-join-button { min-width: 36px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border: 2px solid #3e2723; color: #fff; font-weight: 900; box-shadow: 2px 2px 0 rgba(0,0,0,.5); cursor: pointer; text-decoration: none; }
+.mini-join-button { background: #1976d2; border-color: #0d47a1; }
+.mini-join-button:hover { background: #2196f3; }
 .mini-button.accept, .mini-profile-button { background: #2e7d32; border-color: #1b5e20; }
 .mini-profile-button:hover { background: #43a047; }
 .mini-button.refuse, .mini-trash { background: #f44336; border-color: #c62828; }
