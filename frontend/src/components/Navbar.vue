@@ -11,8 +11,9 @@
           <router-link to="/servers" class="navbar-link">
             🖥️ Mes Serveurs
           </router-link>
-          <router-link to="/friends" class="navbar-link">
-            👥 Amis
+          <router-link to="/friends" class="navbar-link friends-nav-link">
+            <span>👥 Amis</span>
+            <span v-if="friendsStore.incomingRequestCount > 0" class="friend-request-badge">{{ friendsStore.incomingRequestCount }}</span>
           </router-link>
           <router-link to="/profile" class="navbar-link">
             👤 Profil
@@ -43,8 +44,9 @@
         <router-link to="/servers" class="mobile-link" @click="closeMobileMenu">
           🖥️ Mes Serveurs
         </router-link>
-        <router-link to="/friends" class="mobile-link" @click="closeMobileMenu">
-          👥 Amis
+        <router-link to="/friends" class="mobile-link mobile-friends-link" @click="closeMobileMenu">
+          <span>👥 Amis</span>
+          <span v-if="friendsStore.incomingRequestCount > 0" class="friend-request-badge">{{ friendsStore.incomingRequestCount }}</span>
         </router-link>
         <router-link to="/profile" class="mobile-link" @click="closeMobileMenu">
           👤 Profil
@@ -62,17 +64,34 @@
         </router-link>
       </template>
     </div>
+
+    <Teleport to="body">
+      <div v-if="friendNotification" class="friend-notification" role="status" aria-live="polite">
+        <div class="notification-icon">📥</div>
+        <div>
+          <strong>Nouvelle demande d'ami</strong>
+          <p>{{ friendNotification }}</p>
+        </div>
+        <router-link to="/friends" class="notification-action" @click="friendNotification = null">Voir</router-link>
+      </div>
+    </Teleport>
   </nav>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onBeforeUnmount, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useFriendsStore } from '@/stores/friends'
 
 const authStore = useAuthStore()
+const friendsStore = useFriendsStore()
 const router = useRouter()
 const mobileMenuOpen = ref(false)
+const friendNotification = ref<string | null>(null)
+let pollInterval: number | undefined
+let notificationTimeout: number | undefined
+let initializedFriendPolling = false
 
 const toggleMobileMenu = () => {
   mobileMenuOpen.value = !mobileMenuOpen.value
@@ -82,8 +101,55 @@ const closeMobileMenu = () => {
   mobileMenuOpen.value = false
 }
 
+const showFriendNotification = (username: string) => {
+  friendNotification.value = `${username} vous a envoyé une invitation.`
+  if (notificationTimeout) window.clearTimeout(notificationTimeout)
+  notificationTimeout = window.setTimeout(() => {
+    friendNotification.value = null
+  }, 6500)
+}
+
+const refreshIncomingRequests = async () => {
+  if (!authStore.isAuthenticated) return
+  const newRequests = await friendsStore.refreshIncomingRequests()
+  if (initializedFriendPolling && newRequests.length > 0) {
+    showFriendNotification(newRequests[0].requester.username)
+  }
+  initializedFriendPolling = true
+}
+
+const startFriendPolling = async () => {
+  if (pollInterval || !authStore.isAuthenticated) return
+  await refreshIncomingRequests()
+  pollInterval = window.setInterval(() => {
+    void refreshIncomingRequests()
+  }, 20000)
+}
+
+const stopFriendPolling = () => {
+  if (pollInterval) window.clearInterval(pollInterval)
+  pollInterval = undefined
+  initializedFriendPolling = false
+  friendNotification.value = null
+}
+
+watch(
+  () => authStore.isAuthenticated,
+  (isAuthenticated) => {
+    if (isAuthenticated) void startFriendPolling()
+    else stopFriendPolling()
+  },
+  { immediate: true }
+)
+
+onBeforeUnmount(() => {
+  stopFriendPolling()
+  if (notificationTimeout) window.clearTimeout(notificationTimeout)
+})
+
 const handleLogout = () => {
   authStore.logout()
+  stopFriendPolling()
   closeMobileMenu()
   router.push('/')
 }
@@ -164,6 +230,32 @@ const handleLogout = () => {
   border-color: #64ffda;
 }
 
+.friends-nav-link,
+.mobile-friends-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+}
+
+.friend-request-badge {
+  min-width: 1.25rem;
+  height: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 .35rem;
+  border-radius: 999px;
+  background: #2e7d32;
+  border: 2px solid #64ffda;
+  color: #fff;
+  font-size: .72rem;
+  line-height: 1;
+  font-family: monospace;
+  font-weight: 900;
+  box-shadow: 2px 2px 0 rgba(0,0,0,.65);
+}
+
 .navbar-link-primary {
   background-color: #4caf50;
   border-color: #2e7d32;
@@ -225,6 +317,30 @@ const handleLogout = () => {
   border-color: #64ffda;
 }
 
+.friend-notification {
+  position: fixed;
+  right: 1rem;
+  top: 5.5rem;
+  z-index: 3000;
+  width: min(360px, calc(100vw - 2rem));
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: .8rem;
+  align-items: center;
+  padding: 1rem;
+  background: rgba(20, 55, 18, .96);
+  border: 3px solid #64ffda;
+  border-radius: 10px;
+  box-shadow: 6px 6px 0 rgba(0,0,0,.55);
+  color: #fff;
+  font-family: monospace;
+}
+
+.notification-icon { font-size: 1.5rem; }
+.friend-notification strong { color: #64ffda; display: block; margin-bottom: .25rem; }
+.friend-notification p { margin: 0; color: #d7ccc8; font-size: .85rem; }
+.notification-action { color: #101820; background: #64ffda; border: 2px solid #3e2723; padding: .45rem .65rem; text-decoration: none; font-weight: 900; box-shadow: 2px 2px 0 rgba(0,0,0,.55); }
+
 @media (max-width: 768px) {
   .navbar-menu {
     display: none;
@@ -236,6 +352,18 @@ const handleLogout = () => {
   
   .mobile-menu {
     display: flex;
+  }
+
+  .mobile-friends-link {
+    justify-content: space-between;
+  }
+
+  .friend-notification {
+    top: auto;
+    right: .5rem;
+    left: .5rem;
+    bottom: .75rem;
+    width: auto;
   }
 }
 </style>
