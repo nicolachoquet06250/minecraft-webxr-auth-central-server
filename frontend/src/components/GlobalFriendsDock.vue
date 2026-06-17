@@ -23,9 +23,9 @@
           </header>
 
           <div class="drawer-actions">
-            <router-link class="drawer-action-primary" to="/friends" @click="closeDrawer">➕ Ajouter</router-link>
-            <button class="drawer-action-secondary" type="button" :disabled="friendsStore.loading" @click="refreshAll">
-              {{ friendsStore.loading ? '...' : '↻' }}
+            <router-link class="drawer-action-primary" to="/friends" title="Ajouter" aria-label="Ajouter" @click="closeDrawer">➕</router-link>
+            <button class="drawer-action-secondary" type="button" title="Rafraîchir" aria-label="Rafraîchir" :disabled="friendsStore.loading" @click="refreshAll">
+              {{ friendsStore.loading ? '…' : '↻' }}
             </button>
           </div>
 
@@ -44,8 +44,8 @@
                   </div>
                 </div>
                 <div class="mini-actions two-actions">
-                  <button class="mini-button accept" type="button" @click="acceptRequest(request.id)">✓</button>
-                  <button class="mini-button refuse" type="button" @click="refuseRequest(request.id)">✕</button>
+                  <button class="mini-button accept" type="button" title="Accepter" aria-label="Accepter" @click="acceptRequest(request.id)">✓</button>
+                  <button class="mini-button refuse" type="button" title="Refuser" aria-label="Refuser" @click="refuseRequest(request.id)">✕</button>
                 </div>
               </article>
             </div>
@@ -70,7 +70,16 @@
                     <span>{{ entry.user.avatar.name }}</span>
                   </div>
                 </div>
-                <button class="mini-trash" type="button" title="Supprimer" aria-label="Supprimer cet ami" @click="removeFriend(entry.user.id)">🗑️</button>
+                <div class="mini-actions friend-mini-actions">
+                  <router-link
+                    class="mini-profile-button"
+                    :to="`/users/${entry.user.id}`"
+                    title="Voir le profil"
+                    aria-label="Voir le profil"
+                    @click="closeDrawer"
+                  >👤</router-link>
+                  <button class="mini-trash" type="button" title="Supprimer" aria-label="Supprimer cet ami" @click="removeFriend(entry.user.id)">🗑️</button>
+                </div>
               </article>
             </div>
           </section>
@@ -253,9 +262,11 @@ onBeforeUnmount(() => clearAvatarUrls())
 .mini-user-info strong { display: block; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.1; }
 .mini-user-info span { display: block; color: #d7ccc8; font-size: .78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: .2rem; }
 .mini-actions { display: flex; gap: .45rem; }
+.friend-mini-actions { flex: 0 0 auto; }
 .two-actions { display: grid; grid-template-columns: 1fr 1fr; }
-.mini-button, .mini-trash { min-width: 36px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border: 2px solid #3e2723; color: #fff; font-weight: 900; box-shadow: 2px 2px 0 rgba(0,0,0,.5); cursor: pointer; }
-.mini-button.accept { background: #2e7d32; }
+.mini-button, .mini-trash, .mini-profile-button { min-width: 36px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border: 2px solid #3e2723; color: #fff; font-weight: 900; box-shadow: 2px 2px 0 rgba(0,0,0,.5); cursor: pointer; text-decoration: none; }
+.mini-button.accept, .mini-profile-button { background: #2e7d32; border-color: #1b5e20; }
+.mini-profile-button:hover { background: #43a047; }
 .mini-button.refuse, .mini-trash { background: #f44336; border-color: #c62828; }
 .empty-drawer-state { padding: 1rem; text-align: center; color: #d7ccc8; background: rgba(0,0,0,.18); border: 2px dashed rgba(255,255,255,.18); border-radius: 8px; }
 .empty-drawer-state div { font-size: 2.25rem; }

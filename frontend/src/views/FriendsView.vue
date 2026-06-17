@@ -28,8 +28,8 @@
                   </div>
                 </div>
                 <div class="action-row compact request-actions">
-                  <button class="voxicraft-button small" @click="acceptRequest(request.id)">Accepter</button>
-                  <button class="voxicraft-button small danger" @click="refuseRequest(request.id)">Refuser</button>
+                  <button class="voxicraft-button small" title="Accepter" aria-label="Accepter" @click="acceptRequest(request.id)">✓</button>
+                  <button class="voxicraft-button small danger" title="Refuser" aria-label="Refuser" @click="refuseRequest(request.id)">✕</button>
                 </div>
               </div>
             </div>
@@ -50,7 +50,7 @@
                     <span>En attente depuis le {{ formatDate(request.created_at) }}</span>
                   </div>
                 </div>
-                <button class="voxicraft-button small danger" @click="removeFriend(request.receiver.id)">Annuler</button>
+                <button class="voxicraft-button small danger" title="Annuler" aria-label="Annuler" @click="removeFriend(request.receiver.id)">✕</button>
               </div>
             </div>
           </section>
@@ -72,11 +72,19 @@
               <div class="friend-user">
                 <img :src="avatarSrc(entry.user.avatar.url)" :alt="entry.user.avatar.name" class="avatar-large" />
                 <div class="friend-user-info">
-                  <h3 :title="entry.user.username">{{ entry.user.username }}</h3>
+                  <router-link class="friend-profile-link" :to="`/users/${entry.user.id}`" :title="entry.user.username">
+                    {{ entry.user.username }}
+                  </router-link>
                   <p>{{ entry.user.avatar.name }}</p>
                   <p class="muted">Amis depuis le {{ formatDate(entry.created_at) }}</p>
                 </div>
               </div>
+              <router-link
+                class="icon-profile-button"
+                :to="`/users/${entry.user.id}`"
+                title="Voir le profil"
+                aria-label="Voir le profil"
+              >👤</router-link>
               <button
                 class="icon-danger-button"
                 type="button"
@@ -109,8 +117,8 @@
               placeholder="Pseudo, ou vide pour tout lister"
               autofocus
             />
-            <button class="voxicraft-button" type="submit" :disabled="friendsStore.searchLoading">
-              {{ friendsStore.searchLoading ? 'Recherche...' : 'Rechercher' }}
+            <button class="voxicraft-button" type="submit" :disabled="friendsStore.searchLoading" title="Rechercher" aria-label="Rechercher">
+              {{ friendsStore.searchLoading ? '…' : '🔎' }}
             </button>
           </form>
 
@@ -126,17 +134,19 @@
               <button
                 v-if="relationStatus(user) === 'none'"
                 class="voxicraft-button small"
+                title="Ajouter"
+                aria-label="Ajouter"
                 @click="sendRequest(user.id)"
-              >Ajouter</button>
+              >🤝</button>
               <span v-else-if="relationStatus(user) === 'friend'" class="status-pill success">Ami</span>
               <span v-else-if="relationStatus(user) === 'outgoing'" class="status-pill pending">Demande envoyée</span>
               <span v-else class="status-pill pending">Demande reçue</span>
             </div>
 
             <div class="pagination-row">
-              <button class="voxicraft-button small secondary" :disabled="!friendsStore.searchResults.previous_url" @click="goToSearchPage(searchPage - 1)">← Précédent</button>
+              <button class="voxicraft-button small secondary" :disabled="!friendsStore.searchResults.previous_url" title="Précédent" aria-label="Précédent" @click="goToSearchPage(searchPage - 1)">←</button>
               <span>Page {{ friendsStore.searchResults.page }} / {{ friendsStore.searchResults.total_pages || 1 }}</span>
-              <button class="voxicraft-button small secondary" :disabled="!friendsStore.searchResults.next_url" @click="goToSearchPage(searchPage + 1)">Suivant →</button>
+              <button class="voxicraft-button small secondary" :disabled="!friendsStore.searchResults.next_url" title="Suivant" aria-label="Suivant" @click="goToSearchPage(searchPage + 1)">→</button>
             </div>
           </div>
         </section>
@@ -306,12 +316,16 @@ h2, h3 { color: #64ffda; margin: 0; }
 .action-row.compact { justify-content: flex-end; }
 .pagination-row { display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 1rem; color: #d7ccc8; flex-wrap: wrap; }
 .friend-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem; }
-.friend-card { display: grid; grid-template-columns: minmax(0, 1fr) 44px; align-items: start; gap: .75rem; }
+.friend-card { display: grid; grid-template-columns: minmax(0, 1fr) 44px 44px; align-items: start; gap: .75rem; }
 .friend-user { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: .85rem; min-width: 0; }
 .friend-user-info { min-width: 0; text-align: left; }
-.friend-user-info h3 { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.1; }
+.friend-profile-link { display: block; max-width: 100%; color: #fff; text-decoration: none; font-size: 1.17em; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.1; }
+.friend-profile-link:hover { color: #64ffda; text-decoration: underline; text-underline-offset: 3px; }
 .friend-user-info p { margin: .15rem 0; overflow-wrap: anywhere; }
-.icon-danger-button { width: 44px; height: 38px; display: inline-flex; align-items: center; justify-content: center; background-color: #f44336; border: 3px solid #c62828; color: #fff; box-shadow: 3px 3px 0 rgba(0,0,0,.45); cursor: pointer; font-size: 1rem; flex: 0 0 auto; }
+.icon-danger-button, .icon-profile-button { width: 44px; height: 38px; display: inline-flex; align-items: center; justify-content: center; border: 3px solid; color: #fff; box-shadow: 3px 3px 0 rgba(0,0,0,.45); cursor: pointer; font-size: 1rem; flex: 0 0 auto; text-decoration: none; }
+.icon-profile-button { background-color: #2e7d32; border-color: #1b5e20; }
+.icon-profile-button:hover { background-color: #43a047; }
+.icon-danger-button { background-color: #f44336; border-color: #c62828; }
 .icon-danger-button:hover { background-color: #ff6659; }
 .empty-state, .empty-inline { text-align: center; color: #d7ccc8; padding: 1.5rem; }
 .empty-icon { font-size: 4rem; margin-bottom: 1rem; }
@@ -338,10 +352,10 @@ h2, h3 { color: #64ffda; margin: 0; }
   .request-user { align-items: center; }
   .request-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; width: 100%; }
   .request-actions .voxicraft-button { width: 100%; }
-  .friend-card { grid-template-columns: minmax(0, 1fr) 40px; text-align: left; padding: .75rem; }
+  .friend-card { grid-template-columns: minmax(0, 1fr) 40px 40px; text-align: left; padding: .75rem; }
   .friend-user { grid-template-columns: 56px minmax(0, 1fr); gap: .7rem; }
   .friend-user .avatar-large { width: 56px; height: 56px; }
-  .icon-danger-button { width: 40px; height: 36px; }
+  .icon-danger-button, .icon-profile-button { width: 40px; height: 36px; }
   .avatar-img, .avatar-large { align-self: center; }
   .request-user .avatar-img { align-self: center; }
   .action-row.compact { justify-content: stretch; }
