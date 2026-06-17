@@ -4,6 +4,7 @@ import HomeView from '@/views/HomeView.vue'
 import LoginView from '@/views/LoginView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import ProfileView from '@/views/ProfileView.vue'
+import UserProfileView from '@/views/UserProfileView.vue'
 import AvatarBuilderView from '@/views/AvatarBuilderView.vue'
 import ServersView from '@/views/ServersView.vue'
 import FavoriteServersView from '@/views/FavoriteServersView.vue'
@@ -25,6 +26,7 @@ const router = createRouter({
     { path: '/login', name: 'login', component: LoginView, meta: { requiresGuest: true } },
     { path: '/register', name: 'register', component: RegisterView, meta: { requiresGuest: true } },
     { path: '/profile', name: 'profile', component: ProfileView, meta: { requiresAuth: true } },
+    { path: '/users/:id', name: 'user-profile', component: UserProfileView, meta: { requiresAuth: true } },
     { path: '/profile/avatar-builder', name: 'avatar-builder', component: AvatarBuilderView, meta: { requiresAuth: true } },
     { path: '/servers', name: 'servers', component: ServersView, meta: { requiresAuth: true } },
     { path: '/servers/favorites', name: 'servers-favorites', component: FavoriteServersView, meta: { requiresAuth: true } },
