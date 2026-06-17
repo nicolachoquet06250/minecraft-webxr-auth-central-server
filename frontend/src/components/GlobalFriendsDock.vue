@@ -134,7 +134,7 @@ const avatarPlaceholder = 'data:image/svg+xml;utf8,%3Csvg%20xmlns=%22http://www.
 
 async function toggleDrawer() {
   drawerOpen.value = !drawerOpen.value
-  if (drawerOpen.value) await refreshAll()
+  if (drawerOpen.value) await refreshDrawerPresence()
 }
 
 function closeDrawer() {
@@ -143,6 +143,15 @@ function closeDrawer() {
 
 async function refreshAll() {
   await friendsStore.fetchAll()
+  await loadVisibleAvatars()
+}
+
+async function refreshDrawerPresence() {
+  if (friendsStore.friends.length === 0 && !friendsStore.loading) {
+    await friendsStore.fetchAll()
+  } else {
+    await friendsStore.fetchPresence()
+  }
   await loadVisibleAvatars()
 }
 
