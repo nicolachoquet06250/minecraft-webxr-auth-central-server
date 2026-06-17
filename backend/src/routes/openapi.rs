@@ -46,6 +46,7 @@ pub async fn openapi_json() -> impl IntoResponse {
         (name = "openapi", description = "Document OpenAPI"),
         (name = "auth", description = "Authentification"),
         (name = "users", description = "Utilisateurs"),
+        (name = "friends", description = "Amis et demandes d'amis"),
         (name = "avatars", description = "Avatars"),
         (name = "servers", description = "Serveurs"),
         (name = "mail", description = "Contact, support et mail"),

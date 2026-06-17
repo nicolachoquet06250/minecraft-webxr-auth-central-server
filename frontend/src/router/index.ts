@@ -9,6 +9,7 @@ import ServersView from '@/views/ServersView.vue'
 import FavoriteServersView from '@/views/FavoriteServersView.vue'
 import RecentServersView from '@/views/RecentServersView.vue'
 import ServerDashboardView from '@/views/ServerDashboardView.vue'
+import FriendsView from '@/views/FriendsView.vue'
 import ApiSwaggerView from '@/views/ApiSwaggerView.vue'
 import DocumentationView from '@/views/DocumentationView.vue'
 import ContactView from '@/views/ContactView.vue'
@@ -26,6 +27,7 @@ const router = createRouter({
     { path: '/servers/favorites', name: 'servers-favorites', component: FavoriteServersView, meta: { requiresAuth: true } },
     { path: '/servers/recent', name: 'servers-recent', component: RecentServersView, meta: { requiresAuth: true } },
     { path: '/servers/:id/dashboard', name: 'server-dashboard', component: ServerDashboardView, meta: { requiresAuth: true } },
+    { path: '/friends', name: 'friends', component: FriendsView, meta: { requiresAuth: true } },
     { path: '/api/swagger', name: 'api-swagger', component: ApiSwaggerView, meta: { requiresAuth: true } },
     { path: '/documentation', name: 'documentation', component: DocumentationView, meta: { requiresAuth: true } },
     { path: '/api/documentation', redirect: '/documentation', meta: { requiresAuth: true } },
