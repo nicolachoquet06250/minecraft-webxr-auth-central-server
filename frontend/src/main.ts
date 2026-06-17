@@ -6,7 +6,6 @@ import './style.css'
 import './profile-restore.css'
 import './profile-mobile-fix.css'
 import './friends-mobile-fix.css'
-import './friends-request-card-exact.css'
 
 const app = createApp(App)
 const pinia = createPinia()
