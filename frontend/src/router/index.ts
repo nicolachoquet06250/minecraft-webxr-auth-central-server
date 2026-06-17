@@ -10,6 +10,7 @@ import FavoriteServersView from '@/views/FavoriteServersView.vue'
 import RecentServersView from '@/views/RecentServersView.vue'
 import ServerDashboardView from '@/views/ServerDashboardView.vue'
 import FriendsView from '@/views/FriendsView.vue'
+import FriendRequestAcceptView from '@/views/FriendRequestAcceptView.vue'
 import ApiSwaggerView from '@/views/ApiSwaggerView.vue'
 import DocumentationView from '@/views/DocumentationView.vue'
 import ContactView from '@/views/ContactView.vue'
@@ -28,6 +29,7 @@ const router = createRouter({
     { path: '/servers/recent', name: 'servers-recent', component: RecentServersView, meta: { requiresAuth: true } },
     { path: '/servers/:id/dashboard', name: 'server-dashboard', component: ServerDashboardView, meta: { requiresAuth: true } },
     { path: '/friends', name: 'friends', component: FriendsView, meta: { requiresAuth: true } },
+    { path: '/friends/accept', name: 'friend-request-accept', component: FriendRequestAcceptView, meta: { requiresAuth: true } },
     { path: '/api/swagger', name: 'api-swagger', component: ApiSwaggerView, meta: { requiresAuth: true } },
     { path: '/documentation', name: 'documentation', component: DocumentationView, meta: { requiresAuth: true } },
     { path: '/api/documentation', redirect: '/documentation', meta: { requiresAuth: true } },
@@ -46,8 +48,11 @@ router.beforeEach(async (to, _from, next) => {
     return
   }
   if (authStore.token && !authStore.user) await authStore.fetchProfile()
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) next({ name: 'login' })
-  else if (to.meta.requiresGuest && authStore.isAuthenticated) next({ name: 'profile' })
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) next({ name: 'login', query: { redirect: to.fullPath } })
+  else if (to.meta.requiresGuest && authStore.isAuthenticated) {
+    const redirect = typeof to.query.redirect === 'string' ? to.query.redirect : null
+    next(redirect || { name: 'profile' })
+  }
   else next()
 })
 
