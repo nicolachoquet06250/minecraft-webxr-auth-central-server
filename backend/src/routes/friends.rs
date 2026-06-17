@@ -5,7 +5,7 @@ use axum::{
 };
 use sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrait, ModelTrait, QueryFilter, QueryOrder, Set};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, env, sync::Arc};
 use uuid::Uuid;
 
 use crate::{
@@ -67,7 +67,12 @@ pub async fn create_friend_request(
         return Err(StatusCode::BAD_REQUEST);
     }
 
-    User::find_by_id(receiver_user_id.clone())
+    let requester = User::find_by_id(requester_user_id.clone())
+        .one(&state.db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::NOT_FOUND)?;
+    let receiver = User::find_by_id(receiver_user_id.clone())
         .one(&state.db)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
@@ -100,6 +105,15 @@ pub async fn create_friend_request(
     .insert(&state.db)
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let accept_url = friend_request_accept_url(&request.id);
+    if let Err(error) = state
+        .mail_service
+        .send_friend_request_email(&receiver.email, &receiver.username, &requester.username, &accept_url)
+        .await
+    {
+        tracing::warn!(?error, request_id = %request.id, "Failed to send friend request email");
+    }
 
     Ok(Json(friend_request_to_response(&state, request).await?))
 }
@@ -421,4 +435,13 @@ fn base_avatar_name(base_kind: &str) -> &str {
         "alex" => "Alex",
         _ => "Avatar par défaut",
     }
+}
+
+fn friend_request_accept_url(request_id: &str) -> String {
+    let base_url = env::var("FRONTEND_URL")
+        .or_else(|_| env::var("PUBLIC_URL"))
+        .unwrap_or_else(|_| "https://central.voxicraft.fr".to_string())
+        .trim_end_matches('/')
+        .to_string();
+    format!("{}/friends/accept?request_id={}", base_url, urlencoding::encode(request_id))
 }
