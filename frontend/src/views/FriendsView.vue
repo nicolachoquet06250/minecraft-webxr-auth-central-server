@@ -12,20 +12,22 @@
 
       <section class="friends-layout">
         <div class="side-column">
-          <section class="voxicraft-panel">
+          <section class="voxicraft-panel requests-panel">
             <div class="panel-title-row">
               <h2>📥 Demandes reçues</h2>
               <span class="count-badge">{{ friendsStore.incomingRequests.length }}</span>
             </div>
             <div v-if="friendsStore.incomingRequests.length === 0" class="empty-inline">Aucune demande reçue.</div>
             <div v-else class="request-list">
-              <div v-for="request in friendsStore.incomingRequests" :key="request.id" class="request-card">
-                <img :src="avatarSrc(request.requester.avatar.url)" :alt="request.requester.avatar.name" class="avatar-img" />
-                <div class="user-info">
-                  <strong>{{ request.requester.username }}</strong>
-                  <span>Envoyée le {{ formatDate(request.created_at) }}</span>
+              <div v-for="request in friendsStore.incomingRequests" :key="request.id" class="request-card incoming-request-card">
+                <div class="request-user">
+                  <img :src="avatarSrc(request.requester.avatar.url)" :alt="request.requester.avatar.name" class="avatar-img" />
+                  <div class="user-info request-user-info">
+                    <strong :title="request.requester.username">{{ request.requester.username }}</strong>
+                    <span>Envoyée le {{ formatDate(request.created_at) }}</span>
+                  </div>
                 </div>
-                <div class="action-row compact">
+                <div class="action-row compact request-actions">
                   <button class="voxicraft-button small" @click="acceptRequest(request.id)">Accepter</button>
                   <button class="voxicraft-button small danger" @click="refuseRequest(request.id)">Refuser</button>
                 </div>
@@ -33,7 +35,7 @@
             </div>
           </section>
 
-          <section class="voxicraft-panel">
+          <section class="voxicraft-panel requests-panel">
             <div class="panel-title-row">
               <h2>📤 Demandes envoyées</h2>
               <span class="count-badge">{{ friendsStore.outgoingRequests.length }}</span>
@@ -41,10 +43,12 @@
             <div v-if="friendsStore.outgoingRequests.length === 0" class="empty-inline">Aucune demande envoyée.</div>
             <div v-else class="request-list">
               <div v-for="request in friendsStore.outgoingRequests" :key="request.id" class="request-card">
-                <img :src="avatarSrc(request.receiver.avatar.url)" :alt="request.receiver.avatar.name" class="avatar-img" />
-                <div class="user-info">
-                  <strong>{{ request.receiver.username }}</strong>
-                  <span>En attente depuis le {{ formatDate(request.created_at) }}</span>
+                <div class="request-user">
+                  <img :src="avatarSrc(request.receiver.avatar.url)" :alt="request.receiver.avatar.name" class="avatar-img" />
+                  <div class="user-info request-user-info">
+                    <strong :title="request.receiver.username">{{ request.receiver.username }}</strong>
+                    <span>En attente depuis le {{ formatDate(request.created_at) }}</span>
+                  </div>
                 </div>
                 <button class="voxicraft-button small danger" @click="removeFriend(request.receiver.id)">Annuler</button>
               </div>
@@ -259,15 +263,22 @@ const apiAsset = (path: string) => path.startsWith('http') ? path : `${API_BASE_
 .friends-layout { display: grid; grid-template-columns: minmax(320px, .85fr) minmax(0, 1.15fr); gap: 1.5rem; margin-bottom: 1.5rem; }
 .side-column { display: flex; flex-direction: column; gap: 1.5rem; min-width: 0; }
 .friends-list-panel, .side-column .voxicraft-panel { padding: 1.5rem; min-width: 0; }
+.requests-panel { overflow: hidden; }
 .panel-title-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
 h2, h3 { color: #64ffda; margin: 0; }
-.count-badge { background: #2e7d32; color: white; border: 2px solid #1b5e20; padding: .25rem .5rem; border-radius: 999px; font-family: monospace; font-weight: bold; }
+.count-badge { background: #2e7d32; color: white; border: 2px solid #1b5e20; padding: .25rem .5rem; border-radius: 999px; font-family: monospace; font-weight: bold; flex: 0 0 auto; }
 .search-form { display: flex; gap: .75rem; }
 .voxicraft-input { flex: 1; min-width: 0; background: rgba(0,0,0,.45); color: #fff; border: 3px solid #4a4a4a; border-radius: 6px; padding: .85rem 1rem; font-family: monospace; }
 .voxicraft-input:focus { outline: none; border-color: #64ffda; }
 .hint { margin: .35rem 0 0; opacity: .8; }
-.user-list, .request-list { display: flex; flex-direction: column; gap: .75rem; }
+.user-list, .request-list { display: flex; flex-direction: column; gap: .75rem; min-width: 0; }
 .user-row, .request-card, .friend-card { display: flex; align-items: center; gap: .85rem; background: rgba(0,0,0,.25); border: 2px solid rgba(255,255,255,.12); border-radius: 8px; padding: .85rem; min-width: 0; }
+.request-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .9rem; }
+.request-user { display: flex; align-items: center; gap: .85rem; min-width: 0; }
+.request-user-info { min-width: 0; }
+.request-user-info strong { display: block; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.request-user-info span { overflow-wrap: normal; }
+.request-actions { flex-wrap: nowrap; justify-content: flex-end; }
 .user-info { flex: 1; display: flex; flex-direction: column; gap: .25rem; min-width: 0; }
 .user-info strong { color: #fff; overflow-wrap: anywhere; }
 .user-info span, .muted { color: #d7ccc8; font-size: .85rem; }
@@ -297,9 +308,16 @@ h2, h3 { color: #64ffda; margin: 0; }
   .friends-layout { grid-template-columns: 1fr; }
 }
 @media (max-width: 640px) {
-  .search-form, .user-row, .request-card, .friend-card { flex-direction: column; align-items: stretch; text-align: center; }
+  .friends-page { padding: 1rem .55rem; }
+  .friends-list-panel, .side-column .voxicraft-panel { padding: .85rem; }
+  .search-form, .user-row, .friend-card { flex-direction: column; align-items: stretch; text-align: center; }
+  .request-card { grid-template-columns: 1fr; text-align: left; padding: .75rem; }
+  .request-user { align-items: center; }
+  .request-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; width: 100%; }
+  .request-actions .voxicraft-button { width: 100%; }
   .avatar-img, .avatar-large { align-self: center; }
-  .action-row.compact { justify-content: center; }
+  .request-user .avatar-img { align-self: center; }
+  .action-row.compact { justify-content: stretch; }
   .friends-modal-backdrop { padding: .5rem; align-items: flex-start; }
   .friends-modal { max-height: calc(100vh - 1rem); padding: .85rem; }
   .modal-header { align-items: flex-start; }

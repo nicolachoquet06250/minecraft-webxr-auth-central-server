@@ -14,6 +14,7 @@ export const useFriendsStore = defineStore('friends', () => {
   const friendIds = computed(() => new Set(friends.value.map((entry) => entry.user.id)))
   const outgoingRequestReceiverIds = computed(() => new Set(outgoingRequests.value.map((request) => request.receiver.id)))
   const incomingRequestRequesterIds = computed(() => new Set(incomingRequests.value.map((request) => request.requester.id)))
+  const incomingRequestCount = computed(() => incomingRequests.value.length)
 
   const fetchAll = async () => {
     loading.value = true
@@ -33,6 +34,17 @@ export const useFriendsStore = defineStore('friends', () => {
       return false
     } finally {
       loading.value = false
+    }
+  }
+
+  const refreshIncomingRequests = async () => {
+    try {
+      const previousIds = new Set(incomingRequests.value.map((request) => request.id))
+      const response = await friendApi.getIncomingRequests()
+      incomingRequests.value = response.data
+      return response.data.filter((request) => !previousIds.has(request.id))
+    } catch {
+      return []
     }
   }
 
@@ -124,7 +136,9 @@ export const useFriendsStore = defineStore('friends', () => {
     friendIds,
     outgoingRequestReceiverIds,
     incomingRequestRequesterIds,
+    incomingRequestCount,
     fetchAll,
+    refreshIncomingRequests,
     searchUsers,
     sendRequest,
     acceptRequest,
