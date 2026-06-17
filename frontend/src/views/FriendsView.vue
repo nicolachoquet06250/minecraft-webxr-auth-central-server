@@ -76,9 +76,22 @@
                     {{ entry.user.username }}
                   </router-link>
                   <p>{{ entry.user.avatar.name }}</p>
+                  <p v-if="friendPresenceServer(entry.user.id)" class="friend-presence online" :title="friendPresenceServer(entry.user.id)?.name">
+                    <span class="presence-marker">📍</span>
+                    <span>{{ friendPresenceServer(entry.user.id)?.name }}</span>
+                  </p>
+                  <p v-else class="friend-presence offline">hors jeu</p>
                   <p class="muted">Amis depuis le {{ formatDate(entry.created_at) }}</p>
                 </div>
               </div>
+              <button
+                v-if="friendPresenceServer(entry.user.id)"
+                class="icon-join-button"
+                type="button"
+                title="Rejoindre"
+                aria-label="Rejoindre"
+                @click="joinServer(friendPresenceServer(entry.user.id))"
+              >🚪</button>
               <router-link
                 class="icon-profile-button"
                 :to="`/users/${entry.user.id}`"
@@ -157,7 +170,7 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import type { FriendUser } from '@/api'
+import { serverApi, type FriendPresenceServer, type FriendUser } from '@/api'
 import { useFriendsStore } from '@/stores/friends'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
@@ -232,6 +245,12 @@ const removeFriend = async (userId: string) => {
 }
 
 const relationStatus = (user: FriendUser) => friendsStore.relationStatus(user)
+const friendPresenceServer = (userId: string) => friendsStore.presenceFor(userId)
+const joinServer = (server: FriendPresenceServer | null | undefined) => {
+  if (!server) return
+  void serverApi.recordServerVisit(server.game_domain)
+  window.open(server.game_domain, '_blank', 'noopener,noreferrer')
+}
 const formatDate = (value: string) => new Date(value).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
 const avatarSrc = (path: string) => avatarObjectUrls.value[path] || avatarPlaceholder
 
@@ -316,13 +335,19 @@ h2, h3 { color: #64ffda; margin: 0; }
 .action-row.compact { justify-content: flex-end; }
 .pagination-row { display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 1rem; color: #d7ccc8; flex-wrap: wrap; }
 .friend-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem; }
-.friend-card { display: grid; grid-template-columns: minmax(0, 1fr) 44px 44px; align-items: start; gap: .75rem; }
+.friend-card { display: grid; grid-template-columns: minmax(0, 1fr) 44px 44px 44px; align-items: start; gap: .75rem; }
 .friend-user { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: .85rem; min-width: 0; }
 .friend-user-info { min-width: 0; text-align: left; }
 .friend-profile-link { display: block; max-width: 100%; color: #fff; text-decoration: none; font-size: 1.17em; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.1; }
 .friend-profile-link:hover { color: #64ffda; text-decoration: underline; text-underline-offset: 3px; }
 .friend-user-info p { margin: .15rem 0; overflow-wrap: anywhere; }
-.icon-danger-button, .icon-profile-button { width: 44px; height: 38px; display: inline-flex; align-items: center; justify-content: center; border: 3px solid; color: #fff; box-shadow: 3px 3px 0 rgba(0,0,0,.45); cursor: pointer; font-size: 1rem; flex: 0 0 auto; text-decoration: none; }
+.friend-presence { display: block; max-width: 100%; font-size: .78rem; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.friend-presence.online { color: #a5d6a7; }
+.friend-presence.offline { color: #a8a8a8; font-style: italic; }
+.presence-marker { margin-right: .25rem; }
+.icon-danger-button, .icon-profile-button, .icon-join-button { width: 44px; height: 38px; display: inline-flex; align-items: center; justify-content: center; border: 3px solid; color: #fff; box-shadow: 3px 3px 0 rgba(0,0,0,.45); cursor: pointer; font-size: 1rem; flex: 0 0 auto; text-decoration: none; }
+.icon-join-button { background-color: #1976d2; border-color: #0d47a1; }
+.icon-join-button:hover { background-color: #2196f3; }
 .icon-profile-button { background-color: #2e7d32; border-color: #1b5e20; }
 .icon-profile-button:hover { background-color: #43a047; }
 .icon-danger-button { background-color: #f44336; border-color: #c62828; }
@@ -352,10 +377,10 @@ h2, h3 { color: #64ffda; margin: 0; }
   .request-user { align-items: center; }
   .request-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; width: 100%; }
   .request-actions .voxicraft-button { width: 100%; }
-  .friend-card { grid-template-columns: minmax(0, 1fr) 40px 40px; text-align: left; padding: .75rem; }
+  .friend-card { grid-template-columns: minmax(0, 1fr) 40px 40px 40px; text-align: left; padding: .75rem; }
   .friend-user { grid-template-columns: 56px minmax(0, 1fr); gap: .7rem; }
   .friend-user .avatar-large { width: 56px; height: 56px; }
-  .icon-danger-button, .icon-profile-button { width: 40px; height: 36px; }
+  .icon-danger-button, .icon-profile-button, .icon-join-button { width: 40px; height: 36px; }
   .avatar-img, .avatar-large { align-self: center; }
   .request-user .avatar-img { align-self: center; }
   .action-row.compact { justify-content: stretch; }
