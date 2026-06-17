@@ -1,0 +1,74 @@
+@media (max-width: 640px) and (orientation: portrait) {
+  .friends-page {
+    padding-left: 0.35rem !important;
+    padding-right: 0.35rem !important;
+  }
+
+  .friends-page,
+  .friends-page * {
+    box-sizing: border-box;
+  }
+
+  .friends-page .voxicraft-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  .friends-page .voxicraft-panel,
+  .friends-page .search-panel,
+  .friends-page .friends-list-panel,
+  .friends-page .side-column .voxicraft-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  .friends-page .friends-layout,
+  .friends-page .side-column,
+  .friends-page .friend-grid,
+  .friends-page .user-list,
+  .friends-page .request-list {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .friends-page .friend-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .friends-page .user-row,
+  .friends-page .request-card,
+  .friends-page .friend-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    padding-left: 0.65rem !important;
+    padding-right: 0.65rem !important;
+  }
+
+  .friends-page .search-form,
+  .friends-page .pagination-row,
+  .friends-page .action-row {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+@media (max-width: 380px) and (orientation: portrait) {
+  .friends-page {
+    padding-left: 0.2rem !important;
+    padding-right: 0.2rem !important;
+  }
+
+  .friends-page .voxicraft-panel,
+  .friends-page .search-panel,
+  .friends-page .friends-list-panel,
+  .friends-page .side-column .voxicraft-panel {
+    padding-left: 0.55rem !important;
+    padding-right: 0.55rem !important;
+  }
+}
