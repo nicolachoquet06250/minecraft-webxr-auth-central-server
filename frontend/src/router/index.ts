@@ -16,6 +16,8 @@ import DocumentationView from '@/views/DocumentationView.vue'
 import ContactView from '@/views/ContactView.vue'
 import SupportView from '@/views/SupportView.vue'
 
+const POST_LOGIN_REDIRECT_KEY = 'post_login_redirect'
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -48,11 +50,23 @@ router.beforeEach(async (to, _from, next) => {
     return
   }
   if (authStore.token && !authStore.user) await authStore.fetchProfile()
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) next({ name: 'login', query: { redirect: to.fullPath } })
-  else if (to.meta.requiresGuest && authStore.isAuthenticated) {
-    const redirect = typeof to.query.redirect === 'string' ? to.query.redirect : null
-    next(redirect || { name: 'profile' })
+
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    localStorage.setItem(POST_LOGIN_REDIRECT_KEY, to.fullPath)
+    next({ name: 'login' })
+    return
   }
+
+  if (authStore.isAuthenticated && to.name === 'profile') {
+    const redirect = localStorage.getItem(POST_LOGIN_REDIRECT_KEY)
+    if (redirect) {
+      localStorage.removeItem(POST_LOGIN_REDIRECT_KEY)
+      next(redirect)
+      return
+    }
+  }
+
+  if (to.meta.requiresGuest && authStore.isAuthenticated) next({ name: 'profile' })
   else next()
 })
 
