@@ -42,7 +42,7 @@
             </div>
             <div v-if="friendsStore.outgoingRequests.length === 0" class="empty-inline">Aucune demande envoyée.</div>
             <div v-else class="request-list">
-              <div v-for="request in friendsStore.outgoingRequests" :key="request.id" class="request-card">
+              <div v-for="request in friendsStore.outgoingRequests" :key="request.id" class="request-card outgoing-request-card">
                 <div class="request-user">
                   <img :src="avatarSrc(request.receiver.avatar.url)" :alt="request.receiver.avatar.name" class="avatar-img" />
                   <div class="user-info request-user-info">
@@ -274,6 +274,13 @@ h2, h3 { color: #64ffda; margin: 0; }
 .user-list, .request-list { display: flex; flex-direction: column; gap: .75rem; min-width: 0; }
 .user-row, .request-card, .friend-card { display: flex; align-items: center; gap: .85rem; background: rgba(0,0,0,.25); border: 2px solid rgba(255,255,255,.12); border-radius: 8px; padding: .85rem; min-width: 0; }
 .request-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .9rem; }
+.incoming-request-card { display: flex; flex-direction: column; align-items: stretch; gap: .75rem; padding: 1rem; max-width: 100%; overflow: hidden; }
+.incoming-request-card .request-user { display: grid; grid-template-columns: 48px minmax(0, 1fr); align-items: center; gap: .85rem; width: 100%; min-width: 0; }
+.incoming-request-card .request-user-info { display: flex; flex-direction: column; justify-content: center; gap: .2rem; min-width: 0; text-align: left; }
+.incoming-request-card .request-user-info strong { display: block; width: 100%; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.1; }
+.incoming-request-card .request-user-info span { display: block; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #f2e6d8; line-height: 1.1; }
+.incoming-request-card .request-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .65rem; width: 100%; justify-content: stretch; }
+.incoming-request-card .request-actions .voxicraft-button { width: 100%; min-width: 0; text-align: center; justify-content: center; padding: .55rem .7rem; }
 .request-user { display: flex; align-items: center; gap: .85rem; min-width: 0; }
 .request-user-info { min-width: 0; }
 .request-user-info strong { display: block; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -312,6 +319,9 @@ h2, h3 { color: #64ffda; margin: 0; }
   .friends-list-panel, .side-column .voxicraft-panel { padding: .85rem; }
   .search-form, .user-row, .friend-card { flex-direction: column; align-items: stretch; text-align: center; }
   .request-card { grid-template-columns: 1fr; text-align: left; padding: .75rem; }
+  .incoming-request-card { padding: .75rem; }
+  .incoming-request-card .request-user { grid-template-columns: 44px minmax(0, 1fr); gap: .75rem; }
+  .incoming-request-card .avatar-img { width: 44px; height: 44px; }
   .request-user { align-items: center; }
   .request-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; width: 100%; }
   .request-actions .voxicraft-button { width: 100%; }
