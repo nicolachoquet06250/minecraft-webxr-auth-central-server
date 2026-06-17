@@ -91,7 +91,7 @@
             <h3>{{ server.name }}</h3>
             <p class="server-url-row"><strong>Serveur de jeu:</strong> <a :href="server.game_domain" target="_blank" class="server-url" :title="server.game_domain" @click.stop="openGameServer(server)">{{ server.game_domain }}</a></p>
             <p v-if="server.description"><strong>Description:</strong> {{ server.description }}</p>
-            <p><strong>Status:</strong> {{ server.is_active ? '✅ Actif' : '🔴 Inactif' }}</p>
+            <p><strong>Status:</strong> <span class="server-status-label">{{ server.is_active ? '✅ Actif' : '🔴 Inactif' }}</span></p>
 
             <div class="button-container">
               <button
@@ -324,6 +324,10 @@ const openGameServer = async (server: Server) => {
   margin-bottom: 0.5rem;
   color: #d7ccc8;
   overflow-wrap: anywhere;
+}
+
+.server-status-label {
+  display: inline-block;
 }
 
 .server-url-row {
