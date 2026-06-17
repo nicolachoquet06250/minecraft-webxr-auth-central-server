@@ -100,7 +100,7 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useAuthStore } from '@/stores/auth'
 import { useFriendsStore } from '@/stores/friends'
 
@@ -189,16 +189,24 @@ function clearAvatarUrls() {
   avatarObjectUrls.value = {}
 }
 
+function handleAuthenticatedState(isAuthenticated: boolean) {
+  if (isAuthenticated) {
+    void refreshAll()
+  } else {
+    drawerOpen.value = false
+    clearAvatarUrls()
+  }
+}
+
+onMounted(() => {
+  handleAuthenticatedState(authStore.isAuthenticated)
+})
+
 watch(
   () => authStore.isAuthenticated,
-  async (isAuthenticated) => {
-    if (isAuthenticated) await refreshAll()
-    else {
-      drawerOpen.value = false
-      clearAvatarUrls()
-    }
-  },
-  { immediate: true }
+  (isAuthenticated) => {
+    handleAuthenticatedState(isAuthenticated)
+  }
 )
 
 watch(
