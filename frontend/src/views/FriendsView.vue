@@ -69,13 +69,21 @@
           </div>
           <div v-else class="friend-grid">
             <div v-for="entry in friendsStore.friends" :key="entry.user.id" class="friend-card">
-              <img :src="avatarSrc(entry.user.avatar.url)" :alt="entry.user.avatar.name" class="avatar-large" />
-              <div>
-                <h3>{{ entry.user.username }}</h3>
-                <p>{{ entry.user.avatar.name }}</p>
-                <p class="muted">Amis depuis le {{ formatDate(entry.created_at) }}</p>
+              <div class="friend-user">
+                <img :src="avatarSrc(entry.user.avatar.url)" :alt="entry.user.avatar.name" class="avatar-large" />
+                <div class="friend-user-info">
+                  <h3 :title="entry.user.username">{{ entry.user.username }}</h3>
+                  <p>{{ entry.user.avatar.name }}</p>
+                  <p class="muted">Amis depuis le {{ formatDate(entry.created_at) }}</p>
+                </div>
               </div>
-              <button class="voxicraft-button small danger" @click="removeFriend(entry.user.id)">Supprimer</button>
+              <button
+                class="icon-danger-button"
+                type="button"
+                title="Supprimer"
+                aria-label="Supprimer cet ami"
+                @click="removeFriend(entry.user.id)"
+              >🗑️</button>
             </div>
           </div>
         </section>
@@ -298,8 +306,13 @@ h2, h3 { color: #64ffda; margin: 0; }
 .action-row.compact { justify-content: flex-end; }
 .pagination-row { display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 1rem; color: #d7ccc8; flex-wrap: wrap; }
 .friend-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem; }
-.friend-card { align-items: flex-start; }
-.friend-card > div { flex: 1; min-width: 0; }
+.friend-card { display: grid; grid-template-columns: minmax(0, 1fr) 44px; align-items: start; gap: .75rem; }
+.friend-user { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: .85rem; min-width: 0; }
+.friend-user-info { min-width: 0; text-align: left; }
+.friend-user-info h3 { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.1; }
+.friend-user-info p { margin: .15rem 0; overflow-wrap: anywhere; }
+.icon-danger-button { width: 44px; height: 38px; display: inline-flex; align-items: center; justify-content: center; background-color: #f44336; border: 3px solid #c62828; color: #fff; box-shadow: 3px 3px 0 rgba(0,0,0,.45); cursor: pointer; font-size: 1rem; flex: 0 0 auto; }
+.icon-danger-button:hover { background-color: #ff6659; }
 .empty-state, .empty-inline { text-align: center; color: #d7ccc8; padding: 1.5rem; }
 .empty-icon { font-size: 4rem; margin-bottom: 1rem; }
 .voxicraft-button.small { padding: .5rem .85rem; font-size: .8rem; }
@@ -317,7 +330,7 @@ h2, h3 { color: #64ffda; margin: 0; }
 @media (max-width: 640px) {
   .friends-page { padding: 1rem .55rem; }
   .friends-list-panel, .side-column .voxicraft-panel { padding: .85rem; }
-  .search-form, .user-row, .friend-card { flex-direction: column; align-items: stretch; text-align: center; }
+  .search-form, .user-row { flex-direction: column; align-items: stretch; text-align: center; }
   .request-card { grid-template-columns: 1fr; text-align: left; padding: .75rem; }
   .incoming-request-card { padding: .75rem; }
   .incoming-request-card .request-user { grid-template-columns: 44px minmax(0, 1fr); gap: .75rem; }
@@ -325,6 +338,10 @@ h2, h3 { color: #64ffda; margin: 0; }
   .request-user { align-items: center; }
   .request-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; width: 100%; }
   .request-actions .voxicraft-button { width: 100%; }
+  .friend-card { grid-template-columns: minmax(0, 1fr) 40px; text-align: left; padding: .75rem; }
+  .friend-user { grid-template-columns: 56px minmax(0, 1fr); gap: .7rem; }
+  .friend-user .avatar-large { width: 56px; height: 56px; }
+  .icon-danger-button { width: 40px; height: 36px; }
   .avatar-img, .avatar-large { align-self: center; }
   .request-user .avatar-img { align-self: center; }
   .action-row.compact { justify-content: stretch; }
