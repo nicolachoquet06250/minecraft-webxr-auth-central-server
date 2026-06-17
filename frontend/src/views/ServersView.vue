@@ -279,7 +279,8 @@ const openGameServer = async (server: Server) => {
 
 .server-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(380px, 380px));
+  justify-content: start;
   gap: 2rem;
 }
 
@@ -374,10 +375,6 @@ const openGameServer = async (server: Server) => {
 }
 
 @media (max-width: 768px) {
-  .server-grid {
-    grid-template-columns: 1fr;
-  }
-
   .server-url-row {
     display: block;
   }
@@ -393,6 +390,10 @@ const openGameServer = async (server: Server) => {
 }
 
 @media (max-width: 768px) and (orientation: portrait) {
+  .server-grid {
+    grid-template-columns: 1fr;
+  }
+
   .server-card.voxicraft-panel {
     max-width: 100%;
   }
