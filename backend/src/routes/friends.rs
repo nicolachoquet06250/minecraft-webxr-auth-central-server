@@ -5,11 +5,12 @@ use axum::{
 };
 use sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrait, ModelTrait, QueryFilter, QueryOrder, Set};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, env, sync::Arc};
+use serde_json::Value;
+use std::{collections::HashMap, env, sync::Arc, time::Duration};
 use uuid::Uuid;
 
 use crate::{
-    models::{avatar, friend_request, friendship, user, Avatar, FriendRequest, Friendship, User},
+    models::{avatar, friend_request, friendship, server, user, Avatar, FriendRequest, Friendship, Server, User},
     services::Claims,
     AppState,
 };
@@ -53,6 +54,19 @@ pub struct FriendRequestResponse {
 pub struct FriendResponse {
     pub user: FriendUserResponse,
     pub created_at: String,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct FriendPresenceServerResponse {
+    pub id: String,
+    pub name: String,
+    pub game_domain: String,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct FriendPresenceResponse {
+    pub user_id: String,
+    pub server: Option<FriendPresenceServerResponse>,
 }
 
 pub async fn create_friend_request(
@@ -289,6 +303,122 @@ pub async fn get_friends(
     }
 
     Ok(Json(response))
+}
+
+pub async fn get_friends_presence(
+    Extension(claims): Extension<Claims>,
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<Vec<FriendPresenceResponse>>, StatusCode> {
+    let friend_user_ids = friend_user_ids(&state, &claims.sub).await?;
+    let mut presence_by_user_id = friend_user_ids
+        .iter()
+        .map(|user_id| (user_id.clone(), None))
+        .collect::<HashMap<String, Option<FriendPresenceServerResponse>>>();
+
+    if friend_user_ids.is_empty() {
+        return Ok(Json(Vec::new()));
+    }
+
+    let servers = Server::find()
+        .filter(server::Column::IsActive.eq(true))
+        .all(&state.db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(3))
+        .build()
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    for server in servers {
+        let connected_user_ids = fetch_connected_user_ids(&client, &server.game_domain).await;
+        if connected_user_ids.is_empty() {
+            continue;
+        }
+
+        let server_response = FriendPresenceServerResponse {
+            id: server.id.clone(),
+            name: server.name.clone(),
+            game_domain: server.game_domain.clone(),
+        };
+
+        for user_id in connected_user_ids {
+            if let Some(slot) = presence_by_user_id.get_mut(&user_id) {
+                *slot = Some(server_response.clone());
+            }
+        }
+    }
+
+    let response = friend_user_ids
+        .into_iter()
+        .map(|user_id| FriendPresenceResponse {
+            server: presence_by_user_id.remove(&user_id).flatten(),
+            user_id,
+        })
+        .collect();
+
+    Ok(Json(response))
+}
+
+async fn friend_user_ids(state: &Arc<AppState>, user_id: &str) -> Result<Vec<String>, StatusCode> {
+    let friendships = Friendship::find()
+        .filter(
+            Condition::any()
+                .add(friendship::Column::UserAId.eq(user_id))
+                .add(friendship::Column::UserBId.eq(user_id)),
+        )
+        .all(&state.db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(friendships
+        .into_iter()
+        .map(|friendship| {
+            if friendship.user_a_id == user_id {
+                friendship.user_b_id
+            } else {
+                friendship.user_a_id
+            }
+        })
+        .collect())
+}
+
+async fn fetch_connected_user_ids(client: &reqwest::Client, game_domain: &str) -> Vec<String> {
+    let stats_url = format!("{}/stats", game_domain.trim_end_matches('/'));
+    let Ok(response) = client.get(stats_url).send().await else {
+        return Vec::new();
+    };
+    if !response.status().is_success() {
+        return Vec::new();
+    }
+
+    let Ok(value) = response.json::<Value>().await else {
+        return Vec::new();
+    };
+    value
+        .get("connected_players")
+        .and_then(Value::as_array)
+        .map(|players| players.iter().filter_map(player_central_user_id).collect())
+        .unwrap_or_default()
+}
+
+fn player_central_user_id(player: &Value) -> Option<String> {
+    match player {
+        Value::Object(record) => ["user_id", "userId", "central_user_id", "centralUserId", "auth_user_id", "authUserId"]
+            .iter()
+            .find_map(|key| record.get(*key).and_then(value_to_non_empty_string)),
+        _ => None,
+    }
+}
+
+fn value_to_non_empty_string(value: &Value) -> Option<String> {
+    match value {
+        Value::String(text) => {
+            let trimmed = text.trim();
+            if trimmed.is_empty() { None } else { Some(trimmed.to_string()) }
+        }
+        Value::Number(number) => Some(number.to_string()),
+        _ => None,
+    }
 }
 
 async fn ensure_friendship(state: &Arc<AppState>, user_a_id: &str, user_b_id: &str) -> Result<(), StatusCode> {
