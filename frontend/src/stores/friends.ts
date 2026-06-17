@@ -1,13 +1,15 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { friendApi, userApi, type FriendEntry, type FriendRequest, type FriendUser, type PaginatedUsersResponse } from '@/api'
+import { friendApi, userApi, type FriendEntry, type FriendPresence, type FriendRequest, type FriendUser, type PaginatedUsersResponse } from '@/api'
 
 export const useFriendsStore = defineStore('friends', () => {
   const friends = ref<FriendEntry[]>([])
   const incomingRequests = ref<FriendRequest[]>([])
   const outgoingRequests = ref<FriendRequest[]>([])
+  const friendPresence = ref<Record<string, FriendPresence>>({})
   const searchResults = ref<PaginatedUsersResponse | null>(null)
   const loading = ref(false)
+  const presenceLoading = ref(false)
   const searchLoading = ref(false)
   const error = ref<string | null>(null)
 
@@ -28,12 +30,26 @@ export const useFriendsStore = defineStore('friends', () => {
       friends.value = friendsResponse.data
       incomingRequests.value = incomingResponse.data
       outgoingRequests.value = outgoingResponse.data
+      await fetchPresence()
       return true
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Impossible de charger les amis.'
       return false
     } finally {
       loading.value = false
+    }
+  }
+
+  const fetchPresence = async () => {
+    presenceLoading.value = true
+    try {
+      const response = await friendApi.getPresence()
+      friendPresence.value = Object.fromEntries(response.data.map((presence) => [presence.user_id, presence]))
+      return true
+    } catch {
+      return false
+    } finally {
+      presenceLoading.value = false
     }
   }
 
@@ -111,6 +127,9 @@ export const useFriendsStore = defineStore('friends', () => {
       friends.value = friends.value.filter((entry) => entry.user.id !== userId)
       outgoingRequests.value = outgoingRequests.value.filter((request) => request.receiver.id !== userId)
       incomingRequests.value = incomingRequests.value.filter((request) => request.requester.id !== userId)
+      const nextPresence = { ...friendPresence.value }
+      delete nextPresence[userId]
+      friendPresence.value = nextPresence
       return true
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Impossible de supprimer cet ami.'
@@ -125,12 +144,16 @@ export const useFriendsStore = defineStore('friends', () => {
     return 'none'
   }
 
+  const presenceFor = (userId: string) => friendPresence.value[userId]?.server ?? null
+
   return {
     friends,
     incomingRequests,
     outgoingRequests,
+    friendPresence,
     searchResults,
     loading,
+    presenceLoading,
     searchLoading,
     error,
     friendIds,
@@ -138,6 +161,7 @@ export const useFriendsStore = defineStore('friends', () => {
     incomingRequestRequesterIds,
     incomingRequestCount,
     fetchAll,
+    fetchPresence,
     refreshIncomingRequests,
     searchUsers,
     sendRequest,
@@ -145,5 +169,6 @@ export const useFriendsStore = defineStore('friends', () => {
     refuseRequest,
     removeFriend,
     relationStatus,
+    presenceFor,
   }
 })
