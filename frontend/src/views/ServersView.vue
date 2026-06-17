@@ -186,6 +186,9 @@ const openGameServer = async (server: Server) => {
 .voxicraft-container {
   max-width: 1200px;
   margin: 0 auto;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .page-header {
@@ -206,6 +209,7 @@ const openGameServer = async (server: Server) => {
   align-items: center;
   gap: .75rem;
   flex-wrap: wrap;
+  max-width: 100%;
 }
 
 .create-btn {
@@ -230,6 +234,7 @@ const openGameServer = async (server: Server) => {
   margin: 0 auto 2rem;
   max-width: 700px;
   padding: 2rem;
+  box-sizing: border-box;
 }
 
 .create-form h2 {
@@ -257,6 +262,9 @@ const openGameServer = async (server: Server) => {
 
 .servers-list {
   margin-top: 2rem;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .loading-message {
@@ -270,6 +278,7 @@ const openGameServer = async (server: Server) => {
   padding: 3rem 2rem;
   max-width: 600px;
   margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .empty-icon {
@@ -279,8 +288,12 @@ const openGameServer = async (server: Server) => {
 
 .server-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr));
   gap: 2rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .server-card {
@@ -289,6 +302,10 @@ const openGameServer = async (server: Server) => {
   transition: all 0.3s ease;
   text-align: left;
   min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .server-card:hover {
@@ -300,11 +317,13 @@ const openGameServer = async (server: Server) => {
   color: #64ffda;
   margin-bottom: 1rem;
   font-size: 1.4rem;
+  overflow-wrap: anywhere;
 }
 
 .server-card p {
   margin-bottom: 0.5rem;
   color: #d7ccc8;
+  overflow-wrap: anywhere;
 }
 
 .server-url-row {
@@ -343,6 +362,7 @@ const openGameServer = async (server: Server) => {
   gap: 0.5rem;
   margin-top: 1.5rem;
   flex-wrap: wrap;
+  max-width: 100%;
 }
 
 .voxicraft-button.small {
@@ -370,8 +390,35 @@ const openGameServer = async (server: Server) => {
 }
 
 @media (max-width: 768px) {
+  .servers {
+    padding: 1rem .55rem;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  .voxicraft-container,
+  .servers-list,
+  .server-grid,
+  .server-card,
+  .create-form,
+  .empty-state {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
   .server-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
+
+  .server-card {
+    padding: 1rem;
+  }
+
+  .server-card:hover {
+    transform: none;
   }
 
   .server-url-row {
@@ -385,6 +432,14 @@ const openGameServer = async (server: Server) => {
   .button-container,
   .servers-header {
     flex-direction: column;
+    align-items: stretch;
+  }
+
+  .button-container .voxicraft-button,
+  .servers-header .voxicraft-button {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 }
 </style>
