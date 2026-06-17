@@ -98,6 +98,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/users/:id/matrix-color", get(routes::matrix_color::get_user_matrix_color))
         .route("/users/:id/matrix-color", options(routes::matrix_color::matrix_color_preflight))
         .route("/friends", get(routes::friends::get_friends))
+        .route("/friends/presence", get(routes::friends::get_friends_presence))
         .route("/friends/requests", post(routes::friends::create_friend_request))
         .route("/friends/requests/incoming", get(routes::friends::get_incoming_friend_requests))
         .route("/friends/requests/outgoing", get(routes::friends::get_outgoing_friend_requests))
@@ -132,7 +133,6 @@ async fn main() -> anyhow::Result<()> {
     }
 
     let addr: SocketAddr = format!("{}:{}", api_host, api_port).parse().unwrap();
-
     tracing::info!("Server listening on http://{}:{}", api_host, api_port);
     let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app).await?;
