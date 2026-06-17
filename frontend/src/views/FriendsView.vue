@@ -33,7 +33,7 @@
           <div v-else-if="friendsStore.searchResults && friendsStore.searchResults.items.length === 0" class="empty-inline">Aucun utilisateur trouvé.</div>
           <div v-else-if="friendsStore.searchResults" class="user-list">
             <div v-for="user in friendsStore.searchResults.items" :key="user.id" class="user-row">
-              <img :src="apiAsset(user.avatar.url)" :alt="user.avatar.name" class="avatar-img" />
+              <img :src="avatarSrc(user.avatar.url)" :alt="user.avatar.name" class="avatar-img" />
               <div class="user-info">
                 <strong>{{ user.username }}</strong>
                 <span>{{ user.avatar.name }}</span>
@@ -65,14 +65,14 @@
             <div v-if="friendsStore.incomingRequests.length === 0" class="empty-inline">Aucune demande reçue.</div>
             <div v-else class="request-list">
               <div v-for="request in friendsStore.incomingRequests" :key="request.id" class="request-card">
-                <img :src="apiAsset(request.requester.avatar.url)" :alt="request.requester.avatar.name" class="avatar-img" />
+                <img :src="avatarSrc(request.requester.avatar.url)" :alt="request.requester.avatar.name" class="avatar-img" />
                 <div class="user-info">
                   <strong>{{ request.requester.username }}</strong>
                   <span>Envoyée le {{ formatDate(request.created_at) }}</span>
                 </div>
                 <div class="action-row compact">
-                  <button class="voxicraft-button small" @click="friendsStore.acceptRequest(request.id)">Accepter</button>
-                  <button class="voxicraft-button small danger" @click="friendsStore.refuseRequest(request.id)">Refuser</button>
+                  <button class="voxicraft-button small" @click="acceptRequest(request.id)">Accepter</button>
+                  <button class="voxicraft-button small danger" @click="refuseRequest(request.id)">Refuser</button>
                 </div>
               </div>
             </div>
@@ -86,12 +86,12 @@
             <div v-if="friendsStore.outgoingRequests.length === 0" class="empty-inline">Aucune demande envoyée.</div>
             <div v-else class="request-list">
               <div v-for="request in friendsStore.outgoingRequests" :key="request.id" class="request-card">
-                <img :src="apiAsset(request.receiver.avatar.url)" :alt="request.receiver.avatar.name" class="avatar-img" />
+                <img :src="avatarSrc(request.receiver.avatar.url)" :alt="request.receiver.avatar.name" class="avatar-img" />
                 <div class="user-info">
                   <strong>{{ request.receiver.username }}</strong>
                   <span>En attente depuis le {{ formatDate(request.created_at) }}</span>
                 </div>
-                <button class="voxicraft-button small danger" @click="friendsStore.removeFriend(request.receiver.id)">Annuler</button>
+                <button class="voxicraft-button small danger" @click="removeFriend(request.receiver.id)">Annuler</button>
               </div>
             </div>
           </section>
@@ -110,13 +110,13 @@
         </div>
         <div v-else class="friend-grid">
           <div v-for="entry in friendsStore.friends" :key="entry.user.id" class="friend-card">
-            <img :src="apiAsset(entry.user.avatar.url)" :alt="entry.user.avatar.name" class="avatar-large" />
+            <img :src="avatarSrc(entry.user.avatar.url)" :alt="entry.user.avatar.name" class="avatar-large" />
             <div>
               <h3>{{ entry.user.username }}</h3>
               <p>{{ entry.user.avatar.name }}</p>
               <p class="muted">Amis depuis le {{ formatDate(entry.created_at) }}</p>
             </div>
-            <button class="voxicraft-button small danger" @click="friendsStore.removeFriend(entry.user.id)">Supprimer</button>
+            <button class="voxicraft-button small danger" @click="removeFriend(entry.user.id)">Supprimer</button>
           </div>
         </div>
       </section>
@@ -125,7 +125,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { FriendUser } from '@/api'
 import { useFriendsStore } from '@/stores/friends'
 
@@ -134,15 +134,35 @@ const friendsStore = useFriendsStore()
 const searchQuery = ref('')
 const searchPage = ref(1)
 const pageSize = 20
+const avatarObjectUrls = ref<Record<string, string>>({})
+const loadingAvatarUrls = new Set<string>()
+const avatarPlaceholder = 'data:image/svg+xml;utf8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2048%2048%22%3E%3Crect%20width=%2248%22%20height=%2248%22%20rx=%228%22%20fill=%22%23212121%22/%3E%3Crect%20x=%2214%22%20y=%2210%22%20width=%2220%22%20height=%2220%22%20fill=%22%2364ffda%22%20opacity=%22.75%22/%3E%3Crect%20x=%2210%22%20y=%2234%22%20width=%2228%22%20height=%228%22%20fill=%22%2364ffda%22%20opacity=%22.45%22/%3E%3C/svg%3E'
 
 onMounted(async () => {
   await friendsStore.fetchAll()
   await runSearch(1)
+  await loadVisibleAvatars()
+})
+
+watch(
+  () => [
+    friendsStore.searchResults?.items.map((user) => user.avatar.url).join('|'),
+    friendsStore.incomingRequests.map((request) => request.requester.avatar.url).join('|'),
+    friendsStore.outgoingRequests.map((request) => request.receiver.avatar.url).join('|'),
+    friendsStore.friends.map((entry) => entry.user.avatar.url).join('|'),
+  ],
+  () => { void loadVisibleAvatars() },
+  { deep: false }
+)
+
+onBeforeUnmount(() => {
+  Object.values(avatarObjectUrls.value).forEach((url) => URL.revokeObjectURL(url))
 })
 
 const runSearch = async (page: number) => {
   searchPage.value = page
   await friendsStore.searchUsers({ q: searchQuery.value, page, page_size: pageSize })
+  await loadVisibleAvatars()
 }
 
 const goToSearchPage = async (page: number) => {
@@ -155,8 +175,57 @@ const sendRequest = async (userId: string) => {
   if (sent) await runSearch(searchPage.value)
 }
 
+const acceptRequest = async (requestId: string) => {
+  await friendsStore.acceptRequest(requestId)
+  await loadVisibleAvatars()
+}
+
+const refuseRequest = async (requestId: string) => {
+  await friendsStore.refuseRequest(requestId)
+  await loadVisibleAvatars()
+}
+
+const removeFriend = async (userId: string) => {
+  await friendsStore.removeFriend(userId)
+  await loadVisibleAvatars()
+}
+
 const relationStatus = (user: FriendUser) => friendsStore.relationStatus(user)
 const formatDate = (value: string) => new Date(value).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
+const avatarSrc = (path: string) => avatarObjectUrls.value[path] || avatarPlaceholder
+
+const loadVisibleAvatars = async () => {
+  const paths = collectVisibleAvatarPaths()
+  await Promise.all(paths.map((path) => loadProtectedAvatar(path)))
+}
+
+const collectVisibleAvatarPaths = () => Array.from(new Set([
+  ...(friendsStore.searchResults?.items ?? []).map((user) => user.avatar.url),
+  ...friendsStore.incomingRequests.map((request) => request.requester.avatar.url),
+  ...friendsStore.outgoingRequests.map((request) => request.receiver.avatar.url),
+  ...friendsStore.friends.map((entry) => entry.user.avatar.url),
+]))
+
+const loadProtectedAvatar = async (path: string) => {
+  if (!path || avatarObjectUrls.value[path] || loadingAvatarUrls.has(path)) return
+  const token = localStorage.getItem('auth_token')
+  if (!token) return
+
+  loadingAvatarUrls.add(path)
+  try {
+    const response = await fetch(apiAsset(path), {
+      headers: { Authorization: `Bearer ${token}` },
+      credentials: 'include',
+    })
+    if (!response.ok) return
+
+    const blobUrl = URL.createObjectURL(await response.blob())
+    avatarObjectUrls.value = { ...avatarObjectUrls.value, [path]: blobUrl }
+  } finally {
+    loadingAvatarUrls.delete(path)
+  }
+}
+
 const apiAsset = (path: string) => path.startsWith('http') ? path : `${API_BASE_URL}${path.startsWith('/api') ? path.slice(4) : path}`
 </script>
 
