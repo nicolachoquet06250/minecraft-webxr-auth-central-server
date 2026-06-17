@@ -1,0 +1,88 @@
+.friends-page .incoming-request-card {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 0.75rem !important;
+  padding: 1rem !important;
+  background: rgba(0, 0, 0, 0.25) !important;
+  border: 2px solid rgba(255, 255, 255, 0.14) !important;
+  border-radius: 6px !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+.friends-page .incoming-request-card .request-user {
+  display: grid !important;
+  grid-template-columns: 48px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 0.85rem !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.friends-page .incoming-request-card .avatar-img {
+  width: 48px !important;
+  height: 48px !important;
+  align-self: center !important;
+}
+
+.friends-page .incoming-request-card .request-user-info {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  min-width: 0 !important;
+  gap: 0.2rem !important;
+  text-align: left !important;
+}
+
+.friends-page .incoming-request-card .request-user-info strong {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  color: #ffffff !important;
+  line-height: 1.1 !important;
+}
+
+.friends-page .incoming-request-card .request-user-info span {
+  display: block !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  color: #f2e6d8 !important;
+  line-height: 1.1 !important;
+}
+
+.friends-page .incoming-request-card .request-actions {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 0.65rem !important;
+  width: 100% !important;
+  justify-content: stretch !important;
+}
+
+.friends-page .incoming-request-card .request-actions .voxicraft-button {
+  width: 100% !important;
+  min-width: 0 !important;
+  text-align: center !important;
+  justify-content: center !important;
+  padding: 0.55rem 0.7rem !important;
+}
+
+@media (max-width: 640px) {
+  .friends-page .incoming-request-card {
+    padding: 0.75rem !important;
+  }
+
+  .friends-page .incoming-request-card .request-user {
+    grid-template-columns: 44px minmax(0, 1fr) !important;
+    gap: 0.75rem !important;
+  }
+
+  .friends-page .incoming-request-card .avatar-img {
+    width: 44px !important;
+    height: 44px !important;
+  }
+}
