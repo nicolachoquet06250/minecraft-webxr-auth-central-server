@@ -1,6 +1,17 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { friendApi, userApi, type FriendEntry, type FriendPresence, type FriendRequest, type FriendUser, type PaginatedUsersResponse } from '@/api'
+import { friendApi, userApi, type FriendEntry, type FriendPresence, type FriendPresenceServer, type FriendRequest, type FriendUser, type PaginatedUsersResponse } from '@/api'
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
+const AUTH_TOKEN_STORAGE_KEY = 'auth_token'
+
+type PresenceRealtimeMessage = {
+  type?: 'multiplayer_join' | 'multiplayer_leave'
+  payload?: {
+    user_id?: string
+    server?: FriendPresenceServer | null
+  }
+}
 
 export const useFriendsStore = defineStore('friends', () => {
   const friends = ref<FriendEntry[]>([])
@@ -12,6 +23,8 @@ export const useFriendsStore = defineStore('friends', () => {
   const presenceLoading = ref(false)
   const searchLoading = ref(false)
   const error = ref<string | null>(null)
+  let presenceSocket: WebSocket | null = null
+  let presenceReconnectTimer: number | null = null
 
   const friendIds = computed(() => new Set(friends.value.map((entry) => entry.user.id)))
   const outgoingRequestReceiverIds = computed(() => new Set(outgoingRequests.value.map((request) => request.receiver.id)))
@@ -31,6 +44,7 @@ export const useFriendsStore = defineStore('friends', () => {
       incomingRequests.value = incomingResponse.data
       outgoingRequests.value = outgoingResponse.data
       await fetchPresence()
+      connectPresenceSocket()
       return true
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Impossible de charger les amis.'
@@ -51,6 +65,28 @@ export const useFriendsStore = defineStore('friends', () => {
     } finally {
       presenceLoading.value = false
     }
+  }
+
+  const connectPresenceSocket = () => {
+    const token = localStorage.getItem(AUTH_TOKEN_STORAGE_KEY)
+    if (!token || presenceSocket?.readyState === WebSocket.OPEN || presenceSocket?.readyState === WebSocket.CONNECTING) return
+    clearPresenceReconnectTimer()
+
+    const socket = new WebSocket(resolvePresenceSocketUrl(token))
+    presenceSocket = socket
+    socket.addEventListener('message', (event) => applyPresenceRealtimeMessage(event.data))
+    socket.addEventListener('close', () => {
+      if (presenceSocket === socket) presenceSocket = null
+      const latestToken = localStorage.getItem(AUTH_TOKEN_STORAGE_KEY)
+      if (latestToken) presenceReconnectTimer = window.setTimeout(connectPresenceSocket, 1500)
+    })
+    socket.addEventListener('error', () => socket.close())
+  }
+
+  const disconnectPresenceSocket = () => {
+    clearPresenceReconnectTimer()
+    presenceSocket?.close(1000, 'client_disconnect')
+    presenceSocket = null
   }
 
   const refreshIncomingRequests = async () => {
@@ -146,6 +182,38 @@ export const useFriendsStore = defineStore('friends', () => {
 
   const presenceFor = (userId: string) => friendPresence.value[userId]?.server ?? null
 
+  const applyPresenceRealtimeMessage = (raw: unknown) => {
+    if (typeof raw !== 'string') return
+    try {
+      const message = JSON.parse(raw) as PresenceRealtimeMessage
+      const userId = message.payload?.user_id
+      if (!userId || !friendIds.value.has(userId)) return
+      friendPresence.value = {
+        ...friendPresence.value,
+        [userId]: {
+          user_id: userId,
+          server: message.type === 'multiplayer_join' ? message.payload?.server ?? null : null,
+        },
+      }
+    } catch {
+      // Ignore invalid realtime messages.
+    }
+  }
+
+  const resolvePresenceSocketUrl = (token: string) => {
+    const baseUrl = new URL(API_BASE_URL)
+    baseUrl.protocol = baseUrl.protocol === 'https:' ? 'wss:' : 'ws:'
+    baseUrl.pathname = `${baseUrl.pathname.replace(/\/+$/, '')}/friends/presence/realtime`
+    baseUrl.search = `auth=${encodeURIComponent(token)}`
+    return baseUrl.toString()
+  }
+
+  const clearPresenceReconnectTimer = () => {
+    if (presenceReconnectTimer === null) return
+    window.clearTimeout(presenceReconnectTimer)
+    presenceReconnectTimer = null
+  }
+
   return {
     friends,
     incomingRequests,
@@ -162,6 +230,8 @@ export const useFriendsStore = defineStore('friends', () => {
     incomingRequestCount,
     fetchAll,
     fetchPresence,
+    connectPresenceSocket,
+    disconnectPresenceSocket,
     refreshIncomingRequests,
     searchUsers,
     sendRequest,
