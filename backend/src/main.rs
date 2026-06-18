@@ -75,7 +75,8 @@ async fn main() -> anyhow::Result<()> {
         .route("/mail/status", get(routes::mail::mail_status))
         .route("/contact", post(routes::mail::send_contact_mail))
         .route("/support", post(routes::mail::send_support_mail))
-        .route("/friends/presence/realtime", get(routes::friends_presence_ws::friends_presence_socket));
+        .route("/friends/presence/realtime", get(routes::friends_presence_ws::friends_presence_socket))
+        .route("/friends/realtime", get(routes::friends_realtime_ws::friends_realtime_socket));
 
     let protected_routes = Router::new()
         .route("/users/me", get(routes::user::get_profile))
