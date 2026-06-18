@@ -12,10 +12,12 @@ use validator::Validate;
 use crate::{
     dto::{AuthResponse, DiscordCallbackQuery, DiscordOAuthUrl, LoginRequest, RegisterRequest, UserResponse},
     models::{user, User},
-    routes::login_origin,
+    routes::{join_ticket, login_origin},
     services::{hash_password, verify_password},
     AppState,
 };
+
+const SERVER_ORIGIN_HEADER: &str = "x-voxicraft-server-origin";
 
 pub async fn register(State(state): State<Arc<AppState>>, Json(payload): Json<RegisterRequest>) -> Result<Json<AuthResponse>, StatusCode> {
     if let Err(e) = payload.validate() { tracing::error!("Validation error: {:?}", e); return Err(StatusCode::BAD_REQUEST); }
@@ -34,11 +36,27 @@ pub async fn register(State(state): State<Arc<AppState>>, Json(payload): Json<Re
 }
 
 pub async fn login(State(state): State<Arc<AppState>>, headers: HeaderMap, Json(payload): Json<LoginRequest>) -> Result<Json<AuthResponse>, StatusCode> {
+    if let Some(ticket) = payload.central_join_ticket.as_deref().map(str::trim).filter(|value| !value.is_empty()) {
+        let game_domain = headers
+            .get(SERVER_ORIGIN_HEADER)
+            .and_then(|value| value.to_str().ok())
+            .map(str::to_string);
+        let ticket_user = join_ticket::consume_join_ticket(ticket.to_string(), None, game_domain).await?;
+        let user = User::find_by_id(ticket_user.id)
+            .one(&state.db)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+            .ok_or(StatusCode::UNAUTHORIZED)?;
+        let token = state.jwt_service.generate_token(&user.id, &user.username).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        return Ok(Json(AuthResponse { token, user: user_to_response(user) }));
+    }
+
     if !login_origin::is_allowed(&state, &headers).await? { return Err(StatusCode::FORBIDDEN); }
-    if payload.validate().is_err() { return Err(StatusCode::BAD_REQUEST); }
-    let user = User::find().filter(user::Column::Email.eq(&payload.email)).one(&state.db).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?.ok_or(StatusCode::UNAUTHORIZED)?;
+    let email = payload.email.as_deref().map(str::trim).filter(|value| !value.is_empty()).ok_or(StatusCode::BAD_REQUEST)?;
+    let password = payload.password.as_deref().ok_or(StatusCode::BAD_REQUEST)?;
+    let user = User::find().filter(user::Column::Email.eq(email)).one(&state.db).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?.ok_or(StatusCode::UNAUTHORIZED)?;
     let password_hash = user.password_hash.as_ref().ok_or(StatusCode::UNAUTHORIZED)?;
-    let valid = verify_password(&payload.password, password_hash).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let valid = verify_password(password, password_hash).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     if !valid { return Err(StatusCode::UNAUTHORIZED); }
     let token = state.jwt_service.generate_token(&user.id, &user.username).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     Ok(Json(AuthResponse { token, user: user_to_response(user) }))
