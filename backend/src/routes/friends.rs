@@ -11,6 +11,7 @@ use uuid::Uuid;
 
 use crate::{
     models::{avatar, friend_request, friendship, server, user, Avatar, FriendRequest, Friendship, Server, User},
+    routes::friends_realtime_ws,
     services::Claims,
     AppState,
 };
@@ -110,8 +111,8 @@ pub async fn create_friend_request(
     let now = chrono::Utc::now().naive_utc();
     let request = friend_request::ActiveModel {
         id: Set(Uuid::new_v4().to_string()),
-        requester_user_id: Set(requester_user_id),
-        receiver_user_id: Set(receiver_user_id),
+        requester_user_id: Set(requester_user_id.clone()),
+        receiver_user_id: Set(receiver_user_id.clone()),
         status: Set(STATUS_PENDING.to_string()),
         created_at: Set(now),
         updated_at: Set(now),
@@ -129,7 +130,11 @@ pub async fn create_friend_request(
         tracing::warn!(?error, request_id = %request.id, "Failed to send friend request email");
     }
 
-    Ok(Json(friend_request_to_response(&state, request).await?))
+    let response = friend_request_to_response(&state, request).await?;
+    friends_realtime_ws::notify_request_received(&receiver_user_id, &requester.username).await;
+    friends_realtime_ws::notify_friend_state_changed(&[requester_user_id, receiver_user_id]).await;
+
+    Ok(Json(response))
 }
 
 pub async fn get_incoming_friend_requests(
@@ -189,7 +194,11 @@ pub async fn accept_friend_request(
 
     ensure_friendship(&state, &requester_user_id, &receiver_user_id).await?;
 
-    Ok(Json(friend_request_to_response(&state, updated_request).await?))
+    let response = friend_request_to_response(&state, updated_request).await?;
+    friends_realtime_ws::notify_request_accepted(&requester_user_id, &claims.username).await;
+    friends_realtime_ws::notify_friend_state_changed(&[requester_user_id, receiver_user_id]).await;
+
+    Ok(Json(response))
 }
 
 pub async fn refuse_friend_request(
@@ -198,13 +207,15 @@ pub async fn refuse_friend_request(
     Path(request_id): Path<String>,
 ) -> Result<Json<FriendRequestResponse>, StatusCode> {
     let request = FriendRequest::find_by_id(request_id)
-        .filter(friend_request::Column::ReceiverUserId.eq(claims.sub))
+        .filter(friend_request::Column::ReceiverUserId.eq(claims.sub.clone()))
         .filter(friend_request::Column::Status.eq(STATUS_PENDING))
         .one(&state.db)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .ok_or(StatusCode::NOT_FOUND)?;
 
+    let requester_user_id = request.requester_user_id.clone();
+    let receiver_user_id = request.receiver_user_id.clone();
     let mut active_request: friend_request::ActiveModel = request.into();
     active_request.status = Set(STATUS_REFUSED.to_string());
     active_request.updated_at = Set(chrono::Utc::now().naive_utc());
@@ -213,7 +224,10 @@ pub async fn refuse_friend_request(
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    Ok(Json(friend_request_to_response(&state, updated_request).await?))
+    let response = friend_request_to_response(&state, updated_request).await?;
+    friends_realtime_ws::notify_friend_state_changed(&[requester_user_id, receiver_user_id]).await;
+
+    Ok(Json(response))
 }
 
 pub async fn delete_friend(
@@ -231,6 +245,7 @@ pub async fn delete_friend(
             .delete(&state.db)
             .await
             .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        friends_realtime_ws::notify_friend_state_changed(&[current_user_id, user_id]).await;
         return Ok(StatusCode::NO_CONTENT);
     }
 
@@ -250,6 +265,7 @@ pub async fn delete_friend(
             .update(&state.db)
             .await
             .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        friends_realtime_ws::notify_friend_state_changed(&[current_user_id, user_id]).await;
         return Ok(StatusCode::NO_CONTENT);
     }
 
