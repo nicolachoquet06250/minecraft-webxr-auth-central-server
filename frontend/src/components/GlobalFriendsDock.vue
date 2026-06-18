@@ -120,7 +120,8 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { serverApi, type FriendPresenceServer } from '@/api'
+import { type FriendPresenceServer } from '@/api'
+import { createJoinTicket } from '@/api/join-ticket'
 import { useAuthStore } from '@/stores/auth'
 import { useFriendsStore } from '@/stores/friends'
 
@@ -174,10 +175,10 @@ function friendPresenceServer(userId: string) {
   return friendsStore.presenceFor(userId)
 }
 
-function joinServer(server: FriendPresenceServer | null | undefined) {
+async function joinServer(server: FriendPresenceServer | null | undefined) {
   if (!server) return
-  void serverApi.recordServerVisit(server.game_domain)
-  window.open(server.game_domain, '_blank', 'noopener,noreferrer')
+  const ticket = await createJoinTicket(server.id)
+  window.open(ticket.join_url, '_blank', 'noopener,noreferrer')
 }
 
 function formatDate(value: string) {
