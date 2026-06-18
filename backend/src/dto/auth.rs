@@ -59,6 +59,7 @@ pub struct RefreshRequest {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct AuthResponse {
     pub token: String,
+    pub refresh: String,
     pub user: UserResponse,
 }
 
