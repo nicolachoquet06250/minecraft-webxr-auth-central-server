@@ -18,13 +18,16 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(RefreshToken::RevokedAt).date_time().null())
                     .col(ColumnDef::new(RefreshToken::CreatedAt).date_time().not_null())
                     .col(ColumnDef::new(RefreshToken::UpdatedAt).date_time().not_null())
-                    .foreign_key(
-                        ForeignKey::create()
-                            .name("fk_refresh_token_user")
-                            .from(RefreshToken::Table, RefreshToken::UserId)
-                            .to(User::Table, User::Id)
-                            .on_delete(ForeignKeyAction::Cascade),
-                    )
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .name("idx_refresh_token_user_id")
+                    .table(RefreshToken::Table)
+                    .col(RefreshToken::UserId)
                     .to_owned(),
             )
             .await
@@ -47,10 +50,4 @@ enum RefreshToken {
     RevokedAt,
     CreatedAt,
     UpdatedAt,
-}
-
-#[derive(DeriveIden)]
-enum User {
-    Table,
-    Id,
 }
