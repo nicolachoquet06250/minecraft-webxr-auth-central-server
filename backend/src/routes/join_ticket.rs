@@ -109,8 +109,16 @@ pub async fn verify_join_ticket(
     Json(payload): Json<VerifyJoinTicketRequest>,
 ) -> Result<Json<VerifyJoinTicketResponse>, StatusCode> {
     verify_server_secret(&headers)?;
+    let user = consume_join_ticket(payload.ticket, payload.server_id, payload.game_domain).await?;
+    Ok(Json(VerifyJoinTicketResponse { user }))
+}
 
-    let ticket_id = payload.ticket.trim().to_string();
+pub async fn consume_join_ticket(
+    ticket_id: String,
+    expected_server_id: Option<String>,
+    expected_game_domain: Option<String>,
+) -> Result<VerifyJoinTicketUser, StatusCode> {
+    let ticket_id = ticket_id.trim().to_string();
     if ticket_id.is_empty() {
         return Err(StatusCode::BAD_REQUEST);
     }
@@ -123,13 +131,13 @@ pub async fn verify_join_ticket(
         return Err(StatusCode::GONE);
     }
 
-    if let Some(expected_server_id) = payload.server_id.as_deref().map(str::trim).filter(|value| !value.is_empty()) {
+    if let Some(expected_server_id) = expected_server_id.as_deref().map(str::trim).filter(|value| !value.is_empty()) {
         if expected_server_id != ticket.server_id {
             return Err(StatusCode::FORBIDDEN);
         }
     }
 
-    if let Some(expected_domain) = payload.game_domain.as_deref().map(normalize_origin).filter(|value| !value.is_empty()) {
+    if let Some(expected_domain) = expected_game_domain.as_deref().map(normalize_origin).filter(|value| !value.is_empty()) {
         if expected_domain != ticket.game_domain {
             return Err(StatusCode::FORBIDDEN);
         }
@@ -143,7 +151,7 @@ pub async fn verify_join_ticket(
     };
     tickets.remove(&ticket_id);
 
-    Ok(Json(VerifyJoinTicketResponse { user }))
+    Ok(user)
 }
 
 fn verify_server_secret(headers: &HeaderMap) -> Result<(), StatusCode> {
