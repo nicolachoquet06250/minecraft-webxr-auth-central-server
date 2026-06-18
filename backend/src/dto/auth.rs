@@ -40,13 +40,15 @@ pub struct RegisterCodeResponse {
     pub expires_in_minutes: u8,
 }
 
-#[derive(Debug, Deserialize, Validate, ToSchema)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct LoginRequest {
-    #[validate(email)]
-    pub email: String,
+    #[schema(example = "player@example.com")]
+    pub email: Option<String>,
     
     #[schema(format = Password)]
-    pub password: String,
+    pub password: Option<String>,
+
+    pub central_join_ticket: Option<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]

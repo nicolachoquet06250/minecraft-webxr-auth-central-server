@@ -1,5 +1,5 @@
 use axum::{
-    extract::{ws::{Message, WebSocket, WebSocketUpgrade}, Query, State},
+    extract::{ws::{WebSocket, WebSocketUpgrade}, Query, State},
     http::StatusCode,
     response::Response,
 };
