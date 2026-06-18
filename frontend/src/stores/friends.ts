@@ -13,6 +13,11 @@ type PresenceRealtimeMessage = {
   }
 }
 
+type FriendsRealtimeNotification = {
+  title?: string
+  body?: string
+} | null | undefined
+
 type FriendsRealtimeMessage = {
   type?: 'friends_state_changed' | 'friend_request_received' | 'friend_request_accepted'
   payload?: {
@@ -20,10 +25,7 @@ type FriendsRealtimeMessage = {
     refresh_incoming_requests?: boolean
     refresh_outgoing_requests?: boolean
     incoming_request_count_changed?: boolean
-    notification?: {
-      title?: string
-      body?: string
-    } | null
+    notification?: FriendsRealtimeNotification
   }
 }
 
@@ -258,7 +260,7 @@ export const useFriendsStore = defineStore('friends', () => {
     }
   }
 
-  const showPushNotification = (notification: FriendsRealtimeMessage['payload'] extends infer P ? P extends { notification?: infer N } ? N : never : never) => {
+  const showPushNotification = (notification: FriendsRealtimeNotification) => {
     if (!notification?.title || typeof window === 'undefined' || !('Notification' in window)) return
 
     const body = notification.body || ''
