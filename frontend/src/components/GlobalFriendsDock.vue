@@ -68,6 +68,7 @@
                   <div class="mini-user-info">
                     <strong :title="entry.user.username">{{ entry.user.username }}</strong>
                     <span>{{ entry.user.avatar.name }}</span>
+                    <span>Amis depuis {{ formatApproxDurationSince(entry.created_at) }}</span>
                   </div>
                 </div>
                 <button class="mini-trash" type="button" title="Supprimer" aria-label="Supprimer cet ami" @click="removeFriend(entry.user.id)">🗑️</button>
@@ -103,6 +104,7 @@
 import { onBeforeUnmount, ref, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useFriendsStore } from '@/stores/friends'
+import { formatApproxDurationSince } from '@/utils/dateDuration'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
 const authStore = useAuthStore()
