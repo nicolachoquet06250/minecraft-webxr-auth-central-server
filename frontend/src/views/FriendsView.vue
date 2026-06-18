@@ -74,7 +74,7 @@
                 <div class="friend-user-info">
                   <h3 :title="entry.user.username">{{ entry.user.username }}</h3>
                   <p>{{ entry.user.avatar.name }}</p>
-                  <p class="muted">Amis depuis le {{ formatDate(entry.created_at) }}</p>
+                  <p class="muted">Amis depuis {{ formatApproxDurationSince(entry.created_at) }}</p>
                 </div>
               </div>
               <button
@@ -149,6 +149,7 @@
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { FriendUser } from '@/api'
 import { useFriendsStore } from '@/stores/friends'
+import { formatApproxDurationSince } from '@/utils/dateDuration'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
 const friendsStore = useFriendsStore()
