@@ -13,6 +13,22 @@ type PresenceRealtimeMessage = {
   }
 }
 
+type FriendsRealtimeNotification = {
+  title?: string
+  body?: string
+} | null | undefined
+
+type FriendsRealtimeMessage = {
+  type?: 'friends_state_changed' | 'friend_request_received' | 'friend_request_accepted'
+  payload?: {
+    refresh_friends?: boolean
+    refresh_incoming_requests?: boolean
+    refresh_outgoing_requests?: boolean
+    incoming_request_count_changed?: boolean
+    notification?: FriendsRealtimeNotification
+  }
+}
+
 export const useFriendsStore = defineStore('friends', () => {
   const friends = ref<FriendEntry[]>([])
   const incomingRequests = ref<FriendRequest[]>([])
@@ -25,6 +41,9 @@ export const useFriendsStore = defineStore('friends', () => {
   const error = ref<string | null>(null)
   let presenceSocket: WebSocket | null = null
   let presenceReconnectTimer: number | null = null
+  let friendsRealtimeSocket: WebSocket | null = null
+  let friendsRealtimeReconnectTimer: number | null = null
+  let friendsRealtimeRefreshInProgress = false
 
   const friendIds = computed(() => new Set(friends.value.map((entry) => entry.user.id)))
   const outgoingRequestReceiverIds = computed(() => new Set(outgoingRequests.value.map((request) => request.receiver.id)))
@@ -45,6 +64,7 @@ export const useFriendsStore = defineStore('friends', () => {
       outgoingRequests.value = outgoingResponse.data
       await fetchPresence()
       connectPresenceSocket()
+      connectFriendsRealtimeSocket()
       return true
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Impossible de charger les amis.'
@@ -72,7 +92,7 @@ export const useFriendsStore = defineStore('friends', () => {
     if (!token || presenceSocket?.readyState === WebSocket.OPEN || presenceSocket?.readyState === WebSocket.CONNECTING) return
     clearPresenceReconnectTimer()
 
-    const socket = new WebSocket(resolvePresenceSocketUrl(token))
+    const socket = new WebSocket(resolveSocketUrl(token, '/friends/presence/realtime'))
     presenceSocket = socket
     socket.addEventListener('message', (event) => applyPresenceRealtimeMessage(event.data))
     socket.addEventListener('close', () => {
@@ -83,10 +103,29 @@ export const useFriendsStore = defineStore('friends', () => {
     socket.addEventListener('error', () => socket.close())
   }
 
+  const connectFriendsRealtimeSocket = () => {
+    const token = localStorage.getItem(AUTH_TOKEN_STORAGE_KEY)
+    if (!token || friendsRealtimeSocket?.readyState === WebSocket.OPEN || friendsRealtimeSocket?.readyState === WebSocket.CONNECTING) return
+    clearFriendsRealtimeReconnectTimer()
+
+    const socket = new WebSocket(resolveSocketUrl(token, '/friends/realtime'))
+    friendsRealtimeSocket = socket
+    socket.addEventListener('message', (event) => applyFriendsRealtimeMessage(event.data))
+    socket.addEventListener('close', () => {
+      if (friendsRealtimeSocket === socket) friendsRealtimeSocket = null
+      const latestToken = localStorage.getItem(AUTH_TOKEN_STORAGE_KEY)
+      if (latestToken) friendsRealtimeReconnectTimer = window.setTimeout(connectFriendsRealtimeSocket, 1500)
+    })
+    socket.addEventListener('error', () => socket.close())
+  }
+
   const disconnectPresenceSocket = () => {
     clearPresenceReconnectTimer()
+    clearFriendsRealtimeReconnectTimer()
     presenceSocket?.close(1000, 'client_disconnect')
+    friendsRealtimeSocket?.close(1000, 'client_disconnect')
     presenceSocket = null
+    friendsRealtimeSocket = null
   }
 
   const refreshIncomingRequests = async () => {
@@ -200,10 +239,47 @@ export const useFriendsStore = defineStore('friends', () => {
     }
   }
 
-  const resolvePresenceSocketUrl = (token: string) => {
+  const applyFriendsRealtimeMessage = (raw: unknown) => {
+    if (typeof raw !== 'string') return
+    try {
+      const message = JSON.parse(raw) as FriendsRealtimeMessage
+      showPushNotification(message.payload?.notification)
+      void refreshFriendsStateFromRealtime()
+    } catch {
+      // Ignore invalid realtime messages.
+    }
+  }
+
+  const refreshFriendsStateFromRealtime = async () => {
+    if (friendsRealtimeRefreshInProgress) return
+    friendsRealtimeRefreshInProgress = true
+    try {
+      await fetchAll()
+    } finally {
+      friendsRealtimeRefreshInProgress = false
+    }
+  }
+
+  const showPushNotification = (notification: FriendsRealtimeNotification) => {
+    if (!notification?.title || typeof window === 'undefined' || !('Notification' in window)) return
+
+    const body = notification.body || ''
+    if (Notification.permission === 'granted') {
+      new Notification(notification.title, { body })
+      return
+    }
+
+    if (Notification.permission === 'default') {
+      void Notification.requestPermission().then((permission) => {
+        if (permission === 'granted') new Notification(notification.title as string, { body })
+      })
+    }
+  }
+
+  const resolveSocketUrl = (token: string, path: string) => {
     const baseUrl = new URL(API_BASE_URL)
     baseUrl.protocol = baseUrl.protocol === 'https:' ? 'wss:' : 'ws:'
-    baseUrl.pathname = `${baseUrl.pathname.replace(/\/+$/, '')}/friends/presence/realtime`
+    baseUrl.pathname = `${baseUrl.pathname.replace(/\/+$/, '')}${path}`
     baseUrl.search = `auth=${encodeURIComponent(token)}`
     return baseUrl.toString()
   }
@@ -212,6 +288,12 @@ export const useFriendsStore = defineStore('friends', () => {
     if (presenceReconnectTimer === null) return
     window.clearTimeout(presenceReconnectTimer)
     presenceReconnectTimer = null
+  }
+
+  const clearFriendsRealtimeReconnectTimer = () => {
+    if (friendsRealtimeReconnectTimer === null) return
+    window.clearTimeout(friendsRealtimeReconnectTimer)
+    friendsRealtimeReconnectTimer = null
   }
 
   return {
@@ -231,6 +313,7 @@ export const useFriendsStore = defineStore('friends', () => {
     fetchAll,
     fetchPresence,
     connectPresenceSocket,
+    connectFriendsRealtimeSocket,
     disconnectPresenceSocket,
     refreshIncomingRequests,
     searchUsers,
