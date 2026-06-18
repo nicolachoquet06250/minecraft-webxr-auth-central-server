@@ -2,6 +2,7 @@
   .friends-page {
     padding-left: 0.35rem !important;
     padding-right: 0.35rem !important;
+    overflow-x: hidden !important;
   }
 
   .friends-page,
@@ -14,6 +15,7 @@
     max-width: 100% !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
+    overflow-x: hidden !important;
   }
 
   .friends-page .voxicraft-panel,
@@ -22,8 +24,10 @@
   .friends-page .side-column .voxicraft-panel {
     width: 100% !important;
     max-width: 100% !important;
+    min-width: 0 !important;
     padding-left: 0.75rem !important;
     padding-right: 0.75rem !important;
+    overflow: hidden !important;
   }
 
   .friends-page .friends-layout,
@@ -37,17 +41,134 @@
   }
 
   .friends-page .friend-grid {
+    display: grid !important;
     grid-template-columns: minmax(0, 1fr) !important;
+    gap: 0.85rem !important;
+  }
+
+  .friends-page .friend-card {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-areas:
+      "user"
+      "actions" !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    padding: 0.85rem !important;
+    gap: 0.75rem !important;
+    align-items: stretch !important;
+    overflow: hidden !important;
+  }
+
+  .friends-page .friend-user {
+    grid-area: user !important;
+    display: grid !important;
+    grid-template-columns: 58px minmax(0, 1fr) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    gap: 0.75rem !important;
+    align-items: center !important;
+  }
+
+  .friends-page .friend-user .avatar-large,
+  .friends-page .avatar-large {
+    width: 58px !important;
+    height: 58px !important;
+    min-width: 58px !important;
+    max-width: 58px !important;
+    flex: 0 0 58px !important;
+    align-self: center !important;
+  }
+
+  .friends-page .friend-user-info {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-align: left !important;
+  }
+
+  .friends-page .friend-profile-link,
+  .friends-page .friend-user-info p,
+  .friends-page .friend-presence,
+  .friends-page .friend-presence span,
+  .friends-page .muted {
+    max-width: 100% !important;
+    min-width: 0 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+    line-break: auto !important;
+  }
+
+  .friends-page .friend-profile-link {
+    display: block !important;
+    width: 100% !important;
+    font-size: 1rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .friends-page .friend-card > .icon-join-button,
+  .friends-page .friend-card > .icon-profile-button,
+  .friends-page .friend-card > .icon-danger-button {
+    grid-area: actions !important;
+    width: 42px !important;
+    height: 38px !important;
+    min-width: 42px !important;
+    max-width: 42px !important;
+    justify-self: start !important;
+    align-self: center !important;
+  }
+
+  .friends-page .friend-card > .icon-join-button {
+    justify-self: start !important;
+    margin-left: 0 !important;
+  }
+
+  .friends-page .friend-card > .icon-profile-button {
+    justify-self: center !important;
+    margin-left: 0 !important;
+  }
+
+  .friends-page .friend-card > .icon-danger-button {
+    justify-self: end !important;
+    margin-left: 0 !important;
   }
 
   .friends-page .user-row,
-  .friends-page .request-card,
-  .friends-page .friend-card {
+  .friends-page .request-card {
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
     padding-left: 0.65rem !important;
     padding-right: 0.65rem !important;
+  }
+
+  .friends-page .request-user,
+  .friends-page .user-row {
+    min-width: 0 !important;
+  }
+
+  .friends-page .request-user-info,
+  .friends-page .user-info {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .friends-page .request-user-info strong,
+  .friends-page .request-user-info span,
+  .friends-page .user-info strong,
+  .friends-page .user-info span {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
   }
 
   .friends-page .search-form,
@@ -70,5 +191,23 @@
   .friends-page .side-column .voxicraft-panel {
     padding-left: 0.55rem !important;
     padding-right: 0.55rem !important;
+  }
+
+  .friends-page .friend-card {
+    padding: 0.7rem !important;
+  }
+
+  .friends-page .friend-user {
+    grid-template-columns: 52px minmax(0, 1fr) !important;
+    gap: 0.65rem !important;
+  }
+
+  .friends-page .friend-user .avatar-large,
+  .friends-page .avatar-large {
+    width: 52px !important;
+    height: 52px !important;
+    min-width: 52px !important;
+    max-width: 52px !important;
+    flex-basis: 52px !important;
   }
 }
