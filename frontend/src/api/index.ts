@@ -1,6 +1,8 @@
 import { generateProfileInfoAvatarMailPreview } from '../character-builder/avatar-mail-preview'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
+const ACCESS_STORAGE_KEY = 'auth_token'
+const REFRESH_STORAGE_KEY = 'auth_refresh'
 
 type ApiResponse<T> = Promise<{ data: T }>
 type ApiErrorResponse = { status: number; data: any }
@@ -19,6 +21,9 @@ export interface User { id: string; username: string; email: string; avatar: str
 export interface RegisterData { username: string; email: string; password: string; avatar: string; birthdate: string; bio?: string }
 export interface LoginData { email: string; password: string }
 export interface AuthResponse { token: string; user: User }
+export interface RefreshIssueResponse { refresh: string }
+export interface RefreshRotateResponse { token: string; refresh: string; user: User }
+export interface RefreshRevokeResponse { revoked: boolean }
 export interface Server { id: string; owner_id: string; name: string; game_domain: string; description?: string; is_active: boolean; created_at: string; updated_at: string }
 export interface ServerHistoryEntry { server: Server; is_favorite: boolean; visited_at?: string; favorited_at?: string }
 export interface FavoriteServerEntry { server: Server; is_favorite: boolean; favorited_at: string }
@@ -45,15 +50,44 @@ export interface FriendPresenceServer { id: string; name: string; game_domain: s
 export interface FriendPresence { user_id: string; server: FriendPresenceServer | null }
 export interface CreateFriendRequestData { receiver_user_id: string }
 
-const request = async <T>(path: string, options: RequestInit = {}): ApiResponse<T> => {
-  const token = localStorage.getItem('auth_token')
+const request = async <T>(path: string, options: RequestInit = {}, retry = true): ApiResponse<T> => {
+  const token = localStorage.getItem(ACCESS_STORAGE_KEY)
   const headers = new Headers(options.headers)
   if (!headers.has('Content-Type') && options.body !== undefined) headers.set('Content-Type', 'application/json')
   if (token) headers.set('Authorization', `Bearer ${token}`)
   const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers, credentials: 'include' })
   const data = await parseResponseBody(response)
+
+  if (response.status === 401 && retry && !path.startsWith('/auth/refresh')) {
+    const refreshed = await refreshAccessToken()
+    if (refreshed) return request<T>(path, options, false)
+  }
+
   if (!response.ok) throw new ApiError(response.status, data)
   return { data: data as T }
+}
+
+const refreshAccessToken = async () => {
+  const refresh = localStorage.getItem(REFRESH_STORAGE_KEY)
+  if (!refresh) return false
+
+  const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ refresh }),
+    credentials: 'include',
+  })
+  const data = await parseResponseBody(response)
+  if (!response.ok) {
+    localStorage.removeItem(ACCESS_STORAGE_KEY)
+    localStorage.removeItem(REFRESH_STORAGE_KEY)
+    return false
+  }
+
+  const rotated = data as RefreshRotateResponse
+  localStorage.setItem(ACCESS_STORAGE_KEY, rotated.token)
+  localStorage.setItem(REFRESH_STORAGE_KEY, rotated.refresh)
+  return true
 }
 
 const parseResponseBody = async (response: Response) => {
@@ -82,7 +116,14 @@ const userSearchPath = (params: { q?: string; page?: number; page_size?: number 
   return query ? `/users/search?${query}` : '/users/search'
 }
 
-export const authApi = { register: (data: RegisterData): ApiResponse<AuthResponse> => request<AuthResponse>('/auth/register', { method: 'POST', body: jsonBody(data) }), login: (data: LoginData): ApiResponse<AuthResponse> => request<AuthResponse>('/auth/login', { method: 'POST', body: jsonBody(data) }), getDiscordUrl: (): ApiResponse<{ url: string }> => request<{ url: string }>('/auth/discord/url') }
+export const authApi = {
+  register: (data: RegisterData): ApiResponse<AuthResponse> => request<AuthResponse>('/auth/register', { method: 'POST', body: jsonBody(data) }),
+  login: (data: LoginData): ApiResponse<AuthResponse> => request<AuthResponse>('/auth/login', { method: 'POST', body: jsonBody(data) }),
+  issueRefresh: (): ApiResponse<RefreshIssueResponse> => request<RefreshIssueResponse>('/auth/refresh/issue', { method: 'POST' }, false),
+  refresh: (refresh: string): ApiResponse<RefreshRotateResponse> => request<RefreshRotateResponse>('/auth/refresh', { method: 'POST', body: jsonBody({ refresh }) }, false),
+  revokeRefresh: (refresh: string): ApiResponse<RefreshRevokeResponse> => request<RefreshRevokeResponse>('/auth/refresh/revoke', { method: 'POST', body: jsonBody({ refresh }) }, false),
+  getDiscordUrl: (): ApiResponse<{ url: string }> => request<{ url: string }>('/auth/discord/url')
+}
 export const userApi = { getProfile: (): ApiResponse<User> => request<User>('/users/me'), getUserById: (id: string): ApiResponse<User> => request<User>(`/users/${id}`), searchUsers: (params: { q?: string; page?: number; page_size?: number } = {}): ApiResponse<PaginatedUsersResponse> => request<PaginatedUsersResponse>(userSearchPath(params)), updateProfile: (data: Partial<User>): ApiResponse<User> => request<User>('/users/me', { method: 'PUT', body: jsonBody(data) }), unlinkDiscord: (): ApiResponse<User> => request<User>('/users/me/discord', { method: 'DELETE' }), deleteAccount: (): ApiResponse<null> => request<null>('/users/me', { method: 'DELETE' }), requestPasswordChangeCode: (data: PasswordChangeCodeRequest): ApiResponse<PasswordChangeCodeResponse> => request<PasswordChangeCodeResponse>('/users/me/password/change-code', { method: 'POST', body: jsonBody(data) }), confirmPasswordChange: (_data: PasswordChangeConfirmRequest): ApiResponse<PasswordChangedResponse> => request<PasswordChangedResponse>('/users/me/password', { method: 'PUT' }) }
 export const avatarApi = { getActive: (): ApiResponse<ActiveAvatarResponse> => request<ActiveAvatarResponse>('/users/me/avatar'), clearActive: (): ApiResponse<null> => request<null>('/users/me/avatar', { method: 'DELETE' }), list: (): ApiResponse<UserAvatar[]> => request<UserAvatar[]>('/users/me/avatars'), createCopy: (data: SaveAvatarData): ApiResponse<UserAvatar> => request<UserAvatar>('/users/me/avatars', { method: 'POST', body: jsonBody(withProfileInformationPreview(data)) }), update: (id: string, data: UpdateAvatarData): ApiResponse<UserAvatar> => request<UserAvatar>(`/users/me/avatars/${id}`, { method: 'PUT', body: jsonBody(withProfileInformationPreview(data)) }), delete: (id: string): ApiResponse<null> => request<null>(`/users/me/avatars/${id}`, { method: 'DELETE' }), select: (id: string): ApiResponse<null> => request<null>(`/users/me/avatars/${id}/select`, { method: 'PUT' }) }
 export const serverApi = { createServer: (data: CreateServerData): ApiResponse<Server> => request<Server>('/servers', { method: 'POST', body: jsonBody(data) }), getUserServers: (): ApiResponse<Server[]> => request<Server[]>('/servers'), getRecentServers: (): ApiResponse<ServerHistoryEntry[]> => request<ServerHistoryEntry[]>('/servers/recent'), getFavoriteServers: (): ApiResponse<FavoriteServerEntry[]> => request<FavoriteServerEntry[]>('/servers/favorites'), recordServerVisit: (serverUrl: string): ApiResponse<ServerHistoryEntry> => request<ServerHistoryEntry>('/servers/visit', { method: 'POST', body: jsonBody({ server_url: serverUrl }) }), favoriteServer: (id: string): ApiResponse<FavoriteServerEntry> => request<FavoriteServerEntry>(`/servers/${id}/favorite`, { method: 'POST' }), unfavoriteServer: (id: string): ApiResponse<null> => request<null>(`/servers/${id}/favorite`, { method: 'DELETE' }), getServer: (id: string): ApiResponse<Server> => request<Server>(`/servers/${id}`), updateServer: (id: string, data: Partial<CreateServerData>): ApiResponse<Server> => request<Server>(`/servers/${id}`, { method: 'PUT', body: jsonBody(data) }), deleteServer: (id: string): ApiResponse<null> => request<null>(`/servers/${id}`, { method: 'DELETE' }), getServerStats: async (gameDomain: string) => { const response = await fetch(joinStatsPath(gameDomain)); if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`); return response.json() } }

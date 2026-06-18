@@ -170,7 +170,8 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { serverApi, type FriendPresenceServer, type FriendUser } from '@/api'
+import { type FriendPresenceServer, type FriendUser } from '@/api'
+import { createJoinTicket } from '@/api/join-ticket'
 import { useFriendsStore } from '@/stores/friends'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
@@ -246,10 +247,10 @@ const removeFriend = async (userId: string) => {
 
 const relationStatus = (user: FriendUser) => friendsStore.relationStatus(user)
 const friendPresenceServer = (userId: string) => friendsStore.presenceFor(userId)
-const joinServer = (server: FriendPresenceServer | null | undefined) => {
+const joinServer = async (server: FriendPresenceServer | null | undefined) => {
   if (!server) return
-  void serverApi.recordServerVisit(server.game_domain)
-  window.open(server.game_domain, '_blank', 'noopener,noreferrer')
+  const ticket = await createJoinTicket(server.id)
+  window.open(ticket.join_url, '_blank', 'noopener,noreferrer')
 }
 const formatDate = (value: string) => new Date(value).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
 const avatarSrc = (path: string) => avatarObjectUrls.value[path] || avatarPlaceholder
@@ -363,29 +364,6 @@ h2, h3 { color: #64ffda; margin: 0; }
 .modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
 .modal-close { background: rgba(244, 67, 54, .25); color: #ffcdd2; border: 2px solid #f44336; border-radius: 6px; cursor: pointer; font-size: 1.1rem; padding: .35rem .55rem; }
 .modal-user-list { margin-top: 1rem; }
-@media (max-width: 900px) {
-  .friends-layout { grid-template-columns: 1fr; }
-}
-@media (max-width: 640px) {
-  .friends-page { padding: 1rem .55rem; }
-  .friends-list-panel, .side-column .voxicraft-panel { padding: .85rem; }
-  .search-form, .user-row { flex-direction: column; align-items: stretch; text-align: center; }
-  .request-card { grid-template-columns: 1fr; text-align: left; padding: .75rem; }
-  .incoming-request-card { padding: .75rem; }
-  .incoming-request-card .request-user { grid-template-columns: 44px minmax(0, 1fr); gap: .75rem; }
-  .incoming-request-card .avatar-img { width: 44px; height: 44px; }
-  .request-user { align-items: center; }
-  .request-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; width: 100%; }
-  .request-actions .voxicraft-button { width: 100%; }
-  .friend-card { grid-template-columns: minmax(0, 1fr) 40px 40px 40px; text-align: left; padding: .75rem; }
-  .friend-user { grid-template-columns: 56px minmax(0, 1fr); gap: .7rem; }
-  .friend-user .avatar-large { width: 56px; height: 56px; }
-  .icon-danger-button, .icon-profile-button, .icon-join-button { width: 40px; height: 36px; }
-  .avatar-img, .avatar-large { align-self: center; }
-  .request-user .avatar-img { align-self: center; }
-  .action-row.compact { justify-content: stretch; }
-  .friends-modal-backdrop { padding: .5rem; align-items: flex-start; }
-  .friends-modal { max-height: calc(100vh - 1rem); padding: .85rem; }
-  .modal-header { align-items: flex-start; }
-}
+@media (max-width: 900px) { .friends-layout { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .friends-page { padding: 1rem .55rem; } .friends-list-panel, .side-column .voxicraft-panel { padding: .85rem; } .search-form, .user-row { flex-direction: column; align-items: stretch; text-align: center; } .request-card { grid-template-columns: 1fr; text-align: left; padding: .75rem; } .incoming-request-card { padding: .75rem; } .incoming-request-card .request-user { grid-template-columns: 44px minmax(0, 1fr); gap: .75rem; } .incoming-request-card .avatar-img { width: 44px; height: 44px; } .request-user { align-items: center; } .request-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; width: 100%; } .request-actions .voxicraft-button { width: 100%; } .friend-card { grid-template-columns: minmax(0, 1fr) 40px 40px 40px; text-align: left; padding: .75rem; } .friend-user { grid-template-columns: 56px minmax(0, 1fr); gap: .7rem; } .friend-user .avatar-large { width: 56px; height: 56px; } .icon-danger-button, .icon-profile-button, .icon-join-button { width: 40px; height: 36px; } .avatar-img, .avatar-large { align-self: center; } .request-user .avatar-img { align-self: center; } .action-row.compact { justify-content: stretch; } .friends-modal-backdrop { padding: .5rem; align-items: flex-start; } .friends-modal { max-height: calc(100vh - 1rem); padding: .85rem; } .modal-header { align-items: flex-start; } }
 </style>

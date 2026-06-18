@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod auth_refresh;
 pub mod user;
 pub mod server;
 pub mod avatar;

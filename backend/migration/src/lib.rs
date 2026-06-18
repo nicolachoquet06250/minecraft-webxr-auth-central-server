@@ -6,6 +6,7 @@ mod m20260612_000001_remove_relay_domain_from_server;
 mod m20260612_000002_create_avatars_table;
 mod m20260614_000001_create_server_history_tables;
 mod m20260617_000001_create_friend_tables;
+mod m20260618_000001_create_refresh_tokens_table;
 
 pub struct Migrator;
 
@@ -19,6 +20,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20260612_000002_create_avatars_table::Migration),
             Box::new(m20260614_000001_create_server_history_tables::Migration),
             Box::new(m20260617_000001_create_friend_tables::Migration),
+            Box::new(m20260618_000001_create_refresh_tokens_table::Migration),
         ]
     }
 }

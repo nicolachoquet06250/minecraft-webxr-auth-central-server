@@ -16,10 +16,10 @@ pub struct RegisterRequest {
     pub password: String,
     
     #[schema(example = "steve")]
-    pub avatar: String, // "steve" or "alex"
+    pub avatar: String,
     
     #[schema(format = Date)]
-    pub birthdate: String, // YYYY-MM-DD format
+    pub birthdate: String,
     
     pub bio: Option<String>,
 }
@@ -49,6 +49,11 @@ pub struct LoginRequest {
     pub password: Option<String>,
 
     pub central_join_ticket: Option<String>,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct RefreshRequest {
+    pub refresh: String,
 }
 
 #[derive(Debug, Serialize, ToSchema)]

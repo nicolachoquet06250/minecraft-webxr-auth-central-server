@@ -70,6 +70,8 @@ async fn main() -> anyhow::Result<()> {
         .route("/openapi.json", get(routes::openapi::openapi_json))
         .route("/auth/register", post(routes::auth::register))
         .route("/auth/login", post(routes::auth::login))
+        .route("/auth/refresh", post(routes::auth_refresh::rotate))
+        .route("/auth/refresh/revoke", post(routes::auth_refresh::revoke))
         .route("/auth/discord/url", get(routes::auth::discord_oauth_url))
         .route("/auth/discord/callback", get(routes::auth::discord_callback))
         .route("/auth/join-ticket/verify", post(routes::join_ticket::verify_join_ticket))
@@ -121,6 +123,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/servers/:id", delete(routes::server::delete_server))
         .route("/users/me/password/change-code", post(routes::account_security::request_credential_code))
         .route("/users/me/password", put(routes::account_security::confirm_credential_change))
+        .route("/auth/refresh/issue", post(routes::auth_refresh::issue))
         .layer(axum_middleware::from_fn_with_state(state.clone(), middleware::auth_middleware));
 
     let app = Router::new()
