@@ -13,7 +13,13 @@
       </button>
 
       <div v-if="drawerOpen" class="friends-drawer-backdrop" @click.self="closeDrawer">
-        <aside class="friends-drawer" role="dialog" aria-modal="true" aria-labelledby="global-friends-title">
+        <aside
+          class="friends-drawer"
+          :class="`friends-drawer--tab-${activeMobileTab}`"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="global-friends-title"
+        >
           <header class="drawer-header">
             <div>
               <p class="drawer-eyebrow">VoxiCraft social</p>
@@ -29,7 +35,28 @@
             </button>
           </div>
 
-          <section v-if="friendsStore.incomingRequests.length > 0" class="drawer-section alert-section">
+          <nav class="mobile-drawer-tabs" aria-label="Sections des amis">
+            <button
+              class="mobile-drawer-tab"
+              :class="{ 'is-active': activeMobileTab === 'friends' }"
+              type="button"
+              @click="activeMobileTab = 'friends'"
+            >
+              <span>✅ Amis</span>
+              <strong>{{ friendsStore.friends.length }}</strong>
+            </button>
+            <button
+              class="mobile-drawer-tab"
+              :class="{ 'is-active': activeMobileTab === 'requests' }"
+              type="button"
+              @click="activeMobileTab = 'requests'"
+            >
+              <span>📨 Demandes</span>
+              <strong>{{ friendsStore.incomingRequests.length + friendsStore.outgoingRequests.length }}</strong>
+            </button>
+          </nav>
+
+          <section v-if="friendsStore.incomingRequests.length > 0" class="drawer-section alert-section requests-tab-section">
             <div class="section-title-row">
               <h3>📥 Demandes reçues</h3>
               <span class="section-count">{{ friendsStore.incomingRequests.length }}</span>
@@ -51,7 +78,7 @@
             </div>
           </section>
 
-          <section class="drawer-section">
+          <section class="drawer-section friends-tab-section">
             <div class="section-title-row">
               <h3>✅ Mes amis</h3>
               <span class="section-count">{{ friendsStore.friends.length }}</span>
@@ -94,7 +121,7 @@
             </div>
           </section>
 
-          <section v-if="friendsStore.outgoingRequests.length > 0" class="drawer-section">
+          <section v-if="friendsStore.outgoingRequests.length > 0" class="drawer-section requests-tab-section">
             <div class="section-title-row">
               <h3>📤 Envoyées</h3>
               <span class="section-count">{{ friendsStore.outgoingRequests.length }}</span>
@@ -110,6 +137,14 @@
                 </div>
                 <button class="mini-trash" type="button" title="Annuler" aria-label="Annuler la demande" @click="removeFriend(request.receiver.id)">✕</button>
               </article>
+            </div>
+          </section>
+
+          <section class="drawer-section requests-tab-section mobile-empty-requests" v-if="friendsStore.incomingRequests.length === 0 && friendsStore.outgoingRequests.length === 0">
+            <div class="empty-drawer-state">
+              <div>📨</div>
+              <p>Aucune demande pour le moment.</p>
+              <router-link to="/friends" @click="closeDrawer">Ajouter un ami</router-link>
             </div>
           </section>
         </aside>
@@ -129,6 +164,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
 const authStore = useAuthStore()
 const friendsStore = useFriendsStore()
 const drawerOpen = ref(false)
+const activeMobileTab = ref<'friends' | 'requests'>('friends')
 const avatarObjectUrls = ref<Record<string, string>>({})
 const loadingAvatarUrls = new Set<string>()
 const avatarPlaceholder = 'data:image/svg+xml;utf8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2048%2048%22%3E%3Crect%20width=%2248%22%20height=%2248%22%20rx=%228%22%20fill=%22%23212121%22/%3E%3Crect%20x=%2214%22%20y=%2210%22%20width=%2220%22%20height=%2220%22%20fill=%22%2364ffda%22%20opacity=%22.75%22/%3E%3Crect%20x=%2210%22%20y=%2234%22%20width=%2228%22%20height=%228%22%20fill=%22%2364ffda%22%20opacity=%22.45%22/%3E%3C/svg%3E'
@@ -278,6 +314,7 @@ onBeforeUnmount(() => clearAvatarUrls())
 .drawer-action-primary, .drawer-action-secondary { min-height: 40px; display: inline-flex; align-items: center; justify-content: center; color: #fff; text-decoration: none; background: #2e7d32; border: 3px solid #1b5e20; box-shadow: 3px 3px 0 rgba(0,0,0,.45); font-family: monospace; font-weight: 900; cursor: pointer; }
 .drawer-action-secondary { background: #6d4c41; border-color: #4e342e; }
 .drawer-action-secondary:disabled { opacity: .55; cursor: not-allowed; }
+.mobile-drawer-tabs { display: none; }
 .drawer-section { min-height: 0; display: flex; flex-direction: column; gap: .65rem; }
 .alert-section { flex: 0 0 auto; }
 .section-title-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
@@ -307,5 +344,6 @@ onBeforeUnmount(() => clearAvatarUrls())
 .empty-drawer-state div { font-size: 2.25rem; }
 .empty-drawer-state p { margin: .5rem 0; }
 .empty-drawer-state a { color: #64ffda; font-weight: 900; }
-@media (max-width: 640px) { .friends-dock-button { right: .85rem; bottom: .85rem; width: 52px; height: 52px; } .friends-drawer-backdrop { justify-content: center; align-items: flex-end; } .friends-drawer { width: calc(100vw - .75rem); height: min(78vh, 680px); margin: .375rem; border-radius: 12px 12px 0 0; box-shadow: 0 -6px 0 rgba(0,0,0,.45); } }
+.mobile-empty-requests { display: none; }
+@media (max-width: 640px) { .friends-dock-button { right: .85rem; bottom: .85rem; width: 52px; height: 52px; } .friends-drawer-backdrop { justify-content: center; align-items: flex-end; } .friends-drawer { width: calc(100vw - .75rem); height: min(78vh, 680px); margin: .375rem; border-radius: 12px 12px 0 0; box-shadow: 0 -6px 0 rgba(0,0,0,.45); } .mobile-drawer-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: .55rem; } .mobile-drawer-tab { min-width: 0; min-height: 40px; display: flex; align-items: center; justify-content: center; gap: .45rem; padding: .45rem .5rem; border: 3px solid #4e342e; background: rgba(0,0,0,.24); color: #d7ccc8; box-shadow: 3px 3px 0 rgba(0,0,0,.35); font-family: monospace; font-weight: 900; cursor: pointer; } .mobile-drawer-tab.is-active { border-color: #1b5e20; background: #2e7d32; color: #fff; } .mobile-drawer-tab strong { min-width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; background: rgba(0,0,0,.35); border: 2px solid rgba(255,255,255,.24); font-size: .72rem; } .friends-drawer--tab-friends .requests-tab-section { display: none !important; } .friends-drawer--tab-requests .friends-tab-section { display: none !important; } .friends-drawer--tab-requests .mobile-empty-requests { display: flex !important; } .friends-drawer--tab-requests .requests-tab-section { min-height: 0; } }
 </style>
