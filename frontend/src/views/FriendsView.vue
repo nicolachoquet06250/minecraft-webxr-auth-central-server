@@ -81,7 +81,7 @@
                     <span>{{ friendPresenceServer(entry.user.id)?.name }}</span>
                   </p>
                   <p v-else class="friend-presence offline">hors jeu</p>
-                  <p class="muted">Amis depuis le {{ formatDate(entry.created_at) }}</p>
+                  <p class="muted">Amis depuis {{ formatApproxDurationSince(entry.created_at) }}</p>
                 </div>
               </div>
               <button
@@ -253,6 +253,24 @@ const joinServer = async (server: FriendPresenceServer | null | undefined) => {
   window.open(ticket.join_url, '_blank', 'noopener,noreferrer')
 }
 const formatDate = (value: string) => new Date(value).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
+const formatApproxDurationSince = (value: string) => {
+  const start = new Date(value)
+  const diffMs = Date.now() - start.getTime()
+  if (Number.isNaN(start.getTime()) || diffMs <= 0) return 'moins de 1 jour'
+
+  const totalDays = Math.floor(diffMs / 86400000)
+  const years = Math.floor(totalDays / 365)
+  const months = Math.floor((totalDays % 365) / 30)
+  const days = totalDays % 30
+  const yearLabel = years > 1 ? 'ans' : 'an'
+  const dayLabel = days > 1 ? 'jours' : 'jour'
+
+  if (years > 0 && months > 0) return `${years} ${yearLabel} et ${months} mois`
+  if (years > 0) return `${years} ${yearLabel}`
+  if (months > 0 && days > 0) return `${months} mois et ${days} ${dayLabel}`
+  if (months > 0) return `${months} mois`
+  return `${totalDays} ${totalDays > 1 ? 'jours' : 'jour'}`
+}
 const avatarSrc = (path: string) => avatarObjectUrls.value[path] || avatarPlaceholder
 
 const loadVisibleAvatars = async () => {
