@@ -95,6 +95,7 @@
                   <div class="mini-user-info">
                     <strong :title="entry.user.username">{{ entry.user.username }}</strong>
                     <span>{{ entry.user.avatar.name }}</span>
+                    <span>Amis depuis {{ formatApproxDurationSince(entry.created_at) }}</span>
                     <span v-if="friendPresenceServer(entry.user.id)" class="mini-presence online" :title="friendPresenceServer(entry.user.id)?.name">📍 {{ friendPresenceServer(entry.user.id)?.name }}</span>
                     <span v-else class="mini-presence offline">hors jeu</span>
                   </div>
@@ -221,6 +222,25 @@ function formatDate(value: string) {
   return new Date(value).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
 }
 
+function formatApproxDurationSince(value: string) {
+  const start = new Date(value)
+  const diffMs = Date.now() - start.getTime()
+  if (Number.isNaN(start.getTime()) || diffMs <= 0) return 'moins de 1 jour'
+
+  const totalDays = Math.floor(diffMs / 86400000)
+  const years = Math.floor(totalDays / 365)
+  const months = Math.floor((totalDays % 365) / 30)
+  const days = totalDays % 30
+  const yearLabel = years > 1 ? 'ans' : 'an'
+  const dayLabel = days > 1 ? 'jours' : 'jour'
+
+  if (years > 0 && months > 0) return `${years} ${yearLabel} et ${months} mois`
+  if (years > 0) return `${years} ${yearLabel}`
+  if (months > 0 && days > 0) return `${months} mois et ${days} ${dayLabel}`
+  if (months > 0) return `${months} mois`
+  return `${totalDays} ${totalDays > 1 ? 'jours' : 'jour'}`
+}
+
 function avatarSrc(path: string) {
   return avatarObjectUrls.value[path] || avatarPlaceholder
 }
@@ -324,6 +344,7 @@ onBeforeUnmount(() => clearAvatarUrls())
 .friends-compact-list { flex: 1; }
 .mini-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .65rem; padding: .65rem; background: rgba(0,0,0,.25); border: 2px solid rgba(255,255,255,.12); border-radius: 8px; }
 .request-mini-card { grid-template-columns: 1fr; }
+.friend-mini-card { grid-template-columns: minmax(0, 1fr) auto; }
 .mini-user { display: grid; grid-template-columns: 42px minmax(0, 1fr); align-items: center; gap: .65rem; min-width: 0; }
 .mini-avatar { width: 42px; height: 42px; object-fit: contain; background: rgba(255,255,255,.08); border: 2px solid #4a4a4a; border-radius: 8px; }
 .mini-user-info { min-width: 0; }
@@ -332,18 +353,17 @@ onBeforeUnmount(() => clearAvatarUrls())
 .mini-presence.online { color: #a5d6a7; }
 .mini-presence.offline { color: #a8a8a8; font-style: italic; }
 .mini-actions { display: flex; gap: .45rem; }
-.friend-mini-actions { flex: 0 0 auto; }
 .two-actions { display: grid; grid-template-columns: 1fr 1fr; }
+.friend-mini-actions { align-self: stretch; align-items: stretch; }
 .mini-button, .mini-trash, .mini-profile-button, .mini-join-button { min-width: 36px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border: 2px solid #3e2723; color: #fff; font-weight: 900; box-shadow: 2px 2px 0 rgba(0,0,0,.5); cursor: pointer; text-decoration: none; }
-.mini-join-button { background: #1976d2; border-color: #0d47a1; }
-.mini-join-button:hover { background: #2196f3; }
-.mini-button.accept, .mini-profile-button { background: #2e7d32; border-color: #1b5e20; }
-.mini-profile-button:hover { background: #43a047; }
+.mini-button.accept { background: #2e7d32; }
 .mini-button.refuse, .mini-trash { background: #f44336; border-color: #c62828; }
+.mini-profile-button { background: #2e7d32; border-color: #1b5e20; }
+.mini-join-button { background: #1976d2; border-color: #0d47a1; }
 .empty-drawer-state { padding: 1rem; text-align: center; color: #d7ccc8; background: rgba(0,0,0,.18); border: 2px dashed rgba(255,255,255,.18); border-radius: 8px; }
 .empty-drawer-state div { font-size: 2.25rem; }
 .empty-drawer-state p { margin: .5rem 0; }
 .empty-drawer-state a { color: #64ffda; font-weight: 900; }
 .mobile-empty-requests { display: none; }
-@media (max-width: 640px) { .friends-dock-button { right: .85rem; bottom: .85rem; width: 52px; height: 52px; } .friends-drawer-backdrop { justify-content: center; align-items: flex-end; } .friends-drawer { width: calc(100vw - .75rem); height: min(78vh, 680px); margin: .375rem; border-radius: 12px 12px 0 0; box-shadow: 0 -6px 0 rgba(0,0,0,.45); } .mobile-drawer-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: .55rem; } .mobile-drawer-tab { min-width: 0; min-height: 40px; display: flex; align-items: center; justify-content: center; gap: .45rem; padding: .45rem .5rem; border: 3px solid #4e342e; background: rgba(0,0,0,.24); color: #d7ccc8; box-shadow: 3px 3px 0 rgba(0,0,0,.35); font-family: monospace; font-weight: 900; cursor: pointer; } .mobile-drawer-tab.is-active { border-color: #1b5e20; background: #2e7d32; color: #fff; } .mobile-drawer-tab strong { min-width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; background: rgba(0,0,0,.35); border: 2px solid rgba(255,255,255,.24); font-size: .72rem; } .friends-drawer--tab-friends .requests-tab-section { display: none !important; } .friends-drawer--tab-requests .friends-tab-section { display: none !important; } .friends-drawer--tab-requests .mobile-empty-requests { display: flex !important; } .friends-drawer--tab-requests .requests-tab-section { min-height: 0; } }
+@media (max-width: 640px) { .friends-dock-button { right: .85rem; bottom: .85rem; width: 52px; height: 52px; } .friends-drawer-backdrop { justify-content: center; align-items: flex-end; } .friends-drawer { width: calc(100vw - .75rem); height: min(78vh, 680px); margin: .375rem; border-radius: 12px 12px 0 0; box-shadow: 0 -6px 0 rgba(0,0,0,.45); } .mobile-drawer-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; } .mobile-drawer-tab { display: flex; align-items: center; justify-content: space-between; gap: .5rem; min-width: 0; padding: .55rem .65rem; background: rgba(0,0,0,.22); border: 2px solid rgba(255,255,255,.16); color: #d7ccc8; font-family: monospace; font-weight: 900; box-shadow: 2px 2px 0 rgba(0,0,0,.35); cursor: pointer; } .mobile-drawer-tab span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .mobile-drawer-tab strong { min-width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; background: rgba(46,125,50,.75); color: #fff; font-size: .75rem; } .mobile-drawer-tab.is-active { color: #fff; border-color: #64ffda; background: rgba(46,125,50,.45); } .friends-drawer--tab-friends .requests-tab-section { display: none; } .friends-drawer--tab-requests .friends-tab-section { display: none; } .friends-drawer--tab-requests .mobile-empty-requests { display: flex; } .friend-mini-card { grid-template-columns: 1fr; } .friend-mini-actions { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; } .mini-button, .mini-trash, .mini-profile-button, .mini-join-button { width: 100%; } }
 </style>
