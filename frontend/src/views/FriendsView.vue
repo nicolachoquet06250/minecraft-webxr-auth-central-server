@@ -47,7 +47,7 @@
                   <img :src="avatarSrc(request.receiver.avatar.url)" :alt="request.receiver.avatar.name" class="avatar-img" />
                   <div class="user-info request-user-info">
                     <strong :title="request.receiver.username">{{ request.receiver.username }}</strong>
-                    <span>En attente depuis le {{ formatDate(request.created_at) }}</span>
+                    <span>En attente depuis {{ formatApproxDurationSince(request.created_at) }}</span>
                   </div>
                 </div>
                 <button class="voxicraft-button small danger" title="Annuler" aria-label="Annuler" @click="removeFriend(request.receiver.id)">✕</button>
