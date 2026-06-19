@@ -253,12 +253,16 @@ const joinServer = async (server: FriendPresenceServer | null | undefined) => {
   window.open(ticket.join_url, '_blank', 'noopener,noreferrer')
 }
 const formatDate = (value: string) => new Date(value).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
+const startOfLocalDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate())
 const formatApproxDurationSince = (value: string) => {
   const start = new Date(value)
-  const diffMs = Date.now() - start.getTime()
-  if (Number.isNaN(start.getTime()) || diffMs <= 0) return 'moins de 1 jour'
+  if (Number.isNaN(start.getTime())) return 'moins de 1 jour'
 
-  const totalDays = Math.floor(diffMs / 86400000)
+  const startDay = startOfLocalDay(start)
+  const today = startOfLocalDay(new Date())
+  const totalDays = Math.floor((today.getTime() - startDay.getTime()) / 86400000)
+  if (totalDays <= 0) return 'moins de 1 jour'
+
   const years = Math.floor(totalDays / 365)
   const months = Math.floor((totalDays % 365) / 30)
   const days = totalDays % 30
