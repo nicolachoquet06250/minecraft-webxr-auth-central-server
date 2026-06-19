@@ -95,7 +95,10 @@
                 <span v-else class="player-avatar-loading" aria-label="Image de profil en chargement"></span>
               </div>
               <div class="player-main">
-                <span class="player-name">{{ playerLabel(player) }}</span>
+                <span class="player-name-row">
+                  <span class="player-name">{{ playerLabel(player) }}</span>
+                  <span v-if="playerIsFriend(player)" class="friend-indicator" title="Ami">🤝</span>
+                </span>
               </div>
             </div>
           </div>
@@ -114,8 +117,12 @@
               <span>{{ statsEndpoint }}</span>
             </div>
             <div class="info-item">
-              <strong>WebSocket serveur de jeu:</strong>
-              <span>{{ activeWebSocketEndpoint || 'Connexion non établie' }}</span>
+              <strong>WebSocket central:</strong>
+              <span>{{ activeCentralPresenceEndpoint || 'Connexion non établie' }}</span>
+            </div>
+            <div class="info-item">
+              <strong>État temps réel:</strong>
+              <span>{{ centralPresenceStatusLabel }}</span>
             </div>
           </div>
         </div>
@@ -134,6 +141,7 @@ import { Line, Bar, Doughnut } from 'vue-chartjs'
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend, Filler)
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
+const AUTH_TOKEN_STORAGE_KEY = 'auth_token'
 
 type CountByGender = { gender?: string; label?: string; name?: string; avatar?: string; avatar_kind?: string; default_avatar?: string; base_kind?: string; count?: number; total?: number; connections?: number; total_connections?: number; average_duration_seconds?: number }
 type CountByMonth = { month?: string; label?: string; period?: string; date?: string; count?: number; total?: number; connections?: number; total_connections?: number }
@@ -141,7 +149,7 @@ type CountByMonthAndGender = CountByGender & CountByMonth
 type AverageSessionDuration = { average_duration_seconds?: number; by_gender?: CountByGender[] }
 type ConnectedPlayer = Record<string, unknown>
 type ServerStats = { generated_at?: string; total_connections?: number; current_connected_players?: number; connected_players?: unknown[]; connections_by_gender?: CountByGender[]; connections_by_month?: CountByMonth[]; connections_by_month_and_gender?: CountByMonthAndGender[]; average_session_duration?: AverageSessionDuration }
-type GameServerWebSocketMessage = Partial<ServerStats> & { type?: string; event?: string; player?: unknown; players?: unknown[]; online_players?: unknown[]; stats?: Partial<ServerStats>; data?: Partial<ServerStats> & { player?: unknown; players?: unknown[]; online_players?: unknown[]; connected_players?: unknown[] } }
+type ServerPresenceSnapshotMessage = { type?: string; payload?: { players?: unknown[]; current_connected_players?: number } }
 
 const route = useRoute()
 const router = useRouter()
@@ -154,13 +162,11 @@ const gameDomain = ref('')
 const serverName = ref('Mon Serveur')
 const liveConnectedPlayers = ref<unknown[]>([])
 const playerAvatarUrls = ref<Record<string, string>>({})
-const websocketStatus = ref<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected')
-const activeWebSocketEndpoint = ref('')
-let gameServerWebSocket: WebSocket | null = null
-let reconnectTimeoutId: number | undefined
-let currentWebSocketCandidateIndex = 0
-let currentWebSocketCandidates: string[] = []
-let shouldReconnectWebSocket = true
+const centralPresenceStatus = ref<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected')
+const activeCentralPresenceEndpoint = ref('')
+let centralPresenceSocket: WebSocket | null = null
+let centralPresenceReconnectTimer: number | undefined
+let shouldReconnectCentralPresence = true
 
 const totalConnections = computed(() => stats.value.total_connections ?? 0)
 const connectedPlayers = computed(() => liveConnectedPlayers.value)
@@ -169,6 +175,12 @@ const currentConnectedPlayers = computed(() => connectedPlayersCount.value || st
 const averageDurationSeconds = computed(() => stats.value.average_session_duration?.average_duration_seconds ?? 0)
 const formattedAverageDuration = computed(() => formatDuration(averageDurationSeconds.value))
 const statsEndpoint = computed(() => gameDomain.value ? `${gameDomain.value.replace(/\/+$/, '')}/stats` : '')
+const centralPresenceStatusLabel = computed(() => {
+  if (centralPresenceStatus.value === 'connected') return 'Connecté au central'
+  if (centralPresenceStatus.value === 'connecting') return 'Connexion au central...'
+  if (centralPresenceStatus.value === 'error') return 'Erreur websocket central'
+  return 'Déconnecté'
+})
 
 const monthlyChartData = computed(() => {
   const rows = stats.value.connections_by_month ?? []
@@ -217,77 +229,107 @@ const loadStats = async () => {
     const data = await response.json()
     stats.value = data
     updateConnectedPlayers(normalizePlayers(data.connected_players))
-    connectGameServerWebSocket()
+    connectCentralPresenceSocket()
   } catch (err: any) {
     console.error('Error loading stats:', err)
     error.value = err.message || 'Impossible de charger les statistiques'
     stats.value = {}
     updateConnectedPlayers([])
-    closeGameServerWebSocket(false)
+    closeCentralPresenceSocket(false)
   } finally {
     loading.value = false
   }
 }
 
-const connectGameServerWebSocket = () => { closeGameServerWebSocket(false); currentWebSocketCandidates = buildWebSocketCandidates(gameDomain.value); currentWebSocketCandidateIndex = 0; shouldReconnectWebSocket = true; openCurrentGameServerWebSocket() }
-const openCurrentGameServerWebSocket = () => {
-  if (!shouldReconnectWebSocket || currentWebSocketCandidates.length === 0) { websocketStatus.value = 'error'; return }
-  const endpoint = currentWebSocketCandidates[currentWebSocketCandidateIndex]
-  activeWebSocketEndpoint.value = endpoint
-  websocketStatus.value = 'connecting'
+const connectCentralPresenceSocket = () => {
+  closeCentralPresenceSocket(false)
+  const endpoint = resolveCentralPresenceSocketUrl()
+  if (!endpoint) {
+    centralPresenceStatus.value = 'error'
+    activeCentralPresenceEndpoint.value = ''
+    return
+  }
+
+  shouldReconnectCentralPresence = true
+  activeCentralPresenceEndpoint.value = redactAuthQuery(endpoint)
+  centralPresenceStatus.value = 'connecting'
+
   try {
-    gameServerWebSocket = new WebSocket(endpoint)
-    gameServerWebSocket.onopen = () => { websocketStatus.value = 'connected'; currentWebSocketCandidateIndex = 0 }
-    gameServerWebSocket.onmessage = (event) => handleGameServerWebSocketMessage(event.data)
-    gameServerWebSocket.onerror = () => { websocketStatus.value = 'error' }
-    gameServerWebSocket.onclose = () => {
-      gameServerWebSocket = null
-      if (!shouldReconnectWebSocket) { websocketStatus.value = 'disconnected'; return }
-      currentWebSocketCandidateIndex = (currentWebSocketCandidateIndex + 1) % currentWebSocketCandidates.length
-      websocketStatus.value = 'connecting'
-      reconnectTimeoutId = window.setTimeout(openCurrentGameServerWebSocket, 1500)
+    const socket = new WebSocket(endpoint)
+    centralPresenceSocket = socket
+    socket.onopen = () => { centralPresenceStatus.value = 'connected' }
+    socket.onmessage = (event) => handleCentralPresenceMessage(event.data)
+    socket.onerror = () => { centralPresenceStatus.value = 'error' }
+    socket.onclose = () => {
+      if (centralPresenceSocket === socket) centralPresenceSocket = null
+      if (!shouldReconnectCentralPresence) {
+        centralPresenceStatus.value = 'disconnected'
+        return
+      }
+      centralPresenceStatus.value = 'connecting'
+      centralPresenceReconnectTimer = window.setTimeout(connectCentralPresenceSocket, 1500)
     }
   } catch (err) {
-    console.error('Unable to open game server websocket:', err)
-    websocketStatus.value = 'error'
-    currentWebSocketCandidateIndex = (currentWebSocketCandidateIndex + 1) % currentWebSocketCandidates.length
-    reconnectTimeoutId = window.setTimeout(openCurrentGameServerWebSocket, 1500)
+    console.error('Unable to open central presence websocket:', err)
+    centralPresenceStatus.value = 'error'
+    centralPresenceReconnectTimer = window.setTimeout(connectCentralPresenceSocket, 1500)
   }
 }
-const closeGameServerWebSocket = (disableReconnect = true) => { shouldReconnectWebSocket = !disableReconnect; if (reconnectTimeoutId !== undefined) { window.clearTimeout(reconnectTimeoutId); reconnectTimeoutId = undefined } if (gameServerWebSocket) { gameServerWebSocket.close(); gameServerWebSocket = null } if (disableReconnect) { websocketStatus.value = 'disconnected'; activeWebSocketEndpoint.value = '' } }
 
-const handleGameServerWebSocketMessage = (rawMessage: unknown) => {
-  const message = parseMessage(rawMessage)
-  if (Array.isArray(message)) { updateConnectedPlayers(message); return }
-  if (!message || typeof message !== 'object') return
-  const typedMessage = message as GameServerWebSocketMessage
-  const nestedData = typedMessage.data ?? {}
-  const statsPayload = typedMessage.stats ?? (hasStatsShape(typedMessage) ? typedMessage : undefined)
-  if (statsPayload) mergeStats(statsPayload)
-  const playerList = typedMessage.connected_players ?? typedMessage.players ?? typedMessage.online_players ?? nestedData.connected_players ?? nestedData.players ?? nestedData.online_players
-  if (Array.isArray(playerList)) { updateConnectedPlayers(playerList); return }
-  const eventType = String(typedMessage.type ?? typedMessage.event ?? '').toLowerCase()
-  const player = typedMessage.player ?? nestedData.player
-  if (eventType.includes('connect') && !eventType.includes('disconnect') && player) addConnectedPlayer(player)
-  if ((eventType.includes('disconnect') || eventType.includes('leave')) && player) removeConnectedPlayer(player)
-  if (typeof typedMessage.current_connected_players === 'number') stats.value = { ...stats.value, current_connected_players: typedMessage.current_connected_players }
+const closeCentralPresenceSocket = (disableReconnect = true) => {
+  shouldReconnectCentralPresence = !disableReconnect
+  if (centralPresenceReconnectTimer !== undefined) {
+    window.clearTimeout(centralPresenceReconnectTimer)
+    centralPresenceReconnectTimer = undefined
+  }
+  if (centralPresenceSocket) {
+    centralPresenceSocket.close()
+    centralPresenceSocket = null
+  }
+  if (disableReconnect) {
+    centralPresenceStatus.value = 'disconnected'
+    activeCentralPresenceEndpoint.value = ''
+  }
 }
-const parseMessage = (rawMessage: unknown) => { if (typeof rawMessage !== 'string') return rawMessage; try { return JSON.parse(rawMessage) } catch { return rawMessage } }
-const hasStatsShape = (value: Partial<ServerStats>) => value.total_connections !== undefined || value.current_connected_players !== undefined || value.connected_players !== undefined || value.connections_by_gender !== undefined || value.connections_by_month !== undefined || value.connections_by_month_and_gender !== undefined || value.average_session_duration !== undefined
-const mergeStats = (partialStats: Partial<ServerStats>) => { stats.value = { ...stats.value, ...partialStats, average_session_duration: { ...stats.value.average_session_duration, ...partialStats.average_session_duration } }; if (Array.isArray(partialStats.connected_players)) updateConnectedPlayers(partialStats.connected_players) }
+
+const handleCentralPresenceMessage = (rawMessage: unknown) => {
+  const message = parseMessage(rawMessage) as ServerPresenceSnapshotMessage | null
+  if (!message || typeof message !== 'object') return
+  if (message.type !== 'server_presence_snapshot') return
+
+  const players = message.payload?.players
+  if (Array.isArray(players)) updateConnectedPlayers(players)
+  if (typeof message.payload?.current_connected_players === 'number') {
+    stats.value = { ...stats.value, current_connected_players: message.payload.current_connected_players }
+  }
+}
+
+const resolveCentralPresenceSocketUrl = () => {
+  const token = localStorage.getItem(AUTH_TOKEN_STORAGE_KEY)
+  if (!token) return ''
+  const url = new URL(API_BASE_URL)
+  url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
+  url.pathname = `${url.pathname.replace(/\/+$/, '')}/friends/presence/realtime`
+  url.searchParams.set('auth', token)
+  url.searchParams.set('server_id', serverId)
+  url.searchParams.set('include_all_players', 'true')
+  return url.toString()
+}
+
+const parseMessage = (rawMessage: unknown) => {
+  if (typeof rawMessage !== 'string') return rawMessage
+  try { return JSON.parse(rawMessage) } catch { return null }
+}
 const updateConnectedPlayers = (players: unknown[]) => { const normalizedPlayers = normalizePlayers(players); liveConnectedPlayers.value = normalizedPlayers; stats.value = { ...stats.value, current_connected_players: normalizedPlayers.length, connected_players: normalizedPlayers }; refreshPlayerAvatars(normalizedPlayers) }
-const addConnectedPlayer = (player: unknown) => { const nextPlayers = [...liveConnectedPlayers.value]; const key = playerKey(player); if (!nextPlayers.some((currentPlayer) => playerKey(currentPlayer) === key)) nextPlayers.push(player); updateConnectedPlayers(nextPlayers) }
-const removeConnectedPlayer = (player: unknown) => { const key = playerKey(player); updateConnectedPlayers(liveConnectedPlayers.value.filter((currentPlayer) => playerKey(currentPlayer) !== key)) }
 const normalizePlayers = (players: unknown) => Array.isArray(players) ? players.filter((player) => player !== null && player !== undefined) : []
 const refreshPlayerAvatars = (players: unknown[]) => {
   const nextKeys = new Set(players.map(playerKey))
   for (const [key, url] of Object.entries(playerAvatarUrls.value)) if (!nextKeys.has(key)) { URL.revokeObjectURL(url); const nextUrls = { ...playerAvatarUrls.value }; delete nextUrls[key]; playerAvatarUrls.value = nextUrls }
   for (const player of players) { const key = playerKey(player); if (playerAvatarUrls.value[key]) continue; const source = playerProfilePictureSource(player); if (source) void loadPlayerAvatar(key, source) }
 }
-const loadPlayerAvatar = async (key: string, source: string) => { const token = localStorage.getItem('auth_token'); const headers = new Headers(); if (token) headers.set('Authorization', `Bearer ${token}`); try { const response = await fetch(source, { headers, credentials: 'include' }); if (!response.ok) return; const blob = await response.blob(); const url = URL.createObjectURL(blob); if (playerAvatarUrls.value[key]) URL.revokeObjectURL(playerAvatarUrls.value[key]); playerAvatarUrls.value = { ...playerAvatarUrls.value, [key]: url } } catch (err) { console.warn('Unable to load player profile picture:', err) } }
+const loadPlayerAvatar = async (key: string, source: string) => { const token = localStorage.getItem(AUTH_TOKEN_STORAGE_KEY); const headers = new Headers(); if (token) headers.set('Authorization', `Bearer ${token}`); try { const response = await fetch(source, { headers, credentials: 'include' }); if (!response.ok) return; const blob = await response.blob(); const url = URL.createObjectURL(blob); if (playerAvatarUrls.value[key]) URL.revokeObjectURL(playerAvatarUrls.value[key]); playerAvatarUrls.value = { ...playerAvatarUrls.value, [key]: url } } catch (err) { console.warn('Unable to load player profile picture:', err) } }
 const playerProfilePictureSource = (player: unknown) => { const centralUserId = playerCentralUserId(player); if (!centralUserId) return ''; return `${API_BASE_URL}/users/${encodeURIComponent(centralUserId)}/profile-pic.svg` }
 const playerCentralUserId = (player: unknown) => { if (!player || typeof player !== 'object') return ''; const record = player as ConnectedPlayer; const value = record.user_id ?? record.userId ?? record.central_user_id ?? record.centralUserId ?? record.auth_user_id ?? record.authUserId; if (value === undefined || value === null) return ''; return String(value).trim() }
-const buildWebSocketCandidates = (domain: string) => { if (!domain) return []; try { const url = new URL(domain); const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'; const basePath = url.pathname.replace(/\/+$/, ''); const origin = `${protocol}//${url.host}`; return uniqueValues([`${origin}${basePath}/ws`, `${origin}${basePath}/api/ws`, `${origin}/ws`, `${origin}/api/ws`, `${origin}/stats/ws`]) } catch { return [] } }
 const monthLabel = (item: CountByMonth) => String(item.month ?? item.label ?? item.period ?? item.date ?? 'Non renseigné')
 const genderValue = (item: CountByGender) => String(item.gender ?? item.label ?? item.name ?? item.avatar ?? item.avatar_kind ?? item.default_avatar ?? item.base_kind ?? 'Non renseigné')
 const genderLabel = (item: CountByGender) => {
@@ -304,9 +346,11 @@ const formatDuration = (seconds: number) => { const safeSeconds = Math.max(0, Ma
 const playerLabel = (player: unknown) => { if (typeof player === 'string') return player; if (player && typeof player === 'object') { const record = player as ConnectedPlayer; return String(record.nickname ?? record.username ?? record.name ?? record.display_name ?? record.player_name ?? record.player_id ?? record.id ?? 'Joueur connecté') } return String(player) }
 const playerKey = (player: unknown) => { const centralUserId = playerCentralUserId(player); if (centralUserId) return `user:${centralUserId}`; if (player && typeof player === 'object') { const record = player as ConnectedPlayer; return String(record.player_id ?? record.id ?? record.uuid ?? record.nickname ?? record.username ?? record.name ?? record.display_name ?? record.player_name ?? JSON.stringify(record)) } return String(player) }
 const playerAvatarUrl = (player: unknown) => playerAvatarUrls.value[playerKey(player)] || ''
+const playerIsFriend = (player: unknown) => player !== null && typeof player === 'object' && ((player as ConnectedPlayer).is_friend === true || (player as ConnectedPlayer).isFriend === true)
+const redactAuthQuery = (endpoint: string) => endpoint.replace(/([?&]auth=)[^&]+/, '$1***')
 const goBack = () => router.push({ name: 'servers' })
 onMounted(async () => { if (serverStore.servers.length === 0) await serverStore.fetchUserServers(); await loadStats() })
-onBeforeUnmount(() => { closeGameServerWebSocket(true); for (const url of Object.values(playerAvatarUrls.value)) URL.revokeObjectURL(url); playerAvatarUrls.value = {} })
+onBeforeUnmount(() => { closeCentralPresenceSocket(true); for (const url of Object.values(playerAvatarUrls.value)) URL.revokeObjectURL(url); playerAvatarUrls.value = {} })
 </script>
 
 <style scoped>
@@ -337,7 +381,9 @@ onBeforeUnmount(() => { closeGameServerWebSocket(true); for (const url of Object
 .player-avatar-image { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; image-rendering: crisp-edges; }
 .player-avatar-loading { width: 24px; height: 24px; border-radius: 6px; background: linear-gradient(135deg, rgba(100, 255, 218, 0.22), rgba(255, 255, 255, 0.08)); box-shadow: inset 0 0 0 2px rgba(100, 255, 218, 0.3); }
 .player-main { min-width: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+.player-name-row { min-width: 0; display: inline-flex; align-items: center; gap: 0.4rem; }
 .player-name { color: #ffffff; font-size: 0.72rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.friend-indicator { flex: 0 0 auto; font-size: 0.78rem; filter: drop-shadow(0 0 4px rgba(100, 255, 218, 0.45)); }
 .info-grid { display: grid; grid-template-columns: 1fr; gap: 0.75rem; }
 .info-item { display: flex; flex-direction: column; gap: 0.35rem; word-break: break-word; font-size: 0.68rem; line-height: 1.45; }
 .info-item strong { color: #64ffda; }
