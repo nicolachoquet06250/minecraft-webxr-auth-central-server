@@ -16,7 +16,7 @@
           <h1 class="username">{{ authStore.user?.username }}</h1>
           <p class="user-email">{{ authStore.user?.email }}</p>
           <div class="user-meta">
-            <span class="meta-item">📅 Membre depuis {{ formatDate(authStore.user?.created_at) }}</span>
+            <span class="meta-item">📅 Membre depuis {{ formatApproxDurationSince(authStore.user?.created_at) }}</span>
           </div>
         </div>
 
@@ -205,11 +205,35 @@ const linkingDiscord = ref(false)
 const unlinkingDiscord = ref(false)
 const deletingProfile = ref(false)
 
+const startOfLocalDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate())
+const civilDaysSince = (dateString: string | undefined) => {
+  if (!dateString) return 0
+  const start = new Date(dateString)
+  if (Number.isNaN(start.getTime())) return 0
+  const startDay = startOfLocalDay(start)
+  const today = startOfLocalDay(new Date())
+  return Math.max(0, Math.floor((today.getTime() - startDay.getTime()) / 86400000))
+}
+
 const serverCount = computed(() => serverStore.servers.length)
-const daysSinceJoined = computed(() => {
-  if (!authStore.user?.created_at) return 0
-  return Math.floor((Date.now() - new Date(authStore.user.created_at).getTime()) / 86400000)
-})
+const daysSinceJoined = computed(() => civilDaysSince(authStore.user?.created_at))
+
+const formatApproxDurationSince = (dateString: string | undefined) => {
+  const totalDays = civilDaysSince(dateString)
+  if (totalDays <= 0) return 'moins de 1 jour'
+
+  const years = Math.floor(totalDays / 365)
+  const months = Math.floor((totalDays % 365) / 30)
+  const days = totalDays % 30
+  const yearLabel = years > 1 ? 'ans' : 'an'
+  const dayLabel = days > 1 ? 'jours' : 'jour'
+
+  if (years > 0 && months > 0) return `${years} ${yearLabel} et ${months} mois`
+  if (years > 0) return `${years} ${yearLabel}`
+  if (months > 0 && days > 0) return `${months} mois et ${days} ${dayLabel}`
+  if (months > 0) return `${months} mois`
+  return `${totalDays} ${totalDays > 1 ? 'jours' : 'jour'}`
+}
 
 const formatDate = (dateString: string | undefined) => {
   if (!dateString) return 'N/A'
