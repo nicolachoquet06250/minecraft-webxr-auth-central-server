@@ -78,7 +78,7 @@ pub async fn notify_friend_state_changed(user_ids: &[String]) {
 
 async fn handle_socket(user_id: String, mut socket: WebSocket) {
     let hub = hub().clone();
-    let (session_id, mut receiver) = hub.register(&user_id).await;
+    let (session_id, mut receiver) = hub.register(&user_id, None).await;
 
     while let Some(message) = receiver.recv().await {
         if socket.send(message).await.is_err() {
